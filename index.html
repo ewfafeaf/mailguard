@@ -1595,7 +1595,7 @@ async function doLogin(){
   const {error}=await _sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false;btn.textContent='Prihlásiť sa';
   if(error){err.textContent=translateAuthError(error.message);}
-  else{closeModal();}
+  else{window.location.href='dashboard.html';}
 }
 
 async function doRegister(){
@@ -1609,10 +1609,7 @@ async function doRegister(){
   const {error}=await _sb.auth.signUp({email,password:pass});
   btn.disabled=false;btn.textContent='Vytvoriť účet';
   if(error){err.textContent=translateAuthError(error.message);}
-  else{
-    err.style.color='var(--green)';
-    err.textContent='Registrácia úspešná! Skontroluj email pre potvrdenie.';
-  }
+  else{window.location.href='dashboard.html';}
 }
 
 async function doSignOut(){

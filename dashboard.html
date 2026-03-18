@@ -1,0 +1,621 @@
+<!--
+  SUPABASE SQL – spusti raz v SQL Editore (https://supabase.com/dashboard → SQL Editor):
+
+  create table if not exists analyses (
+    id          uuid primary key default gen_random_uuid(),
+    user_id     uuid not null references auth.users(id) on delete cascade,
+    type        text not null check (type in ('email','url')),
+    input       text,
+    score       integer not null default 0,
+    verdict     text not null check (verdict in ('safe','low','medium','high')),
+    created_at  timestamptz not null default now()
+  );
+
+  -- Row Level Security: každý používateľ vidí iba svoje záznamy
+  alter table analyses enable row level security;
+
+  create policy "Users see own analyses"
+    on analyses for select
+    using (auth.uid() = user_id);
+
+  create policy "Users insert own analyses"
+    on analyses for insert
+    with check (auth.uid() = user_id);
+-->
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard – MailGuard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#000000;vscode-webview://0tkbn5p1h2da0isfqflpsvjh9f0tl5nn49mmpeemnqjevlo6kh4k/Desktop/MailGuard/dashboard.html
+  --surface:#12121a;
+  --surface2:#1a1a28;
+  --surface3:#22223a;
+  --border:#2a2a45;
+  --border2:#3a3a60;
+  --accent:#4f8ef7;
+  --accent2:#7c5ff7;
+  --teal:#00d4ff;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --orange:#f97316;
+  --red:#ef4444;
+  --text:#eeeef5;
+  --muted:#8888aa;
+  --radius:14px;
+  --nav-h:56px;
+  --sidebar-w:230px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--text);min-height:100vh}
+
+/* ── BACKGROUND ORBS ── */
+.bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.3}
+.orb1{width:600px;height:600px;background:#1a3a6e;top:-100px;left:-150px;animation:orbA 24s ease-in-out infinite}
+.orb2{width:500px;height:500px;background:#0f2040;top:40%;right:-150px;animation:orbB 30s ease-in-out infinite}
+.orb3{width:450px;height:450px;background:#2a2a3e;bottom:-100px;left:40%;animation:orbC 20s ease-in-out infinite}
+@keyframes orbA{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+@keyframes orbB{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,70px)}}
+@keyframes orbC{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-60px)}}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;
+  background:#000;border-bottom:1px solid rgba(255,255,255,.09);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:0 28px;height:var(--nav-h)}
+.nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
+.nav-logo img{height:48px;width:auto;display:block}
+.nav-left{display:flex;align-items:center;gap:8px}
+.nav-right{display:flex;align-items:center;gap:8px;justify-self:end}
+.nav-user-email{font-size:.8rem;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-signout{background:transparent;border:1px solid var(--border2);color:var(--muted);
+  padding:5px 12px;border-radius:8px;font-size:.8rem;font-weight:500;cursor:pointer;
+  font-family:inherit;transition:all .18s}
+.btn-signout:hover{color:var(--text);border-color:var(--accent)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;padding-top:var(--nav-h);min-height:100vh;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;
+  background:#000;border-right:1px solid rgba(255,255,255,.07);
+  position:fixed;top:var(--nav-h);bottom:0;left:0;
+  display:flex;flex-direction:column;padding:24px 12px;overflow-y:auto;z-index:100}
+.sidebar-label{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.1em;
+  text-transform:uppercase;padding:0 10px;margin-bottom:8px;margin-top:8px}
+.sidebar-label:first-child{margin-top:0}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;
+  color:rgba(255,255,255,.55);font-size:.87rem;font-weight:500;cursor:pointer;
+  text-decoration:none;transition:all .18s;border:none;background:none;font-family:inherit;width:100%;text-align:left}
+.sidebar-item:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.sidebar-item.active{background:rgba(79,142,247,.12);color:var(--accent);
+  border:1px solid rgba(79,142,247,.2)}
+.sidebar-item .icon{font-size:1rem;flex-shrink:0;width:18px;text-align:center}
+.sidebar-divider{height:1px;background:rgba(255,255,255,.06);margin:12px 8px}
+.sidebar-signout{margin-top:auto}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);flex:1;padding:32px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden}
+
+/* ── WELCOME ── */
+.welcome-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.welcome-title{font-size:1.6rem;font-weight:800;letter-spacing:-.5px}
+.welcome-title span{background:linear-gradient(90deg,var(--accent),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.welcome-sub{font-size:.88rem;color:var(--muted);margin-top:4px}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card:hover{border-color:var(--border2)}
+.stat-card::before{content:'';position:absolute;inset:0;border-radius:var(--radius);
+  background:linear-gradient(135deg,rgba(79,142,247,.04),transparent);pointer-events:none}
+.stat-label{font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.03em;text-transform:uppercase;margin-bottom:10px}
+.stat-value{font-size:2.2rem;font-weight:900;letter-spacing:-1px;line-height:1}
+.stat-value.green{color:var(--green)}
+.stat-value.red{color:var(--red)}
+.stat-value.blue{color:var(--accent)}
+.stat-icon{position:absolute;right:18px;top:18px;font-size:1.6rem;opacity:.25}
+
+/* ── SECTION ── */
+.dash-section{margin-bottom:32px}
+.dash-section-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px}
+.dash-section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* ── NEW ANALYSIS CARD ── */
+.analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.analysis-input-row{display:flex;gap:10px;margin-bottom:0}
+.analysis-input{flex:1;height:50px;padding:12px 16px;background:#fff;border:1px solid #e4e4e7;border-radius:10px;
+  font-size:.95rem;color:#111;font-family:inherit;outline:none;caret-color:#111;transition:box-shadow .2s}
+.analysis-input::placeholder{color:#a1a1aa}
+.analysis-input:focus{box-shadow:0 0 0 3px rgba(79,142,247,.2);border-color:var(--accent)}
+.analysis-btn{height:50px;padding:0 24px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;
+  font-family:inherit;white-space:nowrap;transition:opacity .2s,transform .1s;flex-shrink:0}
+.analysis-btn:hover{opacity:.9}
+.analysis-btn:active{transform:scale(.97)}
+.analysis-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── RESULT ── */
+.result-wrap{margin-top:20px;display:none}
+.hres{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.hres-header{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.hres-score{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0}
+.level-safe{background:rgba(34,197,94,.12);color:#22c55e;border:2px solid rgba(34,197,94,.3)}
+.level-low{background:rgba(245,158,11,.12);color:#f59e0b;border:2px solid rgba(245,158,11,.3)}
+.level-medium{background:rgba(249,115,22,.12);color:#f97316;border:2px solid rgba(249,115,22,.3)}
+.level-high{background:rgba(239,68,68,.12);color:#ef4444;border:2px solid rgba(239,68,68,.3)}
+.hres-verdict{font-weight:700;font-size:.95rem}
+.hres-target{font-size:.78rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px}
+.hres-findings{padding:12px 18px;display:flex;flex-direction:column;gap:8px}
+.hres-finding{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:9px;font-size:.84rem}
+.sev-high{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15)}
+.sev-medium{background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.15)}
+.sev-low{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15)}
+.sev-ok{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15)}
+.hres-finding-icon{flex-shrink:0;font-size:1rem;line-height:1.4}
+.hres-finding-text{color:var(--text);line-height:1.5}
+.save-indicator{font-size:.78rem;color:var(--green);margin-top:8px;display:none;padding:0 4px}
+
+/* ── HISTORY TABLE ── */
+.history-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.history-table{width:100%;border-collapse:collapse}
+.history-table th{padding:11px 16px;text-align:left;font-size:.74rem;font-weight:700;
+  color:var(--muted);letter-spacing:.06em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.history-table td{padding:12px 16px;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.history-table tr:last-child td{border-bottom:none}
+.history-table tr:hover td{background:rgba(255,255,255,.02)}
+.history-empty{padding:32px;text-align:center;color:var(--muted);font-size:.88rem}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.badge-url{background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.2)}
+.badge-email{background:rgba(124,95,247,.12);color:#a78bfa;border:1px solid rgba(124,95,247,.2)}
+.badge-safe{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+.badge-low{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+.badge-medium{background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.2)}
+.badge-high{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.score-pill{display:inline-block;width:36px;height:36px;border-radius:50%;font-weight:800;font-size:.82rem;
+  display:flex;align-items:center;justify-content:center}
+.history-input-text{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:.8rem}
+.history-date{color:var(--muted);font-size:.78rem;white-space:nowrap}
+
+/* ── SPINNER ── */
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;
+  background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+  padding:12px 20px;font-size:.85rem;color:var(--text);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;transform:translateY(8px);
+  transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{border-color:rgba(34,197,94,.4);color:#4ade80}
+.toast.error{border-color:rgba(239,68,68,.4);color:#f87171}
+
+/* ── LOADING SCREEN ── */
+.loading-screen{position:fixed;inset:0;z-index:999;background:#000;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.loading-screen .spinner{width:32px;height:32px;border-width:3px}
+.loading-screen p{color:var(--muted);font-size:.9rem}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .main{padding:24px 20px}
+}
+@media(max-width:680px){
+  .sidebar{width:60px;padding:16px 8px}
+  .sidebar-item span:not(.icon){display:none}
+  .sidebar-label{display:none}
+  .sidebar-divider{margin:8px 4px}
+  .main{margin-left:60px;padding:20px 16px}
+  .stats-grid{grid-template-columns:1fr}
+  .nav-user-email{display:none}
+  .analysis-input-row{flex-direction:column}
+  .analysis-btn{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Načítavam…</p>
+</div>
+
+<!-- Background -->
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-left"></div>
+  <a href="index.html" class="nav-logo">
+    <img src="mailguard.png" alt="MailGuard"/>
+  </a>
+  <div class="nav-right">
+    <span class="nav-user-email" id="navEmail"></span>
+    <button class="btn-signout" onclick="signOut()">Odhlásiť sa</button>
+  </div>
+</nav>
+
+<!-- Layout -->
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Menu</div>
+    <a class="sidebar-item active" id="navAnalyza" onclick="showSection('nova')">
+      <span class="icon">🔍</span><span>Nová analýza</span>
+    </a>
+    <a class="sidebar-item" id="navHistoria" onclick="showSection('historia')">
+      <span class="icon">📋</span><span>História</span>
+    </a>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Účet</div>
+    <a class="sidebar-item" id="navNastavenia" onclick="showSection('nastavenia')">
+      <span class="icon">⚙️</span><span>Nastavenia</span>
+    </a>
+    <div class="sidebar-divider"></div>
+    <button class="sidebar-item sidebar-signout" onclick="signOut()">
+      <span class="icon">🚪</span><span>Odhlásiť sa</span>
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Welcome -->
+    <div class="welcome-row">
+      <div>
+        <div class="welcome-title">Vitaj, <span id="welcomeName">—</span></div>
+        <div class="welcome-sub">Tu sú tvoje analýzy a štatistiky</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Celkový počet analýz</div>
+        <div class="stat-value blue" id="statTotal">—</div>
+        <div class="stat-icon">📊</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Bezpečné</div>
+        <div class="stat-value green" id="statSafe">—</div>
+        <div class="stat-icon">✅</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nebezpečné</div>
+        <div class="stat-value red" id="statDanger">—</div>
+        <div class="stat-icon">🚨</div>
+      </div>
+    </div>
+
+    <!-- Section: Nova analyza -->
+    <div id="sectionNova" class="dash-section">
+      <div class="dash-section-title"><div class="dot"></div>Nová analýza</div>
+      <div class="analysis-card">
+        <div class="analysis-input-row">
+          <input type="text" class="analysis-input" id="dashInput"
+            placeholder="Vlož URL adresu alebo text emailu…"
+            onkeydown="if(event.key==='Enter')dashAnalyze()"/>
+          <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
+        </div>
+        <div class="result-wrap" id="resultWrap">
+          <div id="dashResult"></div>
+          <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Historia -->
+    <div id="sectionHistoria" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot"></div>História analýz</div>
+      <div class="history-card">
+        <div id="historyContent"><div class="history-empty">Načítavam históriu…</div></div>
+      </div>
+    </div>
+
+    <!-- Section: Nastavenia -->
+    <div id="sectionNastavenia" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot"></div>Nastavenia účtu</div>
+      <div class="analysis-card">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:.9rem;color:var(--muted)">Email:</div>
+          <div style="font-size:1rem;font-weight:600" id="settingsEmail">—</div>
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <div style="font-size:.85rem;color:var(--muted)">Pre zmenu hesla alebo emailu kontaktuj podporu na <a href="mailto:support@mailguard.sk" style="color:var(--accent)">support@mailguard.sk</a></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── SUPABASE ── */
+const _sb = supabase.createClient(
+  'https://qalcsmnvyuujsmnreglt.supabase.co',
+  'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+);
+
+let _currentUser = null;
+
+/* ── AUTH CHECK ── */
+_sb.auth.getSession().then(({data:{session}})=>{
+  if(!session){
+    window.location.href='index.html';
+    return;
+  }
+  _currentUser=session.user;
+  initDashboard();
+  document.getElementById('loadingScreen').style.display='none';
+});
+
+_sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_OUT'||!session){
+    window.location.href='index.html';
+  }
+});
+
+function initDashboard(){
+  const email=_currentUser.email||'';
+  const name=email.split('@')[0]||'používateľ';
+  document.getElementById('welcomeName').textContent=name;
+  document.getElementById('navEmail').textContent=email;
+  document.getElementById('settingsEmail').textContent=email;
+  loadStats();
+  loadHistory();
+}
+
+async function signOut(){
+  await _sb.auth.signOut();
+  window.location.href='index.html';
+}
+
+/* ── NAVIGATION ── */
+function showSection(s){
+  ['nova','historia','nastavenia'].forEach(id=>{
+    const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(el) el.style.display=id===s?'block':'none';
+  });
+  ['navAnalyza','navHistoria','navNastavenia'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia'};
+  if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
+  if(s==='historia') loadHistory();
+}
+
+/* ── STATS ── */
+async function loadStats(){
+  const{data,error}=await _sb
+    .from('analyses')
+    .select('score,verdict')
+    .eq('user_id',_currentUser.id);
+  if(error){
+    document.getElementById('statTotal').textContent='—';
+    return;
+  }
+  const total=data.length;
+  const safe=data.filter(r=>r.verdict==='safe'||r.verdict==='low').length;
+  const danger=data.filter(r=>r.verdict==='medium'||r.verdict==='high').length;
+  document.getElementById('statTotal').textContent=total;
+  document.getElementById('statSafe').textContent=safe;
+  document.getElementById('statDanger').textContent=danger;
+}
+
+/* ── HISTORY ── */
+async function loadHistory(){
+  const{data,error}=await _sb
+    .from('analyses')
+    .select('*')
+    .eq('user_id',_currentUser.id)
+    .order('created_at',{ascending:false})
+    .limit(20);
+
+  const container=document.getElementById('historyContent');
+  if(error||!data||data.length===0){
+    container.innerHTML='<div class="history-empty">Zatiaľ žiadne analýzy. Spusti svoju prvú analýzu! 🔍</div>';
+    return;
+  }
+
+  const rows=data.map(r=>{
+    const d=new Date(r.created_at);
+    const dateStr=d.toLocaleDateString('sk-SK')+' '+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+    const typeBadge=r.type==='url'?'<span class="badge badge-url">URL</span>':'<span class="badge badge-email">Email</span>';
+    const level=r.verdict||'safe';
+    const levelLabel={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'}[level]||'—';
+    const score=r.score??'?';
+    return`<tr>
+      <td><span class="history-date">${dateStr}</span></td>
+      <td>${typeBadge}</td>
+      <td><div class="history-input-text" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,60))}${(r.input||'').length>60?'…':''}</div></td>
+      <td><span class="score-pill level-${level}">${score}</span></td>
+      <td><span class="badge badge-${level}">${levelLabel}</span></td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML=`<table class="history-table">
+    <thead><tr>
+      <th>Dátum</th><th>Typ</th><th>Vstup</th><th>Skóre</th><th>Verdikt</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ── ANALYSIS ── */
+function dashAnalyze(){
+  const val=document.getElementById('dashInput').value.trim();
+  if(!val) return;
+  const btn=document.getElementById('dashBtn');
+  const wrap=document.getElementById('resultWrap');
+  const resultEl=document.getElementById('dashResult');
+  const saveInd=document.getElementById('saveIndicator');
+
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="display:inline-block;width:16px;height:16px;border-width:2px"></div>';
+  saveInd.style.display='none';
+
+  setTimeout(async()=>{
+    const html=renderResultHTML(val);
+    resultEl.innerHTML='<div class="hres">'+html+'</div>';
+    wrap.style.display='block';
+    wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+    btn.disabled=false;
+    btn.textContent='Analyzovať';
+
+    // save to Supabase
+    await saveAnalysis(val);
+    saveInd.style.display='block';
+    loadStats();
+  }, 200);
+}
+
+async function saveAnalysis(val){
+  // get fresh authenticated user
+  const{data:{user},error:authErr}=await _sb.auth.getUser();
+  console.log('saveAnalysis – user:', user, 'authErr:', authErr);
+  if(!user){console.warn('saveAnalysis: no user, aborting');return;}
+
+  const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
+  let score,type;
+
+  if(isEmail){
+    type='email';
+    let s=0;
+    for(const rule of EMAIL_RULES){if(rule.patterns.some(p=>p.test(val)))s+=rule.weight;}
+    score=Math.min(s,100);
+  } else {
+    type='url';
+    const r=analyzeUrl(val.startsWith('http')?val:'https://'+val);
+    score=r.score;
+  }
+
+  const verdict=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
+  const payload={user_id:user.id,type,input:val.slice(0,500),score,verdict};
+  console.log('saveAnalysis – inserting:', payload);
+
+  const{data,error}=await _sb.from('analyses').insert(payload).select();
+  console.log('Insert result:', data, error);
+  if(error) console.error('Supabase insert error:', error);
+}
+
+function renderResultHTML(val){
+  const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
+  let score,findings,target;
+
+  if(isEmail){
+    target=val.slice(0,60)+(val.length>60?'…':'');
+    const ef=[];let es=0;
+    for(const rule of EMAIL_RULES){if(rule.patterns.some(p=>p.test(val))){ef.push({icon:sevIcon(rule.sev),text:rule.title,sev:rule.sev});es+=rule.weight;}}
+    score=Math.min(es,100);findings=ef;
+  } else {
+    const cleaned=val.startsWith('http')?val:'https://'+val;
+    target=cleaned;
+    const r=analyzeUrl(cleaned);
+    score=r.score;
+    findings=r.findings.map(f=>({icon:f.icon,text:f.text,sev:f.sev==='ok'?'ok':f.sev}));
+  }
+
+  const level=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
+  const meta=levelMeta(level);
+
+  let html=`<div class="hres-header">
+    <div class="hres-score level-${level}">${score===0&&findings.length===0?'✅':score}</div>
+    <div style="flex:1;min-width:0">
+      <div class="hres-verdict" style="color:${meta.color}">${meta.label}</div>
+      <div class="hres-target">${escHtml(target)}</div>
+    </div>
+  </div>`;
+
+  if(findings.length===0){
+    html+=`<div class="hres-findings"><div class="hres-finding sev-ok"><span class="hres-finding-icon">✅</span><div class="hres-finding-text"><strong>Žiadne varovné signály</strong> – obsah nevykazuje known phishing vzory.</div></div></div>`;
+    return html;
+  }
+
+  html+=`<div class="hres-findings">`;
+  findings.forEach(f=>{
+    html+=`<div class="hres-finding sev-${f.sev}"><span class="hres-finding-icon">${f.icon}</span><div class="hres-finding-text"><strong>${escHtml(f.text)}</strong></div></div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+
+/* ── HELPERS ── */
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sevIcon(s){return s==='high'?'🚨':s==='medium'?'⚠️':s==='low'?'🔔':'✅';}
+function levelMeta(l){
+  return{safe:{label:'Bezpečné',color:'#22c55e'},low:{label:'Nízke riziko',color:'#f59e0b'},medium:{label:'Stredné riziko',color:'#f97316'},high:{label:'Vysoké riziko – možný phishing',color:'#ef4444'}}[l]||{label:'Neznáme',color:'#8888aa'};
+}
+
+/* ── EMAIL RULES ── */
+const EMAIL_RULES=[
+  {id:'urgency',title:'Naliehavý jazyk / tlak na rýchle konanie',sev:'high',weight:18,
+   patterns:[/okamžite|urgentné|naliehav|konaj teraz|do 24 hodín|do 48 hodín|posledná šanca|dnes vyprší|zablokovan|pozastavený?|obmedzený?|zrušen/i,/act now|urgent|immediately|account (suspended|blocked|locked)|limited time|expires? (today|soon)|last chance/i]},
+  {id:'threats',title:'Vyhrážky alebo strašenie',sev:'high',weight:20,
+   patterns:[/vymažem|vymažeme|zmažeme|bude(te)? zablokovan|budete pokutovan|právne kroky|súdne konanie/i,/legal action|will be deleted|account will be (closed|terminated|suspended)|law enforcement|criminal/i]},
+  {id:'credentials',title:'Žiadosť o heslo alebo prihlasovacie údaje',sev:'high',weight:25,
+   patterns:[/heslo|pin kód|overovac[íi] kód|potvrď? (svoje )?heslo|zadaj(te)? heslo/i,/password|login credentials|enter your password|verify your password|passcode|pin code/i]},
+  {id:'financial',title:'Požiadavka na finančné alebo citlivé informácie',sev:'high',weight:22,
+   patterns:[/číslo karty|kreditná karta|bankový (účet|prevod)|IBAN|rodné číslo/i,/credit card|bank account|social security|SSN|IBAN|card number|wire transfer/i]},
+  {id:'prize',title:'Výhry, lotéria alebo nereálna ponuka',sev:'high',weight:18,
+   patterns:[/vyhral(i)? ste|vyhral si|lotéria|hlavná cena|odmena pre vás|získaj(te)? zadarmo/i,/you (have )?won|winner|lottery|prize|free gift|claim your (prize|reward)|million dollars/i]},
+  {id:'click_link',title:'Vyzýva na kliknutie na odkaz',sev:'medium',weight:12,
+   patterns:[/klikni (sem|tu|na odkaz|na tlačidlo)|kliknite (sem|tu|na odkaz|na tlačidlo)|overte (kliknutím|tu|konto|totožnosť)/i,/click (here|the link|below)|verify (your )?(account|identity)|activate (your )?account/i]},
+  {id:'impersonation',title:'Vydávanie sa za dôveryhodnú inštitúciu',sev:'medium',weight:14,
+   patterns:[/microsoft|google|apple|amazon|paypal|facebook|instagram|netflix|tatra banka|slovenská sporiteľňa|ministerstvo|polícia/i]},
+  {id:'attachments',title:'Zmienka o prílohách alebo súboroch',sev:'medium',weight:10,
+   patterns:[/príloha|stiahnite? (prílohu|súbor)|otvorte? (prílohu|súbor|dokument)/i,/attachment|download the file|open the (attachment|document)|invoice attached/i]},
+  {id:'grammar',title:'Podozrivé formulácie alebo gramatické chyby',sev:'low',weight:6,
+   patterns:[/Vážený zákazník|Vážený užívateľ|Drahý (zákazník|používateľ)/i,/Dear (Customer|User|Friend|Sir\/Madam)|Greetings from|kindly (click|provide|send)/i]},
+  {id:'personal_data',title:'Žiadosť o osobné údaje',sev:'medium',weight:12,
+   patterns:[/potvrdz? (svoje )?(osobné)?údaje|aktualizuj(te)? (údaje|profil)/i,/confirm (your )?(personal )?details|update your (profile|information|account)|verify your identity/i]},
+];
+
+/* ── URL ANALYSIS ── */
+function analyzeUrl(url){
+  const findings=[];let score=0;let rawUrl=url.trim();
+  let parsed;
+  try{if(!/^https?:\/\//i.test(rawUrl))rawUrl='http://'+rawUrl;parsed=new URL(rawUrl);}
+  catch{findings.push({icon:'⚠️',text:'Nepodarilo sa spracovať URL – skontroluj formát.',sev:'medium'});return{url,findings,score:20};}
+  const host=parsed.hostname.toLowerCase();const path=parsed.pathname.toLowerCase();
+  if(/^(\d{1,3}\.){3}\d{1,3}$/.test(host)){findings.push({icon:'🚨',text:'Doména je IP adresa – legitímne weby toto nepoužívajú.',sev:'high'});score+=35;}
+  if(parsed.protocol==='http:'){findings.push({icon:'🔓',text:'Nešifrované spojenie (HTTP).',sev:'medium'});score+=12;}
+  const suspTLD=['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.club','.online','.site','.icu','.buzz'];
+  const tld=host.slice(host.lastIndexOf('.'));
+  if(suspTLD.includes(tld)){findings.push({icon:'⚠️',text:`Podozrivá doména: "${tld}"`,sev:'high'});score+=25;}
+  const brands=[{name:'google',variants:/g[o0][o0]gle|g00gle/},{name:'microsoft',variants:/micros[o0]ft|microsott/},{name:'paypal',variants:/payp[a4]l|paypai/},{name:'facebook',variants:/faceb[o0]{2}k|facbook/},{name:'apple',variants:/app[l1]e-id|appleaccount/},{name:'amazon',variants:/amaz[o0]n|arnazon/}];
+  for(const b of brands){if(b.variants.test(host)){findings.push({icon:'🚨',text:`Možná imitácia "${b.name}" (typosquatting).`,sev:'high'});score+=30;break;}}
+  if(rawUrl.includes('@')){findings.push({icon:'🚨',text:'URL obsahuje "@" – možné presmerovanie.',sev:'high'});score+=25;}
+  const shorteners=['bit.ly','tinyurl.com','t.co','ow.ly'];
+  if(shorteners.some(s=>host===s)){findings.push({icon:'⚠️',text:'Skrátená URL – skutočný cieľ je skrytý.',sev:'medium'});score+=15;}
+  if(/login|signin|password|credential|verify|secure|update|confirm|account/i.test(path)){findings.push({icon:'⚠️',text:'URL obsahuje slová ako "login", "verify", "password".',sev:'medium'});score+=10;}
+  if(findings.length===0)findings.push({icon:'✅',text:'Nezistené zjavné red flags v URL.',sev:'ok'});
+  return{url,findings,score:Math.min(score,100)};
+}
+
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+(type||'');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
