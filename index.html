@@ -621,6 +621,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
     <a href="#how">Ako to funguje</a>
     <a href="#pricing">Cenník</a>
     <a href="#faq">FAQ</a>
+    <a href="dashboard.html" id="navDashboardLink" style="display:none">Dashboard</a>
   </div>
   <a class="nav-logo" href="#hero">
     <img src="mailguard.png" alt="MailGuard"/>
@@ -1626,16 +1627,19 @@ function translateAuthError(msg){
 
 function updateNavAuth(user){
   const navRight=document.getElementById('navRight');
+  const dashLink=document.getElementById('navDashboardLink');
   if(user){
     navRight.innerHTML=`
       <div class="nav-user">
         <span class="nav-user-email">${escHtml(user.email)}</span>
         <button class="btn-signout" onclick="doSignOut()">Odhlásiť sa</button>
       </div>`;
+    if(dashLink) dashLink.style.display='';
   } else {
     navRight.innerHTML=`
       <button class="btn-signin" onclick="openModal('login')">Prihlásiť sa</button>
       <button class="btn-signup" onclick="openModal('register')">Registrovať</button>`;
+    if(dashLink) dashLink.style.display='none';
   }
 }
 
