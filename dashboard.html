@@ -331,12 +331,29 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <!-- Section: Nastavenia -->
     <div id="sectionNastavenia" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot"></div>Nastavenia účtu</div>
-      <div class="analysis-card">
+      <div class="analysis-card" style="margin-bottom:16px">
         <div style="display:flex;flex-direction:column;gap:12px">
           <div style="font-size:.9rem;color:var(--muted)">Email:</div>
           <div style="font-size:1rem;font-weight:600" id="settingsEmail">—</div>
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
           <div style="font-size:.85rem;color:var(--muted)">Pre zmenu hesla alebo emailu kontaktuj podporu na <a href="mailto:support@mailguard.sk" style="color:var(--accent)">support@mailguard.sk</a></div>
+        </div>
+      </div>
+
+      <!-- GSB API KEY -->
+      <div class="dash-section-title" style="margin-top:8px"><div class="dot" style="background:var(--green)"></div>Google Safe Browsing API</div>
+      <div class="analysis-card">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:.85rem;color:var(--muted);line-height:1.6">
+            Google Safe Browsing kontroluje URL oproti databáze známych hrozieb (malware, phishing, nežiaduci softvér).
+            API kľúč získaš zadarmo na <a href="https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com" target="_blank" rel="noopener" style="color:var(--accent)">Google Cloud Console</a>.
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input type="password" id="gsbKeyInput" class="analysis-input" style="flex:1;min-width:200px;height:44px"
+              placeholder="AIza…"/>
+            <button class="analysis-btn" style="height:44px;padding:0 20px" onclick="saveGsbKey()">Uložiť</button>
+          </div>
+          <div id="gsbKeyStatus" style="font-size:.8rem;color:var(--muted)"></div>
         </div>
       </div>
     </div>
@@ -379,8 +396,24 @@ function initDashboard(){
   document.getElementById('welcomeName').textContent=name;
   document.getElementById('navEmail').textContent=email;
   document.getElementById('settingsEmail').textContent=email;
+  // load saved GSB key
+  const saved=localStorage.getItem('gsb_api_key');
+  if(saved){
+    document.getElementById('gsbKeyInput').value=saved;
+    document.getElementById('gsbKeyStatus').textContent='✓ API kľúč je uložený';
+    document.getElementById('gsbKeyStatus').style.color='var(--green)';
+  }
   loadStats();
   loadHistory();
+}
+
+function saveGsbKey(){
+  const key=document.getElementById('gsbKeyInput').value.trim();
+  const status=document.getElementById('gsbKeyStatus');
+  if(!key){localStorage.removeItem('gsb_api_key');status.textContent='API kľúč bol odstránený.';status.style.color='var(--muted)';return;}
+  localStorage.setItem('gsb_api_key',key);
+  status.textContent='✓ API kľúč uložený.';
+  status.style.color='var(--green)';
 }
 
 async function signOut(){
@@ -460,44 +493,83 @@ async function loadHistory(){
   </table>`;
 }
 
+/* ── GOOGLE SAFE BROWSING ── */
+const GSB_THREAT_SK={
+  MALWARE:'Malvér – stránka distribuuje škodlivý softvér',
+  SOCIAL_ENGINEERING:'Phishing / sociálne inžinierstvo',
+  UNWANTED_SOFTWARE:'Nežiaduci softvér',
+  POTENTIALLY_HARMFUL_APPLICATION:'Potenciálne škodlivá aplikácia'
+};
+
+async function checkGoogleSafeBrowsing(url){
+  const key=localStorage.getItem('gsb_api_key');
+  if(!key) return null;
+  try{
+    const body={
+      client:{clientId:'mailguard',clientVersion:'1.0'},
+      threatInfo:{
+        threatTypes:['MALWARE','SOCIAL_ENGINEERING','UNWANTED_SOFTWARE','POTENTIALLY_HARMFUL_APPLICATION'],
+        platformTypes:['ANY_PLATFORM'],
+        threatEntryTypes:['URL'],
+        threatEntries:[{url}]
+      }
+    };
+    const res=await fetch(
+      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${encodeURIComponent(key)}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
+    );
+    if(!res.ok){console.warn('GSB HTTP error:',res.status);return null;}
+    const json=await res.json();
+    return json.matches||[];
+  }catch(e){
+    console.warn('GSB fetch error:',e);
+    return null;
+  }
+}
+
 /* ── ANALYSIS ── */
-function dashAnalyze(){
+async function dashAnalyze(){
   const val=document.getElementById('dashInput').value.trim();
   if(!val) return;
   const btn=document.getElementById('dashBtn');
   const wrap=document.getElementById('resultWrap');
   const resultEl=document.getElementById('dashResult');
   const saveInd=document.getElementById('saveIndicator');
+  const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
 
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:16px;height:16px;border-width:2px"></div>';
   saveInd.style.display='none';
 
-  setTimeout(async()=>{
-    const html=renderResultHTML(val);
-    resultEl.innerHTML='<div class="hres">'+html+'</div>';
-    wrap.style.display='block';
-    wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
-    btn.disabled=false;
-    btn.textContent='Analyzovať';
+  // GSB check only for URLs
+  let gsbMatches=null;
+  if(!isEmail){
+    const fullUrl=val.startsWith('http')?val:'https://'+val;
+    gsbMatches=await checkGoogleSafeBrowsing(fullUrl);
+  }
 
-    // save to Supabase
-    await saveAnalysis(val);
-    saveInd.style.display='block';
-    loadStats();
-  }, 200);
+  const html=renderResultHTML(val,gsbMatches);
+  resultEl.innerHTML='<div class="hres">'+html+'</div>';
+  wrap.style.display='block';
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+  btn.disabled=false;
+  btn.textContent='Analyzovať';
+
+  await saveAnalysis(val,gsbMatches);
+  saveInd.style.display='block';
+  loadStats();
 }
 
-async function saveAnalysis(val){
-  // get fresh authenticated user
+async function saveAnalysis(val,gsbMatches=null){
   const{data:{user},error:authErr}=await _sb.auth.getUser();
-  console.log('saveAnalysis – user:', user, 'authErr:', authErr);
   if(!user){console.warn('saveAnalysis: no user, aborting');return;}
 
   const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
   let score,type;
 
-  if(isEmail){
+  if(gsbMatches&&gsbMatches.length>0){
+    type='url';score=100;
+  } else if(isEmail){
     type='email';
     let s=0;
     for(const rule of EMAIL_RULES){if(rule.patterns.some(p=>p.test(val)))s+=rule.weight;}
@@ -510,14 +582,12 @@ async function saveAnalysis(val){
 
   const verdict=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
   const payload={user_id:user.id,type,input:val.slice(0,500),score,verdict};
-  console.log('saveAnalysis – inserting:', payload);
 
   const{data,error}=await _sb.from('analyses').insert(payload).select();
-  console.log('Insert result:', data, error);
-  if(error) console.error('Supabase insert error:', error);
+  if(error) console.error('Supabase insert error:',error);
 }
 
-function renderResultHTML(val){
+function renderResultHTML(val,gsbMatches=null){
   const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
   let score,findings,target;
 
@@ -529,9 +599,23 @@ function renderResultHTML(val){
   } else {
     const cleaned=val.startsWith('http')?val:'https://'+val;
     target=cleaned;
-    const r=analyzeUrl(cleaned);
-    score=r.score;
-    findings=r.findings.map(f=>({icon:f.icon,text:f.text,sev:f.sev==='ok'?'ok':f.sev}));
+    if(gsbMatches&&gsbMatches.length>0){
+      // GSB hit → score 100, show threat types
+      score=100;
+      findings=gsbMatches.map(m=>({
+        icon:'🚨',
+        text:'Google Safe Browsing: '+(GSB_THREAT_SK[m.threatType]||m.threatType),
+        sev:'high'
+      }));
+    } else {
+      const r=analyzeUrl(cleaned);
+      score=r.score;
+      findings=r.findings.map(f=>({icon:f.icon,text:f.text,sev:f.sev==='ok'?'ok':f.sev}));
+      // GSB clear badge (only when we actually called GSB)
+      if(gsbMatches!==null){
+        findings.unshift({icon:'🛡️',text:'Google Safe Browsing: URL nie je v databáze hrozieb',sev:'ok'});
+      }
+    }
   }
 
   const level=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
