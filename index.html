@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MailGuard – Kybernetická ochrana pre školy</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#000000;
+  --surface:#12121a;
+  --surface2:#1a1a28;
+  --surface3:#22223a;
+  --border:#2a2a45;
+  --border2:#3a3a60;
+  --accent:#4f8ef7;
+  --accent2:#7c5ff7;
+  --teal:#00d4ff;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --orange:#f97316;
+  --red:#ef4444;
+  --text:#eeeef5;
+  --muted:#8888aa;
+  --radius:14px;
+  --nav-h:68px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--text);overflow-x:hidden}
+.bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.4}
+.orb1{width:750px;height:750px;background:#1a3a6e;top:-180px;left:-200px;
+  animation:orbA 24s ease-in-out infinite}
+.orb2{width:680px;height:680px;background:#0f2040;top:30%;right:-220px;
+  animation:orbB 30s ease-in-out infinite}
+.orb3{width:600px;height:600px;background:#2a2a3e;bottom:-150px;left:35%;
+  animation:orbC 20s ease-in-out infinite}
+@keyframes orbA{0%,100%{transform:translate(0,0)}   50%{transform:translate(80px,60px)}}
+@keyframes orbB{0%,100%{transform:translate(0,0)}   50%{transform:translate(-70px,90px)}}
+@keyframes orbC{0%,100%{transform:translate(0,0)}   50%{transform:translate(60px,-80px)}}
+
+/* ── LASER LINES ── */
+.lasers{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.laser{position:fixed;left:0;top:50vh;width:100vw;height:3px;
+  background:#ff0000;opacity:.5;
+  filter:drop-shadow(0 0 8px #ff0000);
+  transform-origin:50% 50%}
+.lz1{animation:lzCW  15s linear infinite}
+.lz2{animation:lzCCW 20s linear infinite}
+@keyframes lzCW {from{transform:rotate(0deg)}   to{transform:rotate(360deg)}}
+@keyframes lzCCW{from{transform:rotate(360deg)} to{transform:rotate(0deg)}}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;
+  background:#000;border-bottom:1px solid rgba(255,255,255,.09);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:0 28px;height:56px}
+.nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
+.nav-logo img{height:60px;width:auto;display:block}
+/* left links — left-aligned, close to left edge */
+.nav-left{display:flex;justify-content:flex-start;align-items:center;gap:0}
+.nav-left a{color:rgba(255,255,255,.5);text-decoration:none;font-size:.84rem;
+  padding:6px 13px;border-radius:7px;transition:color .18s,background .18s;font-weight:500;white-space:nowrap}
+.nav-left a:hover{color:#fff;background:rgba(255,255,255,.06)}
+/* right buttons */
+.nav-right{display:flex;align-items:center;gap:8px;justify-self:end}
+.btn-signin{background:transparent;border:none;color:rgba(255,255,255,.5);
+  padding:6px 12px;font-size:.84rem;font-weight:500;cursor:pointer;
+  font-family:inherit;transition:color .18s;white-space:nowrap}
+.btn-signin:hover{color:#fff}
+.btn-signup{background:#fff;color:#111;
+  border:1px solid #e4e4e7;
+  padding:6px 16px;border-radius:99px;font-size:.82rem;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:background .18s,border-color .18s;white-space:nowrap}
+.btn-signup:hover{background:#f4f4f5;border-color:#d4d4d8}
+.nav-hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer}
+.nav-mobile-menu{display:none}
+@media(max-width:700px){
+  nav{grid-template-columns:auto 1fr}
+  .nav-left{display:none}
+  .nav-right{display:none}
+  .nav-hamburger{display:block;justify-self:end}
+}
+
+/* ── SECTIONS ── */
+section{position:relative;z-index:1}
+.container{max-width:1100px;margin:0 auto;padding:0 20px}
+
+/* ── HERO ── */
+#hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:calc(56px + 70px) 20px 100px;flex-direction:column}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(79,142,247,.1);
+  border:1px solid rgba(79,142,247,.25);border-radius:99px;padding:5px 16px;font-size:.75rem;
+  color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px}
+.hero-badge span{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,212,255,.4)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(0,212,255,0)}}
+.hero-title{font-size:clamp(2.6rem,6.5vw,4.8rem);font-weight:900;line-height:1.06;letter-spacing:-2.5px;margin-bottom:20px}
+.hero-title .hl{background:linear-gradient(90deg,var(--accent),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-tagline{font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--muted);margin-bottom:36px;letter-spacing:.01em}
+.hero-tagline strong{color:rgba(238,238,245,.7);font-weight:600}
+/* hero input */
+.hero-input-wrap{display:flex;align-items:center;gap:12px;
+  max-width:480px;width:100%;margin:0 auto;position:relative}
+.hero-input-icon{display:none}
+.hero-input{flex:1;min-width:0;height:56px;
+  padding:14px 16px;
+  background:#ffffff !important;border:1px solid #e4e4e7 !important;border-radius:12px;
+  font-size:1rem;color:#111111 !important;font-family:inherit;
+  outline:none !important;caret-color:#111111 !important;
+  transition:box-shadow .2s}
+.hero-input::placeholder{color:#a1a1aa}
+.hero-input:focus{outline:none !important;box-shadow:none !important;border-color:#e4e4e7 !important}
+.hero-input-btn{flex-shrink:0;height:56px;padding:0 24px;
+  background:#fff;color:#111;border:1px solid #e4e4e7;border-radius:12px;
+  font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;
+  white-space:nowrap;transition:background .15s,transform .1s}
+.hero-input-btn:hover{background:#f4f4f5;border-color:#d4d4d8}
+.hero-input-btn:active{transform:scale(.98)}
+/* subtext */
+.hero-subtext{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  margin-top:14px;font-size:.875rem;color:var(--muted)}
+.hero-subtext-sep{color:var(--border2)}
+/* social proof */
+.social-proof{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:32px;flex-wrap:wrap}
+.avatars-row{display:flex}
+.avatar-item{width:32px;height:32px;border-radius:50%;border:2px solid var(--bg);
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;margin-left:-9px;flex-shrink:0}
+.avatar-item:first-child{margin-left:0}
+.social-proof-meta{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.social-stars{color:#fbbf24;font-size:.8rem;letter-spacing:2px;line-height:1}
+.social-label{font-size:.8rem;color:var(--muted);line-height:1}
+/* terminal */
+.hero-terminal-wrap{max-width:760px;width:100%;margin:52px auto 0;
+  perspective:900px;perspective-origin:50% 50%}
+.hero-terminal{width:100%;
+  background:#0e0e10;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),0 0 60px rgba(79,142,247,.06);
+  transform-style:preserve-3d;transform:rotateX(0deg) rotateY(0deg);
+  transition:transform .12s ease-out,box-shadow .12s ease-out;will-change:transform}
+.t-bar{display:flex;align-items:center;padding:11px 18px;background:#161618;border-bottom:1px solid rgba(255,255,255,.06)}
+.t-dots{display:flex;gap:6px;align-items:center}
+.t-dot{width:11px;height:11px;border-radius:50%;cursor:default}
+.t-red{background:#ff5f57}.t-yellow{background:#ffbd2e}.t-green{background:#28c840}
+.t-title{font-size:.72rem;font-family:'Courier New',monospace;color:rgba(255,255,255,.25);
+  margin-left:auto;letter-spacing:.04em}
+.t-body{padding:20px 24px;font-family:'Courier New',Courier,monospace;font-size:.79rem;
+  line-height:1.8;position:relative;overflow:hidden;user-select:none}
+.t-line{display:block;white-space:pre}
+.tc-k{color:#7dd3fc}.tc-s{color:#86efac}.tc-n{color:#fb923c}
+.tc-t{color:#34d399}.tc-f{color:#f87171}.tc-p{color:#6b7280}.tc-c{color:#4b5563;font-style:italic}
+/* finding rows */
+.t-findings{border-top:1px solid rgba(255,255,255,.06);padding:14px 24px;display:flex;flex-direction:column;gap:9px}
+.t-finding{display:flex;align-items:center;gap:10px;font-family:'Courier New',monospace;font-size:.76rem;color:rgba(255,255,255,.55)}
+.t-badge{padding:2px 8px;border-radius:4px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;flex-shrink:0}
+.t-badge-red{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.t-badge-orange{background:rgba(249,115,22,.12);color:#fb923c;border:1px solid rgba(249,115,22,.25)}
+.t-badge-yellow{background:rgba(234,179,8,.12);color:#fbbf24;border:1px solid rgba(234,179,8,.25)}
+/* scanning beam */
+.scan-wrap{position:absolute;left:0;right:0;height:2px;
+  animation:scanBeam 2s linear infinite;will-change:top;top:0}
+.scan-line{height:2px;background:linear-gradient(90deg,transparent 0%,rgba(79,142,247,.15) 8%,rgba(79,142,247,.85) 38%,#00d4ff 50%,rgba(79,142,247,.85) 62%,rgba(79,142,247,.15) 92%,transparent 100%);
+  box-shadow:0 0 12px rgba(79,142,247,.8),0 0 28px rgba(79,142,247,.35)}
+.scan-badge{position:absolute;right:18px;top:-10px;background:rgba(79,142,247,.15);
+  border:1px solid rgba(79,142,247,.4);border-radius:5px;padding:2px 9px;
+  font-size:.64rem;font-weight:800;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+@keyframes scanBeam{0%{top:0}100%{top:calc(100% - 2px)}}
+/* util */
+.btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;
+  padding:14px 34px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;
+  box-shadow:0 0 28px rgba(79,142,247,.4);transition:opacity .2s,transform .1s;text-decoration:none;display:inline-block}
+.btn-primary:hover{opacity:.9}
+.btn-primary:active{transform:scale(.97)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border2);
+  padding:14px 30px;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;
+  transition:background .2s,border-color .2s;text-decoration:none;display:inline-block}
+.btn-ghost:hover{background:rgba(255,255,255,.1);border-color:var(--accent)}
+
+/* ── SECTION HEADER ── */
+.section-header{text-align:center;margin-bottom:60px}
+.section-tag{display:inline-block;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.25);
+  border-radius:99px;padding:5px 16px;font-size:.75rem;font-weight:700;color:var(--accent);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}
+.section-title{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+.section-title .hl{background:linear-gradient(90deg,var(--accent),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.section-desc{font-size:1rem;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.7}
+
+/* ── TOOL SECTION ── */
+#tool{padding:80px 0 100px}
+.tool-tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:6px;margin-bottom:28px;max-width:520px}
+.tool-tab{flex:1;padding:10px 14px;border:none;border-radius:9px;background:transparent;
+  color:var(--muted);font-family:inherit;font-size:.84rem;font-weight:600;cursor:pointer;
+  transition:all .2s;white-space:nowrap}
+.tool-tab:hover{background:var(--surface2);color:var(--text)}
+.tool-tab.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;
+  box-shadow:0 2px 14px rgba(79,142,247,.3)}
+.tool-content{display:none}
+.tool-content.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px;
+  transition:transform .2s ease,border-color .25s,box-shadow .25s}
+.card-glow{box-shadow:0 0 0 1px var(--border),0 20px 60px rgba(79,142,247,.08)}
+.card-glow:hover{transform:translateY(-3px);border-color:rgba(79,142,247,.3);
+  box-shadow:0 0 0 1px rgba(79,142,247,.2),0 24px 60px rgba(79,142,247,.14)}
+.card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* ── INPUTS ── */
+textarea,input[type="text"]{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:9px;color:var(--text);font-family:inherit;font-size:.9rem;padding:13px 15px;
+  resize:vertical;transition:border-color .2s,box-shadow .2s;outline:none}
+textarea:focus,input[type="text"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,247,.13)}
+textarea{min-height:150px}
+.input-row{display:flex;gap:10px;margin-top:10px}
+.input-row input{flex:1}
+.btn-add{background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--accent);
+  cursor:pointer;font-size:1.2rem;padding:0 16px;transition:background .2s}
+.btn-add:hover{background:var(--surface3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:var(--surface2);border:1px solid var(--border);border-radius:99px;font-size:.77rem;
+  padding:4px 10px 4px 13px;display:flex;align-items:center;gap:6px;max-width:260px}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:0;line-height:1}
+.chip button:hover{color:var(--red)}
+.btn-analyze{width:100%;padding:14px;border:none;border-radius:11px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;
+  font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.02em;
+  transition:opacity .2s,transform .1s;box-shadow:0 4px 22px rgba(79,142,247,.3)}
+.btn-analyze:hover{opacity:.9}
+.btn-analyze:active{transform:scale(.98)}
+
+/* ── GLASSMORPHISM INPUT CARD ── */
+.card-glass{background:rgba(14,14,24,.7)!important;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.07)!important;
+  box-shadow:0 8px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)!important;
+  transition:border-color .35s,box-shadow .4s!important}
+.card-glass:focus-within{border-color:rgba(79,142,247,.45)!important;
+  box-shadow:0 8px 40px rgba(0,0,0,.45),0 0 0 1px rgba(79,142,247,.15),0 0 50px rgba(79,142,247,.1),inset 0 1px 0 rgba(255,255,255,.05)!important}
+/* Analyzing pulse */
+@keyframes analyzePulse{0%,100%{box-shadow:0 8px 40px rgba(0,0,0,.45),0 0 0 2px rgba(79,142,247,.15),0 0 0 0 rgba(79,142,247,0)}
+  50%{box-shadow:0 8px 40px rgba(0,0,0,.45),0 0 0 2px rgba(79,142,247,.4),0 0 60px rgba(79,142,247,.2)}}
+.card-glass.analyzing{animation:analyzePulse 1.3s ease-in-out infinite!important;border-color:rgba(79,142,247,.55)!important}
+
+/* ── BENTO GRID ── */
+.bento-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.bento-full{grid-column:1/-1}
+@media(max-width:720px){.bento-grid{grid-template-columns:1fr}}
+
+/* ── STAGGERED FADE-IN ── */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.anim-card{opacity:0;animation:fadeInUp .5s cubic-bezier(.22,1,.36,1) forwards}
+
+/* ── RESULTS ── */
+.results-grid{display:none;margin-top:18px}
+.score-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.score-circle{width:96px;height:96px;border-radius:50%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.score-num{font-size:1.9rem;line-height:1}
+.score-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
+.score-info{flex:1}
+.score-verdict{font-size:1.15rem;font-weight:800;margin-bottom:4px}
+.score-desc{font-size:.86rem;color:var(--muted);line-height:1.5}
+.level-safe  {background:rgba(34,197,94,.12);color:var(--green);border:2px solid var(--green)}
+.level-low   {background:rgba(245,158,11,.1);color:var(--yellow);border:2px solid var(--yellow)}
+.level-medium{background:rgba(249,115,22,.12);color:var(--orange);border:2px solid var(--orange)}
+.level-high  {background:rgba(239,68,68,.12);color:var(--red);border:2px solid var(--red)}
+.gauge-wrap{margin:16px 0 5px}
+.gauge-bg{height:9px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.gauge-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.gauge-ticks{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-top:4px}
+.findings-grid{display:grid;gap:9px;margin-top:4px}
+.finding{background:var(--surface2);border-radius:9px;padding:12px 14px;
+  display:flex;gap:11px;align-items:flex-start;border-left:3px solid transparent}
+.finding.sev-high  {border-color:var(--red)}
+.finding.sev-medium{border-color:var(--orange)}
+.finding.sev-low   {border-color:var(--yellow)}
+.finding.sev-info  {border-color:var(--accent)}
+.finding.sev-ok    {border-color:var(--green)}
+.finding-icon{font-size:1rem;flex-shrink:0;margin-top:2px}
+.finding-body{flex:1}
+.finding-title{font-size:.88rem;font-weight:600}
+.finding-detail{font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.45}
+.finding-badge{font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:99px;
+  flex-shrink:0;text-transform:uppercase;letter-spacing:.05em}
+.badge-high  {background:rgba(239,68,68,.18);color:var(--red)}
+.badge-medium{background:rgba(249,115,22,.18);color:var(--orange)}
+.badge-low   {background:rgba(245,158,11,.18);color:var(--yellow)}
+.badge-info  {background:rgba(79,142,247,.18);color:var(--accent)}
+.badge-ok    {background:rgba(34,197,94,.18);color:var(--green)}
+.url-result{background:var(--surface2);border-radius:9px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--border)}
+.url-result.url-safe  {border-color:var(--green)}
+.url-result.url-warn  {border-color:var(--orange)}
+.url-result.url-danger{border-color:var(--red)}
+.url-result-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.url-val{font-family:monospace;font-size:.8rem;color:var(--accent);flex:1;overflow-wrap:anywhere}
+.url-findings{margin-top:7px}
+.url-finding-item{font-size:.77rem;color:var(--muted);display:flex;gap:6px;align-items:flex-start;margin-bottom:3px}
+.tips-list{list-style:none;display:grid;gap:8px}
+.tips-list li{font-size:.85rem;color:var(--muted);padding-left:20px;position:relative;line-height:1.5}
+.tips-list li::before{content:'→';position:absolute;left:0;color:var(--accent)}
+.web-headers-grid{display:grid;gap:8px;margin-top:4px}
+.header-row{display:flex;align-items:flex-start;gap:10px;background:var(--surface2);border-radius:9px;padding:10px 14px}
+.header-name{font-family:monospace;font-size:.8rem;color:var(--accent);min-width:170px;flex-shrink:0}
+.header-desc{font-size:.78rem;color:var(--muted);line-height:1.4}
+.notice-box{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);
+  border-radius:9px;padding:10px 14px;font-size:.79rem;color:var(--muted);margin-top:10px;line-height:1.5}
+.loading-state{display:none;align-items:center;justify-content:center;gap:14px;padding:32px;color:var(--muted)}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── HOW IT WORKS ── */
+#how{padding:80px 0}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;position:relative}
+.steps-grid::before{content:'';position:absolute;top:36px;left:calc(16.67% + 20px);
+  right:calc(16.67% + 20px);height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--teal),transparent);opacity:.4}
+.step-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:32px 24px;text-align:center;transition:border-color .3s,transform .3s}
+.step-card:hover{border-color:var(--accent);transform:translateY(-4px)}
+.step-num{width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:900;
+  margin:0 auto 18px;box-shadow:0 0 22px rgba(79,142,247,.35)}
+.step-title{font-size:1.05rem;font-weight:700;margin-bottom:10px}
+.step-desc{font-size:.875rem;color:var(--muted);line-height:1.65}
+
+/* ── FEATURES ── */
+#features{padding:80px 0}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px;transition:border-color .3s,box-shadow .3s}
+.feature-card:hover{border-color:rgba(79,142,247,.5);box-shadow:0 0 30px rgba(79,142,247,.1)}
+.feature-icon{font-size:2rem;margin-bottom:14px}
+.feature-title{font-size:1rem;font-weight:700;margin-bottom:8px}
+.feature-desc{font-size:.86rem;color:var(--muted);line-height:1.6}
+
+/* ── REVIEWS ── */
+#reviews{padding:80px 0}
+.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.review-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px;transition:border-color .3s}
+.review-card:hover{border-color:rgba(79,142,247,.4)}
+.stars{font-size:1rem;margin-bottom:14px;letter-spacing:2px}
+.review-text{font-size:.9rem;color:var(--muted);line-height:1.65;margin-bottom:18px;font-style:italic}
+.review-author{display:flex;align-items:center;gap:12px}
+.review-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:1.1rem;flex-shrink:0}
+.review-name{font-size:.88rem;font-weight:700}
+.review-role{font-size:.77rem;color:var(--muted)}
+
+/* ── PRICING ── */
+#pricing{padding:80px 0}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:32px;transition:border-color .3s,transform .3s}
+.pricing-card:hover{transform:translateY(-4px)}
+.pricing-card.popular{border-color:var(--accent);box-shadow:0 0 40px rgba(79,142,247,.18);
+  background:linear-gradient(160deg,var(--surface),rgba(79,142,247,.06))}
+.pricing-badge{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  color:#fff;font-size:.7rem;font-weight:700;padding:3px 12px;border-radius:99px;
+  margin-bottom:16px;text-transform:uppercase;letter-spacing:.08em}
+.pricing-plan{font-size:1rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.1em;margin-bottom:10px}
+.pricing-price{font-size:3rem;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.pricing-price span{font-size:1rem;font-weight:600;color:var(--muted);vertical-align:super;font-size:1.2rem}
+.pricing-period{font-size:.84rem;color:var(--muted);margin-bottom:24px}
+.pricing-features{list-style:none;display:grid;gap:10px;margin-bottom:28px}
+.pricing-features li{font-size:.875rem;color:var(--muted);display:flex;align-items:center;gap:10px}
+.pricing-features li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0}
+.pricing-features li.off{opacity:.45}
+.pricing-features li.off::before{content:'✕';color:var(--muted)}
+.btn-plan{width:100%;padding:13px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;
+  cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-plan-ghost{background:transparent;border:1px solid var(--border2);color:var(--text)}
+.btn-plan-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-plan-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;
+  border:none;box-shadow:0 4px 18px rgba(79,142,247,.3)}
+.btn-plan-primary:hover{opacity:.9}
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* ── FAQ ── */
+#faq{padding:80px 0}
+.faq-list{max-width:720px;margin:0 auto;display:grid;gap:10px}
+.faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:20px 24px;cursor:pointer;user-select:none;font-weight:600;font-size:.95rem}
+.faq-q:hover{background:rgba(255,255,255,.03)}
+.faq-chevron{color:var(--muted);font-size:.8rem;transition:transform .3s;flex-shrink:0}
+.faq-item.open .faq-chevron{transform:rotate(180deg)}
+.faq-a{display:none;padding:0 24px 20px;font-size:.88rem;color:var(--muted);line-height:1.7}
+.faq-item.open .faq-a{display:block}
+
+/* ── FOOTER ── */
+/* ── FOOTER CTA ── */
+.footer-cta{padding:80px 0;background:linear-gradient(135deg,#080810 0%,#0f0f22 50%,#080810 100%);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);text-align:center}
+.footer-cta-title{font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:800;letter-spacing:-.5px;
+  margin-bottom:10px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.25}
+.footer-cta-sub{font-size:.95rem;color:var(--muted);margin-bottom:32px}
+.footer-cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+/* footer */
+footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0 28px;position:relative;z-index:1}
+.footer-grid{display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;gap:40px;margin-bottom:44px}
+.footer-logo{margin-bottom:12px}
+.footer-logo img{height:40px;width:auto;display:block}
+.footer-about{font-size:.83rem;color:var(--muted);line-height:1.65;max-width:240px}
+.footer-col-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  color:rgba(255,255,255,.35);margin-bottom:14px}
+.footer-links{list-style:none;display:grid;gap:9px}
+.footer-links a{color:rgba(255,255,255,.45);text-decoration:none;font-size:.85rem;
+  transition:color .18s;font-weight:400}
+.footer-links a:hover{color:#fff}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  padding-top:24px;border-top:1px solid rgba(255,255,255,.07)}
+.footer-copy{font-size:.78rem;color:rgba(255,255,255,.3)}
+.footer-right{display:flex;gap:16px;align-items:center}
+.footer-right span{font-size:.78rem;color:rgba(255,255,255,.3)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .steps-grid,.features-grid,.reviews-grid,.pricing-grid{grid-template-columns:1fr}
+  .steps-grid::before{display:none}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .nav-center{display:none}
+}
+@media(max-width:640px){
+  .nav-center,.nav-right{display:none}
+  .nav-hamburger{display:flex;align-items:center}
+  nav{grid-template-columns:auto 1fr;padding:0 16px}
+  .nav-mobile-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;
+    background:rgba(8,8,18,.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:14px;flex-direction:column;gap:4px;z-index:99}
+  .nav-mobile-menu.open{display:flex}
+  .nav-mobile-menu a,.nav-mobile-menu button{color:var(--muted);text-decoration:none;font-size:.9rem;
+    padding:10px 14px;border-radius:9px;transition:background .2s,color .2s;border:none;
+    background:transparent;font-family:inherit;font-weight:500;cursor:pointer;text-align:left;width:100%}
+  .nav-mobile-menu a:hover,.nav-mobile-menu button:hover{background:rgba(255,255,255,.07);color:var(--text)}
+  .nav-mobile-menu .m-signup{background:linear-gradient(90deg,var(--accent),var(--accent2));
+    color:#fff!important;font-weight:700;border-radius:9px;margin-top:4px}
+  .footer-grid{grid-template-columns:1fr}
+  .score-row{flex-direction:column;text-align:center}
+  .hero-input-wrap{flex-direction:column;border-radius:14px}
+  .hero-input{width:100%;border-bottom:1px solid rgba(0,0,0,.1);text-align:center}
+  .hero-input-btn{margin:0 10px 10px;width:calc(100% - 20px)}
+  .hero-terminal{margin-top:32px}
+}
+
+/* ── MARQUEE REVIEWS ── */
+#reviews{padding:70px 0;overflow:hidden}
+.marquee-wrap{position:relative;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.marquee-track{display:flex;gap:18px;width:max-content;animation:marqueeScroll 38s linear infinite}
+.marquee-track:hover{animation-play-state:paused}
+@keyframes marqueeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.rev-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:22px 24px;width:300px;flex-shrink:0}
+.rev-stars{color:#fbbf24;font-size:.85rem;letter-spacing:2px;margin-bottom:10px}
+.rev-text{font-size:.86rem;color:var(--muted);line-height:1.65;margin-bottom:14px;font-style:italic}
+.rev-author{display:flex;align-items:center;gap:10px}
+.rev-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.rev-name{font-size:.82rem;font-weight:700;line-height:1.2}
+.rev-role{font-size:.74rem;color:var(--muted)}
+
+/* ── WORLDS ── */
+#worlds{padding:56px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.worlds-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.world-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+  border-radius:99px;padding:9px 18px;font-size:.84rem;color:var(--muted);font-weight:500;
+  transition:border-color .2s,color .2s}
+.world-chip:hover{border-color:rgba(79,142,247,.45);color:var(--text)}
+.world-chip span:first-child{font-size:1.1rem}
+
+/* ── CTA BOX ── */
+#cta-pre{padding:70px 0}
+.cta-box{background:linear-gradient(135deg,#0d1117 0%,#1a1a2e 50%,#0d1117 100%);
+  border:1px solid rgba(79,142,247,.2);border-radius:20px;
+  padding:60px 40px;text-align:center;position:relative;overflow:hidden}
+.cta-box::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 60% at 50% 120%,rgba(79,142,247,.12),transparent);
+  pointer-events:none}
+.cta-box-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
+.cta-box-sub{font-size:1rem;color:var(--muted);margin-bottom:32px}
+
+/* ── PRICING (4 cols) ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:border-color .3s,transform .3s;position:relative}
+.pricing-card:hover{transform:translateY(-4px)}
+.pricing-card.popular{border-color:var(--accent);box-shadow:0 0 40px rgba(79,142,247,.18);background:linear-gradient(160deg,var(--surface),rgba(79,142,247,.06))}
+.pricing-badge{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em}
+.pricing-plan{font-size:.85rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.pricing-price{font-size:2.4rem;font-weight:900;letter-spacing:-1.5px;line-height:1;margin-bottom:3px}
+.pricing-price sup{font-size:1.1rem;vertical-align:super;font-weight:700}
+.pricing-period{font-size:.78rem;color:var(--muted);margin-bottom:8px}
+.pricing-alt{font-size:.74rem;color:rgba(255,255,255,.35);margin-bottom:20px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.pricing-features{list-style:none;display:grid;gap:8px;margin-bottom:24px}
+.pricing-features li{font-size:.82rem;color:var(--muted);display:flex;align-items:flex-start;gap:8px;line-height:1.45}
+.pricing-features li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0;margin-top:1px}
+.pricing-features li.off{opacity:.38}
+.pricing-features li.off::before{content:'✕';color:var(--muted)}
+.btn-plan{width:100%;padding:12px;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-plan-ghost{background:transparent;border:1px solid var(--border2);color:var(--text);transition:border-color .2s,color .2s}
+.btn-plan-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-plan-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;box-shadow:0 4px 18px rgba(79,142,247,.3);transition:opacity .2s}
+.btn-plan-primary:hover{opacity:.9}
+
+/* ── COUNTDOWN ── */
+.countdown-wrap{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.countdown-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--orange);background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);
+  border-radius:99px;padding:2px 10px}
+.countdown-timer{display:flex;gap:4px;align-items:center}
+.cd-unit{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.06);
+  border-radius:6px;padding:3px 7px;min-width:34px}
+.cd-num{font-size:.95rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.cd-lbl{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cd-sep{color:var(--muted);font-weight:700;margin-bottom:6px}
+
+@media(max-width:900px){.pricing-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){.pricing-grid{grid-template-columns:1fr}}
+
+/* ── HERO RESULTS ── */
+.hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;overflow:hidden;backdrop-filter:blur(12px)}
+.hres-header{display:flex;align-items:center;gap:16px;padding:18px 20px;
+  border-bottom:1px solid rgba(255,255,255,.07)}
+.hres-score{width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:1.3rem}
+.hres-verdict{font-size:1rem;font-weight:700}
+.hres-target{font-size:.75rem;color:var(--muted);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px}
+.hres-findings{padding:14px 20px;display:grid;gap:8px}
+.hres-finding{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+  background:rgba(255,255,255,.04);border-radius:9px;border-left:3px solid transparent;
+  transition:transform .2s}
+.hres-finding.sev-high  {border-color:var(--red)}
+.hres-finding.sev-medium{border-color:var(--orange)}
+.hres-finding.sev-low   {border-color:var(--yellow)}
+.hres-finding.sev-ok    {border-color:var(--green)}
+.hres-finding-icon{font-size:.95rem;flex-shrink:0;margin-top:1px}
+.hres-finding-text{font-size:.82rem;color:var(--muted);line-height:1.45}
+.hres-finding-text strong{color:var(--text);font-weight:600}
+/* blur gate */
+.hres-gate{position:relative;margin-top:4px}
+.hres-blurred{filter:blur(5px);pointer-events:none;user-select:none;padding:0 20px 14px}
+.hres-overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(180deg,rgba(10,10,20,.0) 0%,rgba(10,10,20,.85) 40%)}
+.hres-overlay-text{font-size:.85rem;color:rgba(255,255,255,.7);text-align:center}
+.hres-overlay-btn{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;
+  border:none;border-radius:99px;padding:9px 22px;font-size:.85rem;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:opacity .2s}
+.hres-overlay-btn:hover{opacity:.88}
+
+/* ── AUTH MODALS ── */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:#111;border:1px solid rgba(255,255,255,.1);border-radius:16px;
+  padding:32px;width:100%;max-width:400px;
+  transform:translateY(12px);transition:transform .2s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-title{font-size:1.2rem;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:.85rem;color:var(--muted);margin-bottom:24px}
+.modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.modal-field label{font-size:.82rem;font-weight:600;color:rgba(255,255,255,.7)}
+.modal-field input{background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:9px;
+  padding:11px 14px;color:#fff;font-family:inherit;font-size:.92rem;outline:none;
+  transition:border-color .2s}
+.modal-field input:focus{border-color:rgba(79,142,247,.5)}
+.modal-field input::placeholder{color:rgba(255,255,255,.25)}
+.modal-btn{width:100%;padding:13px;border:none;border-radius:10px;margin-top:6px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;
+  font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:opacity .2s}
+.modal-btn:hover{opacity:.88}
+.modal-btn:disabled{opacity:.5;cursor:not-allowed}
+.modal-err{font-size:.8rem;color:var(--red);margin-top:8px;min-height:18px}
+.modal-switch{font-size:.82rem;color:var(--muted);text-align:center;margin-top:16px}
+.modal-switch a{color:var(--accent);cursor:pointer;text-decoration:underline}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;
+  color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px;
+  border-radius:6px;transition:color .2s}
+.modal-close:hover{color:#fff}
+.modal-wrap{position:relative}
+/* nav user state */
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-user-email{font-size:.82rem;color:rgba(255,255,255,.6);max-width:160px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-signout{background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.7);
+  padding:5px 14px;border-radius:99px;font-size:.8rem;font-weight:500;cursor:pointer;
+  font-family:inherit;transition:all .18s}
+.btn-signout:hover{border-color:rgba(255,255,255,.45);color:#fff}
+</style>
+</head>
+<body>
+
+
+
+<!-- ── BG ORBS ── -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- ── LASER LINES ── -->
+<div class="lasers" aria-hidden="true">
+  <div class="laser lz1"></div>
+  <div class="laser lz2"></div>
+</div>
+
+<!-- ── NAV ── -->
+<nav id="mainNav">
+  <div class="nav-left">
+    <a href="#hero">Nástroj</a>
+    <a href="#how">Ako to funguje</a>
+    <a href="#pricing">Cenník</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <a class="nav-logo" href="#hero">
+    <img src="mailguard.png" alt="MailGuard"/>
+  </a>
+  <div class="nav-right" id="navRight">
+    <button class="btn-signin" onclick="openModal('login')">Prihlásiť sa</button>
+    <button class="btn-signup" onclick="openModal('register')">Registrovať</button>
+  </div>
+  <button class="nav-hamburger" aria-label="Menu">☰</button>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div style="width:100%;max-width:800px">
+    <div class="hero-badge"><span></span>Bezpečnosť pre školy, firmy &amp; jednotlivcov</div>
+    <h1 class="hero-title">
+      Váš osobný strážca<br><span class="hl">v prehliadači.</span>
+    </h1>
+    <p class="hero-tagline">Analyzuj emaily, URL adresy a webstránky. Výsledky za sekundy.</p>
+
+    <div class="hero-input-wrap">
+      <input class="hero-input" id="heroInput" type="text"
+        placeholder=""
+        style="background:#ffffff !important;color:#111111 !important;caret-color:#111111 !important;border:1px solid #e4e4e7 !important;"
+        onkeydown="if(event.key==='Enter')heroAnalyze()"/>
+      <span id="heroPlaceholder" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#a1a1aa;pointer-events:none;font-size:1rem;">yoursite.com</span>
+      <button class="hero-input-btn" onclick="heroAnalyze()">Analyzovať</button>
+    </div>
+
+    <div class="hero-subtext">
+      <span>37 kontrol</span>
+      <span class="hero-subtext-sep">·</span>
+      <span>AI analýza</span>
+      <span class="hero-subtext-sep">·</span>
+      <span>Výsledky za sekundy</span>
+      <span class="hero-subtext-sep">·</span>
+      <span>Pre každého</span>
+    </div>
+
+    <!-- HERO RESULTS -->
+    <div id="heroResults" style="display:none;margin-top:20px;width:100%;max-width:540px;margin-left:auto;margin-right:auto;text-align:left"></div>
+
+  </div>
+
+  <!-- TERMINAL WINDOW -->
+  <div class="hero-terminal-wrap" id="terminalWrap">
+  <div class="hero-terminal" id="terminalEl">
+    <div class="t-bar">
+      <div class="t-dots">
+        <div class="t-dot t-red" title="Zavrieť"></div>
+        <div class="t-dot t-yellow" title="Minimalizovať"></div>
+        <div class="t-dot t-green" title="Maximalizovať"></div>
+      </div>
+      <div class="t-title">analysis_result.json</div>
+    </div>
+    <div class="t-body">
+      <span class="t-line"><span class="tc-c">// Phishing email detected — analyzing headers...</span></span>
+      <span class="t-line"></span>
+      <span class="t-line"><span class="tc-k">async function</span> <span class="tc-t">scanEmail</span><span class="tc-p">(</span><span class="tc-n">input</span><span class="tc-p">) {</span></span>
+      <span class="t-line">  <span class="tc-c">// TODO: user reported suspicious email</span></span>
+      <span class="t-line">  <span class="tc-k">const</span> <span class="tc-t">from</span> <span class="tc-p">=</span> <span class="tc-f">"support@paypal-secure-update.tk"</span><span class="tc-p">;</span></span>
+      <span class="t-line">  <span class="tc-k">const</span> <span class="tc-t">link</span> <span class="tc-p">=</span> <span class="tc-f">"http://paypal-secure-update.tk/verify"</span><span class="tc-p">;</span></span>
+      <span class="t-line">  <span class="tc-k">const</span> <span class="tc-t">verdict</span> <span class="tc-p">=</span> <span class="tc-f">"PHISHING_DETECTED"</span><span class="tc-p">;</span> <span class="tc-c">// score: 94</span></span>
+      <span class="t-line">  <span class="tc-k">return</span> <span class="tc-p">{</span> <span class="tc-t">verdict</span><span class="tc-p">,</span> <span class="tc-t">action</span><span class="tc-p">:</span> <span class="tc-f">"BLOCK"</span> <span class="tc-p">};</span></span>
+      <span class="t-line"><span class="tc-p">}</span></span>
+      <!-- scanning beam -->
+      <div class="scan-wrap">
+        <div class="scan-line"></div>
+        <div class="scan-badge">SCANNING</div>
+      </div>
+    </div>
+    <div class="t-findings">
+      <div class="t-finding"><span class="t-badge t-badge-red">Phishing</span> Doména sa vydáva za PayPal</div>
+      <div class="t-finding"><span class="t-badge t-badge-orange">No HTTPS</span> Nešifrované pripojenie</div>
+      <div class="t-finding"><span class="t-badge t-badge-yellow">Suspicious TLD</span> Doména .tk — bežne zneužívaná</div>
+    </div>
+  </div>
+  </div><!-- /terminal-wrap -->
+</section>
+
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Postup</div>
+      <h2 class="section-title">Ako to <span class="hl">funguje</span></h2>
+      <p class="section-desc">Tri jednoduché kroky – žiadna registrácia, žiadne technické znalosti.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h3 class="step-title">Vlož obsah</h3>
+        <p class="step-desc">Skopíruj text podozrivého emailu, URL adresu z emailu alebo webovú stránku, ktorú chceš skontrolovať.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h3 class="step-title">Spusť analýzu</h3>
+        <p class="step-desc">MailGuard okamžite skontroluje obsah voči databáze phishingových vzorov, blacklistom a bezpečnostným pravidlám.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h3 class="step-title">Pochop výsledok</h3>
+        <p class="step-desc">Dostaneš skóre, zoznam nálezov s vysvetlením a konkrétne odporúčania, čo robiť ďalej.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Funkcie</div>
+      <h2 class="section-title">Všetko čo <span class="hl">potrebuješ</span></h2>
+      <p class="section-desc">Komplexná ochrana v jednom nástroji navrhnutom pre školské prostredie.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">✉️</div>
+        <h3 class="feature-title">Analýza emailov</h3>
+        <p class="feature-desc">Detekuje 10+ phishingových vzorov – urgentný jazyk, žiadosti o heslá, vydávanie sa za inštitúcie, podozrivé prílohy a ďalšie.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔗</div>
+        <h3 class="feature-title">Skener URL adries</h3>
+        <p class="feature-desc">Kontroluje typosquatting, podozrivé TLD, URL shorteners, skryté presmerovania a phishingové vzory v doméne.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3 class="feature-title">Analýza webstránky</h3>
+        <p class="feature-desc">Overuje HTTPS, SSL certifikát, blacklisty, bezpečnostné HTTP hlavičky a rýchlosť odozvy servera.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3 class="feature-title">Bezpečnostné skóre</h3>
+        <p class="feature-desc">Každá analýza produkuje skóre 0–100 s vizuálnym indikátorom a zrozumiteľným verdiktom pre každého používateľa.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3 class="feature-title">Edukačný obsah</h3>
+        <p class="feature-desc">Vysvetlenia každého nálezu priamo v rozhraní – ideálne na výučbu kybernetickej bezpečnosti na hodinách.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3 class="feature-title">Hrozby a obrana</h3>
+        <p class="feature-desc">Interaktívne karty o phishingu, ransomware, malware, DDoS a SQL Injection s popisom prejavov a obranou.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── REVIEWS ── -->
+<!-- ── REVIEWS MARQUEE ── -->
+<section id="reviews">
+  <div class="section-header" style="margin-bottom:40px">
+    <div class="section-tag">Recenzie</div>
+    <h2 class="section-title">Čo hovoria <span class="hl">používatelia</span></h2>
+  </div>
+  <div class="marquee-wrap">
+    <div class="marquee-track" id="marqueeTrack">
+      <!-- set 1 -->
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Konečne nástroj ktorý pochopí aj netechnický zamestnanec."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(79,142,247,.2)">👩‍🏫</div><div><div class="rev-name">Mgr. Jana Kováčová</div><div class="rev-role">ZŠ Bratislava</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Odhalil phishing email ktorý prešiel cez náš antivírus."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(124,95,247,.2)">👨‍💼</div><div><div class="rev-name">Ing. Peter Novák</div><div class="rev-role">Gymnázium Košice</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Používame to na hodinách informatiky ako praktickú ukážku."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(0,212,255,.15)">🧑‍🏫</div><div><div class="rev-name">Bc. Martin Horváth</div><div class="rev-role">SOŠ Žilina</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Riaditeľ bol nadšený keď sme mu ukázali report."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(34,197,94,.15)">👩‍💻</div><div><div class="rev-name">Simona Kováč</div><div class="rev-role">IT správca, škola</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Jednoduché, rýchle, presné. Odporúčam každej škole."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(249,115,22,.15)">👨‍🎓</div><div><div class="rev-name">Tomáš Blaho</div><div class="rev-role">ZŠ Nitra</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Za 30 sekúnd vie každý učiteľ či je email bezpečný."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(239,68,68,.15)">👩‍🎓</div><div><div class="rev-name">Lucia Mináčová</div><div class="rev-role">VŠ Trenčín</div></div></div>
+      </div>
+      <!-- set 2 (duplicate for seamless loop) -->
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Konečne nástroj ktorý pochopí aj netechnický zamestnanec."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(79,142,247,.2)">👩‍🏫</div><div><div class="rev-name">Mgr. Jana Kováčová</div><div class="rev-role">ZŠ Bratislava</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Odhalil phishing email ktorý prešiel cez náš antivírus."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(124,95,247,.2)">👨‍💼</div><div><div class="rev-name">Ing. Peter Novák</div><div class="rev-role">Gymnázium Košice</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Používame to na hodinách informatiky ako praktickú ukážku."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(0,212,255,.15)">🧑‍🏫</div><div><div class="rev-name">Bc. Martin Horváth</div><div class="rev-role">SOŠ Žilina</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Riaditeľ bol nadšený keď sme mu ukázali report."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(34,197,94,.15)">👩‍💻</div><div><div class="rev-name">Simona Kováč</div><div class="rev-role">IT správca, škola</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Jednoduché, rýchle, presné. Odporúčam každej škole."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(249,115,22,.15)">👨‍🎓</div><div><div class="rev-name">Tomáš Blaho</div><div class="rev-role">ZŠ Nitra</div></div></div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-stars">★★★★★</div>
+        <p class="rev-text">"Za 30 sekúnd vie každý učiteľ či je email bezpečný."</p>
+        <div class="rev-author"><div class="rev-avatar" style="background:rgba(239,68,68,.15)">👩‍🎓</div><div><div class="rev-name">Lucia Mináčová</div><div class="rev-role">VŠ Trenčín</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WORLDS ── -->
+<section id="worlds">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:28px">
+      <div class="section-tag">Navrhnuté pre váš svet</div>
+    </div>
+    <div class="worlds-row">
+      <div class="world-chip"><span>🏫</span><span>Základné školy</span></div>
+      <div class="world-chip"><span>🎓</span><span>Stredné školy</span></div>
+      <div class="world-chip"><span>🏛️</span><span>Univerzity</span></div>
+      <div class="world-chip"><span>🏢</span><span>Firmy</span></div>
+      <div class="world-chip"><span>🏥</span><span>Nemocnice</span></div>
+      <div class="world-chip"><span>🏛</span><span>Štátne inštitúcie</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA PRE-PRICING ── -->
+<section id="cta-pre">
+  <div class="container">
+    <div class="cta-box">
+      <h2 class="cta-box-title">Kybernetické útoky na školy<br>rastú každý rok.</h2>
+      <p class="cta-box-sub">Buď pripravený skôr, než príde útok.</p>
+      <button class="btn-primary" onclick="openModal('register')">Začať zadarmo →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Cenník</div>
+      <h2 class="section-title">Transparentný <span class="hl">cenník</span></h2>
+      <p class="section-desc">Začni zadarmo. Plať len keď potrebuješ viac.</p>
+    </div>
+    <div class="pricing-grid">
+
+      <!-- FREE -->
+      <div class="pricing-card">
+        <div class="pricing-plan">Free</div>
+        <div class="pricing-price"><sup>€</sup>0</div>
+        <div class="pricing-period">navždy zadarmo</div>
+        <div class="pricing-alt">&nbsp;</div>
+        <div class="divider"></div>
+        <ul class="pricing-features">
+          <li>3 analýzy denne</li>
+          <li>Email + URL skener</li>
+          <li>Základné výsledky</li>
+          <li>1 používateľ, 1 účet</li>
+          <li class="off">História analýz</li>
+          <li class="off">Export do PDF</li>
+          <li class="off">API prístup</li>
+        </ul>
+        <button class="btn-plan btn-plan-ghost" onclick="openModal('register')">Začať zadarmo</button>
+      </div>
+
+      <!-- PRO -->
+      <div class="pricing-card popular">
+        <div class="pricing-badge">Najpopulárnejší</div>
+        <div class="countdown-wrap">
+          <span class="countdown-label">⚡ Limitovaná ponuka</span>
+          <div class="countdown-timer" id="countdown">
+            <div class="cd-unit"><span class="cd-num" id="cdD">00</span><span class="cd-lbl">dni</span></div>
+            <span class="cd-sep">:</span>
+            <div class="cd-unit"><span class="cd-num" id="cdH">00</span><span class="cd-lbl">hod</span></div>
+            <span class="cd-sep">:</span>
+            <div class="cd-unit"><span class="cd-num" id="cdM">00</span><span class="cd-lbl">min</span></div>
+            <span class="cd-sep">:</span>
+            <div class="cd-unit"><span class="cd-num" id="cdS">00</span><span class="cd-lbl">sek</span></div>
+          </div>
+        </div>
+        <div class="pricing-plan">Pro</div>
+        <div class="pricing-price"><sup>€</sup>9<span style="font-size:1.2rem">.99</span></div>
+        <div class="pricing-period">/ mesiac</div>
+        <div class="pricing-alt">alebo 79€ / rok (ušetri 41%)</div>
+        <div class="divider"></div>
+        <ul class="pricing-features">
+          <li>Neobmedzené analýzy</li>
+          <li>Plné výsledky + detaily</li>
+          <li>História analýz</li>
+          <li>Export do PDF</li>
+          <li class="off">Multi-používateľský účet</li>
+          <li class="off">API prístup</li>
+          <li class="off">Dashboard správcu</li>
+        </ul>
+        <button class="btn-plan btn-plan-primary">Vyskúšať Pro</button>
+      </div>
+
+      <!-- ŠKOLA -->
+      <div class="pricing-card">
+        <div class="pricing-plan">Škola</div>
+        <div class="pricing-price"><sup>€</sup>249</div>
+        <div class="pricing-period">/ rok</div>
+        <div class="pricing-alt">alebo 339€ jednorazovo</div>
+        <div class="divider"></div>
+        <ul class="pricing-features">
+          <li>Všetko z Pro</li>
+          <li>Až 50 používateľov</li>
+          <li>Dashboard pre riaditeľa</li>
+          <li>Mesačné reporty</li>
+          <li>Osobná konzultácia</li>
+          <li>Overenie školskej domény</li>
+          <li class="off">API prístup</li>
+        </ul>
+        <button class="btn-plan btn-plan-ghost">Kontaktovať nás</button>
+      </div>
+
+      <!-- FIRMA -->
+      <div class="pricing-card">
+        <div class="pricing-plan">Firma</div>
+        <div class="pricing-price"><sup>€</sup>319</div>
+        <div class="pricing-period">/ rok</div>
+        <div class="pricing-alt">alebo 399€ jednorazovo</div>
+        <div class="divider"></div>
+        <ul class="pricing-features">
+          <li>Všetko zo Školy</li>
+          <li>Až 100 používateľov</li>
+          <li>API prístup</li>
+          <li>Vlastný branding</li>
+          <li>SLA podpora</li>
+          <li>Overenie firemnej domény</li>
+          <li>Dedikovaný account manager</li>
+        </ul>
+        <button class="btn-plan btn-plan-ghost">Kontaktovať nás</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">FAQ</div>
+      <h2 class="section-title">Časté <span class="hl">otázky</span></h2>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ── FOOTER CTA ── -->
+<div class="footer-cta">
+  <div class="container">
+    <h2 class="footer-cta-title">Priprav svoju školu alebo firmu<br>na kybernetické hrozby.</h2>
+    <p class="footer-cta-sub">Začni zadarmo. Bez kreditnej karty. Výsledky za sekundy.</p>
+    <div class="footer-cta-btns">
+      <button class="btn-primary" onclick="openModal('register')">Začať zadarmo →</button>
+      <a href="mailto:info@mailguard.sk" class="btn-ghost">Kontaktovať nás</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><img src="mailguard.png" alt="MailGuard"/></div>
+        <p class="footer-about">Váš osobný strážca v prehliadači. Chráni školy, firmy aj jednotlivcov pred phishingom a kybernetickými hrozbami.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Produkt</div>
+        <ul class="footer-links">
+          <li><a href="#hero">Analýza emailov</a></li>
+          <li><a href="#hero">URL skener</a></li>
+          <li><a href="#hero">Analýza webu</a></li>
+          <li><a href="#pricing">Cenník</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Spoločnosť</div>
+        <ul class="footer-links">
+          <li><a href="#how">O nás</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="mailto:info@mailguard.sk">Kontakt</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Podpora</div>
+        <ul class="footer-links">
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#">Dokumentácia</a></li>
+          <li><a href="https://www.cert.sk" target="_blank" rel="noopener">CERT.SK</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2025 MailGuard. Všetky práva vyhradené.</div>
+      <div class="footer-right">
+        <span>Made in Slovakia 🇸🇰</span>
+        <span>Určené pre školy a firmy</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ── AUTH MODALS ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <!-- LOGIN -->
+  <div class="modal modal-wrap" id="modalLogin">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Prihlásiť sa</div>
+    <div class="modal-sub">Vitaj späť v MailGuard</div>
+    <div class="modal-field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="vas@email.sk" autocomplete="email"/>
+    </div>
+    <div class="modal-field">
+      <label>Heslo</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <div class="modal-err" id="loginErr"></div>
+    <button class="modal-btn" id="loginBtn" onclick="doLogin()">Prihlásiť sa</button>
+    <div class="modal-switch">Nemáš účet? <a onclick="openModal('register')">Registrovať sa</a></div>
+  </div>
+  <!-- REGISTER -->
+  <div class="modal modal-wrap" id="modalRegister" style="display:none">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Registrovať sa</div>
+    <div class="modal-sub">Vytvor si bezplatný účet</div>
+    <div class="modal-field">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="vas@email.sk" autocomplete="email"/>
+    </div>
+    <div class="modal-field">
+      <label>Heslo</label>
+      <input type="password" id="regPassword" placeholder="Minimálne 6 znakov" autocomplete="new-password"/>
+    </div>
+    <div class="modal-err" id="regErr"></div>
+    <button class="modal-btn" id="regBtn" onclick="doRegister()">Vytvoriť účet</button>
+    <div class="modal-switch">Už máš účet? <a onclick="openModal('login')">Prihlásiť sa</a></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   NAV
+══════════════════════════════════════════ */
+function toggleNav(){document.getElementById('navMobile').classList.toggle('open');}
+function closeNav(){var m=document.getElementById('navMobile');if(m)m.classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('nav'))closeNav();});
+
+/* ══════════════════════════════════════════
+   HERO ANALYZE
+══════════════════════════════════════════ */
+/* current logged-in user (set by Supabase listener) */
+let _currentUser=null;
+
+function heroAnalyze(){
+  const val=document.getElementById('heroInput').value.trim();
+  if(!val)return;
+  const container=document.getElementById('heroResults');
+  container.style.display='block';
+  container.innerHTML='<div style="padding:18px 20px;color:var(--muted);font-size:.85rem;display:flex;align-items:center;gap:10px"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div>Analyzujem…</div>';
+  container.innerHTML='<div class="hres">'+renderHeroResultHTML(val)+'</div>';
+  container.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderHeroResultHTML(val){
+  // Detect type and run analysis
+  const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
+  let score,findings,target,type;
+  if(isEmail){
+    type='email';target=val.slice(0,60)+(val.length>60?'…':'');
+    const emailFindings=[];let emailScore=0;
+    for(const rule of EMAIL_RULES){if(rule.patterns.some(p=>p.test(val))){emailFindings.push({icon:sevIcon(rule.sev),text:rule.title,sev:rule.sev});emailScore+=rule.weight;}}
+    score=Math.min(emailScore,100);findings=emailFindings;
+  } else {
+    type='url';
+    const cleaned=val.startsWith('http')?val:'https://'+val;
+    target=cleaned;
+    const r=analyzeUrl(cleaned);
+    score=r.score;
+    findings=r.findings.map(f=>({icon:f.icon,text:f.text,sev:f.sev==='ok'?'ok':f.sev}));
+  }
+  const level=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
+  const meta=levelMeta(level);
+  const isLoggedIn=!!_currentUser;
+  const FREE_LIMIT=2;
+
+  // score circle
+  let html=`<div class="hres-header">
+    <div class="hres-score level-${level}" style="font-size:1.2rem">${score===0&&findings.length===0?'✅':score}</div>
+    <div style="flex:1;min-width:0">
+      <div class="hres-verdict" style="color:${meta.color}">${meta.label}</div>
+      <div class="hres-target">${escHtml(target)}</div>
+    </div>
+  </div>`;
+
+  if(findings.length===0){
+    html+=`<div class="hres-findings"><div class="hres-finding sev-ok"><span class="hres-finding-icon">✅</span><div class="hres-finding-text"><strong>Žiadne varovné signály</strong> – obsah nevykazuje known phishing vzory.</div></div></div>`;
+    return html;
+  }
+
+  const visible=findings.slice(0,FREE_LIMIT);
+  const hidden=findings.slice(FREE_LIMIT);
+
+  // visible findings
+  html+=`<div class="hres-findings">`;
+  visible.forEach(f=>{
+    html+=`<div class="hres-finding sev-${f.sev}"><span class="hres-finding-icon">${f.icon}</span><div class="hres-finding-text"><strong>${escHtml(f.text)}</strong></div></div>`;
+  });
+  html+=`</div>`;
+
+  // blurred gate (only if not logged in and there are hidden findings)
+  if(!isLoggedIn && hidden.length>0){
+    html+=`<div class="hres-gate">
+      <div class="hres-blurred">`;
+    hidden.forEach(f=>{
+      html+=`<div class="hres-finding sev-${f.sev}" style="margin-bottom:8px"><span class="hres-finding-icon">${f.icon}</span><div class="hres-finding-text"><strong>${escHtml(f.text)}</strong></div></div>`;
+    });
+    html+=`</div>
+      <div class="hres-overlay">
+        <div class="hres-overlay-text">🔒 Ešte ${hidden.length} ${hidden.length===1?'nález':'nálezy'} skryté</div>
+        <button class="hres-overlay-btn" onclick="openModal('register')">Prihlásiť sa pre plné výsledky</button>
+      </div>
+    </div>`;
+  } else if(isLoggedIn && hidden.length>0){
+    html+=`<div class="hres-findings" style="padding-top:0">`;
+    hidden.forEach(f=>{
+      html+=`<div class="hres-finding sev-${f.sev}"><span class="hres-finding-icon">${f.icon}</span><div class="hres-finding-text"><strong>${escHtml(f.text)}</strong></div></div>`;
+    });
+    html+=`</div>`;
+  }
+  return html;
+}
+
+/* ══════════════════════════════════════════
+   EMAIL RULES
+══════════════════════════════════════════ */
+const EMAIL_RULES=[
+  {id:'urgency',title:'Naliehavý jazyk / tlak na rýchle konanie',detail:'Email obsahuje výrazy vytvárajúce časový stres alebo strach z následkov.',sev:'high',weight:18,
+   patterns:[/okamžite|urgentné|naliehav|konaj teraz|do 24 hodín|do 48 hodín|posledná šanca|dnes vyprší|zablokovan|pozastavený?|obmedzený?|zrušen/i,/act now|urgent|immediately|account (suspended|blocked|locked)|limited time|expires? (today|soon)|last chance/i,/vaše konto bude/i]},
+  {id:'threats',title:'Vyhrážky alebo strašenie',detail:'Phishingové emaily sa často pokúšajú vystrašiť obeť hrozbami o strate prístupu, súdnom konaní alebo pokutách.',sev:'high',weight:20,
+   patterns:[/vymažem|vymažeme|zmažeme|bude(te)? zablokovan|budete pokutovan|právne kroky|súdne konanie|policajné oznámenie|trestné oznámenie/i,/legal action|will be deleted|account will be (closed|terminated|suspended)|law enforcement|criminal/i]},
+  {id:'credentials',title:'Žiadosť o heslo alebo prihlasovacie údaje',detail:'Legitímne služby nikdy nežiadajú heslo cez email.',sev:'high',weight:25,
+   patterns:[/heslo|pin kód|overovac[íi] kód|potvrď? (svoje )?heslo|zadaj(te)? heslo|prihlasovacie (údaje|meno)/i,/password|login credentials|enter your password|verify your password|confirm your password|passcode|pin code/i]},
+  {id:'financial',title:'Požiadavka na finančné alebo citlivé informácie',detail:'Žiadosť o číslo karty, bankové údaje, rodné číslo alebo iné citlivé informácie.',sev:'high',weight:22,
+   patterns:[/číslo karty|kreditná karta|bankový (účet|prevod)|IBAN|rodné číslo|číslo OP|číslo pasu/i,/credit card|bank account|social security|SSN|IBAN|card number|routing number|wire transfer/i]},
+  {id:'prize',title:'Výhry, lotéria alebo nereálna ponuka',detail:'Sľuby nereálnych odmien sú klasickým znakom podvodných emailov.',sev:'high',weight:18,
+   patterns:[/vyhral(i)? ste|vyhral si|lotéria|hlavná cena|odmena pre vás|získaj(te)? zadarmo|milión|tisíc eur/i,/you (have )?won|winner|lottery|prize|free gift|claim your (prize|reward)|million dollars/i]},
+  {id:'click_link',title:'Vyzýva na kliknutie na odkaz',detail:'Emaily vyzývajúce na kliknutie na odkaz na „overenie", „aktiváciu" alebo „potvrdenie" sú rizikové.',sev:'medium',weight:12,
+   patterns:[/klikni (sem|tu|na odkaz|na tlačidlo)|kliknite (sem|tu|na odkaz|na tlačidlo)|overte (kliknutím|tu|konto|totožnosť)|aktivujte (konto|účet)/i,/click (here|the link|below)|verify (your )?(account|identity)|activate (your )?account|confirm (your )?(email|account)/i]},
+  {id:'impersonation',title:'Vydávanie sa za dôveryhodnú inštitúciu',detail:'Email sa môže vydávať za banku, Microsoft, Google, školu alebo štátny úrad.',sev:'medium',weight:14,
+   patterns:[/microsoft|google|apple|amazon|paypal|facebook|instagram|netflix|tatra banka|vúb|slovenská sporiteľňa|ministerstvo|polícia|finančná správa/i,/helpdesk|it (oddelenie|support|department)|správca siete|tech support/i]},
+  {id:'attachments',title:'Zmienka o prílohách alebo súboroch',detail:'Podvodné emaily môžu obsahovať infikované prílohy (.exe, .zip, .doc s makrami).',sev:'medium',weight:10,
+   patterns:[/príloha|stiahnite? (prílohu|súbor)|otvorte? (prílohu|súbor|dokument)|faktúra v prílohe/i,/attachment|download the file|open the (attachment|document)|invoice attached/i]},
+  {id:'grammar',title:'Podozrivé formulácie alebo gramatické chyby',detail:'Phishing emaily zo zahraničia bývajú prekladané strojovo a obsahujú neprirodzené formulácie.',sev:'low',weight:6,
+   patterns:[/Vážený zákazník|Vážený užívateľ|Drahý (zákazník|používateľ)|milý priateľ/i,/Dear (Customer|User|Friend|Sir\/Madam)|Greetings from|kindly (click|provide|send)/i]},
+  {id:'personal_data',title:'Žiadosť o osobné údaje',detail:'Žiadosť o meno, adresu, dátum narodenia alebo iné osobné údaje.',sev:'medium',weight:12,
+   patterns:[/potvrdz? (svoje )?(osobné)?údaje|aktualizuj(te)? (údaje|profil|informácie)|potvrďte totožnosť/i,/confirm (your )?(personal )?details|update your (profile|information|account)|verify your identity/i]},
+];
+
+/* ══════════════════════════════════════════
+   URL ANALYSIS
+══════════════════════════════════════════ */
+function analyzeUrl(url){
+  const findings=[];let score=0;let rawUrl=url.trim();
+  let parsed;
+  try{if(!/^https?:\/\//i.test(rawUrl))rawUrl='http://'+rawUrl;parsed=new URL(rawUrl);}
+  catch{findings.push({icon:'⚠️',text:'Nepodarilo sa spracovať URL – skontroluj formát.',sev:'medium'});return{url,findings,score:20,level:'warn'};}
+  const host=parsed.hostname.toLowerCase();const path=parsed.pathname.toLowerCase();
+  if(/^(\d{1,3}\.){3}\d{1,3}$/.test(host)){findings.push({icon:'🚨',text:'Doména je IP adresa – legitímne weby toto nepoužívajú.',sev:'high'});score+=35;}
+  if(parsed.protocol==='http:'){findings.push({icon:'🔓',text:'Nešifrované spojenie (HTTP) – citlivé údaje NIE SÚ chránené.',sev:'medium'});score+=12;}
+  const suspTLD=['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.club','.online','.site','.icu','.buzz'];
+  const tld=host.slice(host.lastIndexOf('.'));
+  if(suspTLD.includes(tld)){findings.push({icon:'⚠️',text:`Podozrivá doména najvyššej úrovne: "${tld}" – bežne zneužívaná pre phishing.`,sev:'high'});score+=25;}
+  const brands=[{name:'google',variants:/g[o0][o0]gle|g00gle|googie/},{name:'microsoft',variants:/micros[o0]ft|microsott|micrsoft/},{name:'paypal',variants:/payp[a4]l|paypai|peypal/},{name:'facebook',variants:/faceb[o0]{2}k|facbook|facebok/},{name:'apple',variants:/app[l1]e-id|appleaccount|app1e/},{name:'amazon',variants:/amaz[o0]n|arnazon/},{name:'netflix',variants:/netfl[i1]x|netfix/}];
+  for(const b of brands){if(b.variants.test(host)){findings.push({icon:'🚨',text:`Možná imitácia domény "${b.name}" (typosquatting).`,sev:'high'});score+=30;break;}}
+  const knownBrands=['google','microsoft','apple','paypal','facebook','amazon','netflix','tatra','sporitelna','vub'];
+  for(const b of knownBrands){if(host.includes(b)&&!host.endsWith(`.${b}.com`)&&!host.endsWith(`.${b}.sk`)){const root=host.split('.').slice(-2).join('.');if(!root.startsWith(b)){findings.push({icon:'⚠️',text:`Značka "${b}" je v URL, ale root doména nepatrí tejto firme.`,sev:'high'});score+=22;break;}}}
+  const sub=host.split('.').length-2;if(sub>=3){findings.push({icon:'⚠️',text:`Neobvyklý počet subdomén (${sub}) – môže skrývať pravú doménu.`,sev:'medium'});score+=10;}
+  if(rawUrl.length>100){findings.push({icon:'⚠️',text:`Príliš dlhé URL (${rawUrl.length} znakov).`,sev:'low'});score+=6;}
+  const shorteners=['bit.ly','tinyurl.com','t.co','ow.ly','goo.gl','is.gd','buff.ly','rebrand.ly'];
+  if(shorteners.some(s=>host===s||host.endsWith('.'+s))){findings.push({icon:'⚠️',text:'Skrátená URL (URL shortener) – skutočný cieľ je skrytý.',sev:'medium'});score+=15;}
+  if(/login|signin|password|credential|verify|secure|update|confirm|account/i.test(path)){findings.push({icon:'⚠️',text:'URL obsahuje slová ako "login", "verify", "password" – typické pre phishing stránky.',sev:'medium'});score+=10;}
+  if(/%[0-9a-f]{2}/i.test(rawUrl)&&(rawUrl.match(/%[0-9a-f]{2}/gi)||[]).length>5){findings.push({icon:'⚠️',text:'URL obsahuje veľa zakódovaných znakov – môže zakrývať obsah.',sev:'medium'});score+=10;}
+  if(rawUrl.includes('@')){findings.push({icon:'🚨',text:'URL obsahuje "@" – môže byť použité na presmerovanie na inú doménu.',sev:'high'});score+=25;}
+  if(findings.length===0)findings.push({icon:'✅',text:'Nezistené zjavné red flags v URL.',sev:'ok'});
+  const level=score===0?'safe':score<20?'safe':score<45?'warn':'danger';
+  return{url,findings,score:Math.min(score,100),level};
+}
+
+/* ══════════════════════════════════════════
+   EMAIL STATE
+══════════════════════════════════════════ */
+let urlList=[];
+function addUrl(){
+  const inp=document.getElementById('urlInput');const val=inp.value.trim();
+  if(!val||urlList.includes(val)){inp.value='';return;}
+  urlList.push(val);inp.value='';renderChips();
+}
+var _ui=document.getElementById('urlInput');if(_ui)_ui.addEventListener('keydown',e=>{if(e.key==='Enter')addUrl();});
+var _si=document.getElementById('singleUrlInput');if(_si)_si.addEventListener('keydown',e=>{if(e.key==='Enter')scanSingleUrl();});
+var _wi=document.getElementById('webUrlInput');if(_wi)_wi.addEventListener('keydown',e=>{if(e.key==='Enter')analyzeWebSecurity();});
+function removeUrl(i){urlList.splice(i,1);renderChips();}
+function renderChips(){
+  document.getElementById('urlChips').innerHTML=urlList.map((u,i)=>`<div class="chip"><span title="${escHtml(u)}">${escHtml(u)}</span><button onclick="removeUrl(${i})">✕</button></div>`).join('');
+}
+
+/* ══════════════════════════════════════════
+   EMAIL ANALYZE
+══════════════════════════════════════════ */
+function analyze(){
+  const text=document.getElementById('emailText').value;
+  if(!text.trim()&&urlList.length===0){alert('Vlož text emailu alebo aspoň jednu URL adresu.');return;}
+  setAnalyzing('emailInputCard',true);
+  setTimeout(()=>{
+    const emailFindings=[];let emailScore=0;
+    for(const rule of EMAIL_RULES){if(rule.patterns.some(p=>p.test(text))){emailFindings.push(rule);emailScore+=rule.weight;}}
+    if(!/dobrý deň|vážený|dear|hello|hi\b/i.test(text))emailScore+=4;
+    if(!/s pozdravom|s úctou|regards|sincerely|best regards/i.test(text))emailScore+=3;
+    emailScore=Math.min(emailScore,100);
+    const urlResults=urlList.map(analyzeUrl);
+    const urlMaxScore=urlResults.length?Math.max(...urlResults.map(r=>r.score)):0;
+    let total;
+    if(text.trim()&&urlList.length>0)total=Math.round(emailScore*.55+urlMaxScore*.45);
+    else if(text.trim())total=emailScore;
+    else total=urlMaxScore;
+    total=Math.min(total,100);
+    setAnalyzing('emailInputCard',false);
+    renderEmailResults(total,emailFindings,urlResults,text.trim().length>0);
+  },600);
+}
+
+function renderEmailResults(total,emailFindings,urlResults,hasEmail){
+  const container=document.getElementById('emailResults');
+  container.style.display='block';
+  const level=scoreLevel(total);const meta=levelMeta(level);
+  const hasBoth=hasEmail&&urlResults.length>0;
+  let delay=0;
+  const card=(cls,content)=>{const d=delay;delay+=0.1;return`<div class="card card-glow anim-card ${cls}" style="animation-delay:${d}s">${content}</div>`;};
+  const scoreContent=`
+    <div class="card-title"><span>📊</span>Celkové hodnotenie</div>
+    <div class="score-row">
+      <div class="score-circle level-${level}"><span class="score-num" id="escore">0</span><span class="score-lbl">/ 100</span></div>
+      <div class="score-info"><div class="score-verdict" style="color:${meta.color}">${meta.label}</div><div class="score-desc">${meta.desc}</div></div>
+    </div>
+    <div class="gauge-wrap"><div class="gauge-bg"><div class="gauge-fill" id="eg" style="width:0%;background:${meta.gauge}"></div></div>
+    <div class="gauge-ticks"><span>Bezpečný</span><span>Nízke</span><span>Stredné</span><span>Vysoké</span><span>Phishing</span></div></div>`;
+  let findingsContent='';
+  if(hasEmail){
+    findingsContent=`<div class="card-title"><span>🔎</span>Nálezy v texte emailu</div><div class="findings-grid">`;
+    if(emailFindings.length===0)findingsContent+=renderFinding({icon:'✅',title:'Žiadne varovné signály v texte',detail:'Text emailu neobsahuje bežné phishingové vzory.',sev:'ok'});
+    else findingsContent+=emailFindings.map(f=>renderFinding({icon:sevIcon(f.sev),title:f.title,detail:f.detail,sev:f.sev})).join('');
+    findingsContent+=`</div>`;
+  }
+  let urlContent='';
+  if(urlResults.length>0){
+    urlContent=`<div class="card-title"><span>🌐</span>Analýza URL adries</div>`+urlResults.map(r=>renderUrlResultHtml(r)).join('');
+  }
+  const tips=buildTips(level,emailFindings,urlResults);
+  const tipsContent=`<div class="card-title"><span>💡</span>Ako sa chrániť</div><ul class="tips-list">${tips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>`;
+  let html=`<div class="bento-grid">`;
+  html+=card('bento-full',scoreContent);
+  if(hasEmail&&urlResults.length>0){
+    html+=card('',findingsContent);
+    html+=card('',urlContent);
+  } else if(hasEmail){
+    html+=card('bento-full',findingsContent);
+  } else if(urlResults.length>0){
+    html+=card('bento-full',urlContent);
+  }
+  html+=card('bento-full',tipsContent);
+  html+=`</div>`;
+  container.innerHTML=html;
+  setTimeout(()=>{
+    const f=document.getElementById('eg');if(f)f.style.width=total+'%';
+    animateCounter('escore',total);
+  },120);
+  container.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ══════════════════════════════════════════
+   URL SCANNER (Tab 2)
+══════════════════════════════════════════ */
+function scanSingleUrl(){
+  const val=document.getElementById('singleUrlInput').value.trim();
+  if(!val){alert('Zadaj URL adresu.');return;}
+  setAnalyzing('urlInputCard',true);
+  setTimeout(()=>{
+    const r=analyzeUrl(val);
+    setAnalyzing('urlInputCard',false);
+    const container=document.getElementById('urlScanResults');
+    container.style.display='block';
+    const lvl=r.level;
+    const lbl={safe:'Bezpečná URL',warn:'Podozrivá URL',danger:'Nebezpečná URL'}[lvl];
+    const col={safe:'var(--green)',warn:'var(--orange)',danger:'var(--red)'}[lvl];
+    const cls={safe:'level-safe',warn:'level-medium',danger:'level-high'}[lvl];
+    const gauge={safe:'linear-gradient(90deg,#22c55e,#16a34a)',warn:'linear-gradient(90deg,#fb923c,#ea580c)',danger:'linear-gradient(90deg,#f87171,#dc2626)'}[lvl];
+    const gw=lvl==='safe'?Math.min(r.score+10,28):lvl==='warn'?Math.min(40+r.score*.25,65):Math.min(72+r.score*.28,100);
+    container.innerHTML=`<div class="bento-grid">
+      <div class="card card-glow bento-full anim-card" style="animation-delay:0s">
+        <div class="card-title"><span>📊</span>Výsledok skenovania</div>
+        <div class="score-row">
+          <div class="score-circle ${cls}"><span style="font-size:1.6rem">${lvl==='safe'?'✅':lvl==='warn'?'⚠️':'🚨'}</span></div>
+          <div class="score-info">
+            <div class="score-verdict" style="color:${col}">${lbl}</div>
+            <div style="font-family:monospace;font-size:.8rem;color:var(--accent);margin-bottom:4px">${escHtml(val)}</div>
+            <div class="score-desc">Rizikové skóre: <strong><span id="uscore">0</span>/<span>100</span></strong></div>
+          </div>
+        </div>
+        <div class="gauge-wrap"><div class="gauge-bg"><div class="gauge-fill" id="ug" style="width:0%"></div></div>
+        <div class="gauge-ticks"><span>Bezpečná</span><span>Podozrivá</span><span>Nebezpečná</span></div></div>
+      </div>
+      <div class="card card-glow bento-full anim-card" style="animation-delay:0.1s">
+        <div class="card-title"><span>🔎</span>Nálezy</div>
+        <div class="findings-grid">${r.findings.map(f=>renderFinding({icon:f.icon,title:f.text,detail:'',sev:f.sev==='ok'?'ok':f.sev==='high'?'high':f.sev==='medium'?'medium':'low'})).join('')}</div>
+      </div>
+    </div>`;
+    setTimeout(()=>{
+      const f=document.getElementById('ug');if(f){f.style.width=gw+'%';f.style.background=gauge;}
+      animateCounter('uscore',r.score);
+    },120);
+    container.scrollIntoView({behavior:'smooth',block:'start'});
+  },500);
+}
+
+/* ══════════════════════════════════════════
+   WEB ANALYSIS
+══════════════════════════════════════════ */
+const KNOWN_BLACKLIST=['secure-login-verify.tk','account-update-secure.ml','paypal-secure-login.ga','microsoft-verify.cf','google-account-verify.gq','apple-id-verify.xyz','bank-secure-login.top','netflix-renew-billing.online','amazon-prize-winner.site'];
+const BLACKLIST_PATTERNS=[/secure.*login|login.*secure/i,/verify.*account|account.*verify/i,/update.*billing|billing.*update/i,/prize.*winner|winner.*claim/i,/suspended.*account|account.*suspended/i];
+function checkDomainBlacklist(host){
+  if(KNOWN_BLACKLIST.includes(host))return{listed:true,detail:'Doména sa nachádza v zozname známych škodlivých stránok.'};
+  for(const p of BLACKLIST_PATTERNS)if(p.test(host))return{listed:true,detail:'Názov domény zodpovedá vzoru phishingových stránok.'};
+  const tld=host.slice(host.lastIndexOf('.'));
+  if(['.tk','.ml','.ga','.cf','.gq'].includes(tld))return{listed:false,warning:true,detail:`Doménová prípona "${tld}" je bežne zneužívaná pre phishing.`};
+  return{listed:false,warning:false,detail:'Doména sa nenachádza v lokálnom blackliste.'};
+}
+const SEC_HEADERS=[{name:'HSTS',desc:'Núti prehliadač vždy používať HTTPS – zabraňuje downgrade útokom.'},{name:'Content-Security-Policy',desc:'Definuje, z akých zdrojov môže stránka načítavať skripty a obsah.'},{name:'X-Frame-Options',desc:'Zabraňuje vkladaniu stránky do iframe (clickjacking ochrana).'},{name:'X-Content-Type-Options',desc:'Zabraňuje prehliadaču hádať typ súboru – ochrana pred MIME sniffingom.'},{name:'Referrer-Policy',desc:'Kontroluje informácie odosielané pri navigácii na iné stránky.'},{name:'Permissions-Policy',desc:'Obmedzuje prístup k API prehliadača – kamera, mikrofón, poloha.'}];
+
+async function analyzeWebSecurity(){
+  let raw=document.getElementById('webUrlInput').value.trim();
+  if(!raw){alert('Zadaj URL webstránky.');return;}
+  if(!/^https?:\/\//i.test(raw))raw='https://'+raw;
+  let parsed;
+  try{parsed=new URL(raw);}catch{alert('Neplatná URL adresa.');return;}
+  const host=parsed.hostname.toLowerCase();const isHttps=parsed.protocol==='https:';
+  document.getElementById('webResults').style.display='none';
+  document.getElementById('webLoading').style.display='flex';
+  setAnalyzing('webInputCard',true);
+  let loadTime=null,reachable=false;
+  const t0=performance.now();
+  try{const c=new AbortController();const tid=setTimeout(()=>c.abort(),8000);
+    await fetch(raw,{mode:'no-cors',signal:c.signal});clearTimeout(tid);
+    loadTime=Math.round(performance.now()-t0);reachable=true;}
+  catch(e){if(e.name==='AbortError')loadTime=8000;}
+  const blacklist=checkDomainBlacklist(host);
+  let score=100;
+  if(!isHttps)score-=30;if(blacklist.listed)score-=50;else if(blacklist.warning)score-=15;
+  if(!reachable)score-=10;if(loadTime&&loadTime>=4000)score-=8;else if(loadTime&&loadTime>=1500)score-=3;
+  score=Math.max(0,Math.min(100,score));
+  const level=score>=80?'safe':score>=55?'low':score>=30?'medium':'high';
+  const meta=webLevelMeta(level);
+  document.getElementById('webLoading').style.display='none';
+  setAnalyzing('webInputCard',false);
+  const sslOk=isHttps&&reachable;const sslSev=sslOk?'ok':isHttps?'low':'high';
+  const speedLabel=!reachable||loadTime===null?'Nedostupné':loadTime<500?`Rýchle (${loadTime} ms)`:loadTime<1500?`Priemerné (${loadTime} ms)`:loadTime<4000?`Pomalé (${loadTime} ms)`:`Veľmi pomalé (${loadTime} ms)`;
+  const speedSev=!reachable?'medium':loadTime<1500?'ok':loadTime<4000?'low':'medium';
+  const blSev=blacklist.listed?'high':blacklist.warning?'medium':'ok';
+  const webTips=[];
+  if(!isHttps)webTips.push('Stránka nepoužíva HTTPS – nikdy na nej nezadávaj heslá ani osobné údaje.');
+  if(blacklist.listed)webTips.push('Táto doména je označená ako škodlivá – okamžite zatvor stránku!');
+  if(blacklist.warning)webTips.push('Doménová prípona je podozrivá – buď obzvlášť ostražitý.');
+  if(!reachable)webTips.push('Stránka neodpovedala – skontroluj URL adresu, či je správna.');
+  webTips.push('Pred zadaním prihlasovacích údajov vždy skontroluj URL v adresnom riadku.');
+  webTips.push('Hľadaj ikonu zámku (🔒) vedľa adresy – signalizuje HTTPS.');
+  webTips.push('Na overenie reputácie stránky použi VirusTotal (virustotal.com).');
+  if(level==='high'||level==='medium')webTips.unshift('Nenavštevuj túto stránku a nezadávaj na nej žiadne údaje!');
+  const wr=document.getElementById('webResults');
+  wr.style.display='block';
+  wr.innerHTML=`<div class="bento-grid">
+    <div class="card card-glow bento-full anim-card" style="animation-delay:0s">
+      <div class="card-title"><span>📊</span>Celkové bezpečnostné skóre</div>
+      <div class="score-row">
+        <div class="score-circle level-${level}"><span class="score-num" id="wscore">0</span><span class="score-lbl">/ 100</span></div>
+        <div class="score-info">
+          <div class="score-verdict" style="color:${meta.color}">${meta.label}</div>
+          <div style="font-family:monospace;font-size:.79rem;color:var(--accent);margin-bottom:4px">${escHtml(raw)}</div>
+          <div class="score-desc">${meta.desc}</div>
+        </div>
+      </div>
+      <div class="gauge-wrap"><div class="gauge-bg"><div class="gauge-fill" id="wg" style="width:0%"></div></div>
+      <div class="gauge-ticks"><span>Nebezpečná</span><span>Problémy</span><span>Drobné</span><span>Bezpečná</span></div></div>
+    </div>
+    <div class="card card-glow anim-card" style="animation-delay:0.1s">
+      <div class="card-title"><span>🔎</span>Výsledky kontrol</div>
+      <div class="findings-grid">
+        ${renderFinding({icon:isHttps?'🔒':'🔓',title:isHttps?'HTTPS – šifrované spojenie':'HTTP – nešifrované spojenie',detail:isHttps?'Stránka používa HTTPS. Komunikácia je šifrovaná.':'Stránka nepoužíva HTTPS. Dáta sú prenášané nezabezpečene.',sev:isHttps?'ok':'high'})}
+        ${renderFinding({icon:sslOk?'✅':isHttps?'⚠️':'🔓',title:sslOk?'SSL certifikát – pravdepodobne platný':isHttps?'SSL – nedalo sa overiť':'SSL – stránka nepoužíva HTTPS',detail:sslOk?'Stránka používa HTTPS a odpovedala – certifikát je pravdepodobne platný.':isHttps?'HTTPS áno, ale stránka neodpovedala – platnosť certifikátu sa nedá overiť.':'Stránka nepoužíva šifrované spojenie.',sev:sslSev})}
+        ${renderFinding({icon:reachable?'✅':'⚠️',title:reachable?`Dostupnosť – stránka odpovedá`:'Dostupnosť – stránka neodpovedala',detail:reachable?`Server odpovedal za ${loadTime} ms.`:'Stránka neodpovedala. Môže byť vypnutá alebo blokovať požiadavky.',sev:reachable?'ok':'medium'})}
+        ${renderFinding({icon:speedSev==='ok'?'⚡':speedSev==='low'?'🐢':'🔴',title:`Rýchlosť – ${speedLabel}`,detail:reachable?'Čas odozvy servera meraný priamo z prehliadača.':'Rýchlosť sa nedala zmerať – stránka neodpovedala.',sev:speedSev})}
+        ${renderFinding({icon:blacklist.listed?'🚨':blacklist.warning?'⚠️':'✅',title:blacklist.listed?'Blacklist – doména označená ako škodlivá':blacklist.warning?'Blacklist – podozrivá doménová prípona':'Blacklist – doména nie je na zozname hrozieb',detail:blacklist.detail,sev:blSev})}
+      </div>
+    </div>
+    <div class="card card-glow anim-card" style="animation-delay:0.15s">
+      <div class="card-title"><span>📋</span>Bezpečnostné HTTP hlavičky</div>
+      <div class="web-headers-grid">
+        ${SEC_HEADERS.map(h=>`<div class="header-row"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0"></div><div class="header-name">${h.name}</div><div class="header-desc">${h.desc}</div></div>`).join('')}
+      </div>
+      <div class="notice-box">ℹ️ Bezpečnostné HTTP hlavičky nie je možné prečítať priamo z prehliadača (CORS obmedzenie). Na overenie použi <strong>securityheaders.com</strong> alebo <strong>observatory.mozilla.org</strong>.</div>
+    </div>
+    <div class="card card-glow bento-full anim-card" style="animation-delay:0.22s">
+      <div class="card-title"><span>💡</span>Odporúčania</div>
+      <ul class="tips-list">${webTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+    </div>
+  </div>`;
+  setTimeout(()=>{
+    const f=document.getElementById('wg');if(f){f.style.width=score+'%';f.style.background=meta.gauge;}
+    animateCounter('wscore',score);
+  },120);
+  wr.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ══════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════ */
+function animateCounter(elId,target,duration=900){
+  const el=document.getElementById(elId);if(!el)return;
+  const s=performance.now();
+  (function step(now){
+    const p=Math.min((now-s)/duration,1);
+    const ease=1-Math.pow(1-p,4);
+    el.textContent=Math.round(ease*target);
+    if(p<1)requestAnimationFrame(step);else el.textContent=target;
+  })(s);
+}
+function setAnalyzing(cardId,on){
+  const c=document.getElementById(cardId);if(c)c.classList[on?'add':'remove']('analyzing');
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function scoreLevel(s){return s<20?'safe':s<45?'low':s<70?'medium':'high';}
+function levelMeta(l){return{safe:{label:'Bezpečný email',desc:'Nezistili sme žiadne výrazné znaky phishingu. Napriek tomu buď ostražitý.',color:'var(--green)',gauge:'linear-gradient(90deg,#22c55e,#16a34a)'},low:{label:'Nízke riziko',desc:'Nájdené niektoré slabé indikátory. Odporúčame zvýšenú pozornosť.',color:'var(--yellow)',gauge:'linear-gradient(90deg,#fbbf24,#d97706)'},medium:{label:'Stredné riziko',desc:'Viacero znakov phishingu. Neklikaj na odkazy a neodpovedaj bez overenia.',color:'var(--orange)',gauge:'linear-gradient(90deg,#fb923c,#ea580c)'},high:{label:'Vysoké riziko – pravdepodobný phishing!',desc:'Tento email vykazuje výrazné znaky phishingového útoku. Neodpovedaj, neklikaj na žiadne odkazy.',color:'var(--red)',gauge:'linear-gradient(90deg,#f87171,#dc2626)'}}[l];}
+function webLevelMeta(l){return{safe:{label:'Bezpečná stránka',desc:'Stránka prešla základnými bezpečnostnými kontrolami bez závažných problémov.',color:'var(--green)',gauge:'linear-gradient(90deg,#22c55e,#16a34a)'},low:{label:'Drobné nedostatky',desc:'Stránka má niektoré slabiny, ale nie je okamžite nebezpečná.',color:'var(--yellow)',gauge:'linear-gradient(90deg,#fbbf24,#d97706)'},medium:{label:'Bezpečnostné problémy',desc:'Stránka vykazuje viacero bezpečnostných nedostatkov. Nezadávaj osobné údaje.',color:'var(--orange)',gauge:'linear-gradient(90deg,#fb923c,#ea580c)'},high:{label:'Nebezpečná stránka!',desc:'Stránka je pravdepodobne škodlivá. Nenavštevuj ju a nezadávaj žiadne údaje.',color:'var(--red)',gauge:'linear-gradient(90deg,#f87171,#dc2626)'}}[l];}
+function sevIcon(s){return{high:'🚨',medium:'⚠️',low:'🔸',info:'ℹ️',ok:'✅'}[s]||'🔸';}
+function renderFinding({icon,title,detail,sev}){
+  const bc={high:'badge-high',medium:'badge-medium',low:'badge-low',info:'badge-info',ok:'badge-ok'}[sev];
+  const bl={high:'Vysoké',medium:'Stredné',low:'Nízke',info:'Info',ok:'OK'}[sev];
+  return`<div class="finding sev-${sev}"><div class="finding-icon">${icon}</div><div class="finding-body"><div class="finding-title">${escHtml(title)}</div>${detail?`<div class="finding-detail">${escHtml(detail)}</div>`:''}</div><span class="finding-badge ${bc}">${bl}</span></div>`;
+}
+function renderUrlResultHtml(r){
+  const badge=r.level==='safe'?`<span class="finding-badge badge-ok">Bezpečná</span>`:r.level==='warn'?`<span class="finding-badge badge-medium">Podozrivá</span>`:`<span class="finding-badge badge-high">Nebezpečná</span>`;
+  return`<div class="url-result url-${r.level}"><div class="url-result-top"><span class="url-val">${escHtml(r.url)}</span>${badge}</div><div class="url-findings">${r.findings.map(f=>`<div class="url-finding-item"><span>${f.icon}</span><span>${escHtml(f.text)}</span></div>`).join('')}</div></div>`;
+}
+function buildTips(level,emailFindings,urlResults){
+  const tips=['Nikdy nezadávaj heslo na stránke, na ktorú si prišiel cez odkaz v emaili.','Skontroluj skutočnú adresu odosielateľa – nie len zobrazené meno.','Legitímne inštitúcie (banky, školy) ťa nikdy nebudú žiadať o heslo emailom.','Pri podozrivom emaili kontaktuj odosielateľa telefonicky alebo osobne.'];
+  if(level==='high'||level==='medium'){tips.unshift('NEODPOVEDAJ na tento email a neklikaj na žiadne odkazy ani prílohy!');tips.push('Nahláš email ako phishing svojmu IT správcovi alebo učiteľovi.');}
+  if(emailFindings.some(f=>f.id==='credentials'))tips.push('Ak si zadal heslo na podozrivej stránke, okamžite ho zmeň!');
+  if(urlResults.some(r=>r.level==='danger'))tips.push('Podozrivé URL neotvárať – ani na počítači v škole alebo na mobile.');
+  return tips;
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ══════════════════════════════════════════
+   FAQ
+══════════════════════════════════════════ */
+const FAQS=[
+  {q:'Ako MailGuard funguje?',a:'MailGuard analyzuje text emailu alebo URL adresu priamo vo vašom prehliadači pomocou detekčných pravidiel a AI. Výsledky dostanete do pár sekúnd.'},
+  {q:'Je MailGuard bezpečný? Posiela moje dáta niekam?',a:'Nie. Všetka analýza prebieha priamo vo vašom prehliadači. Žiadny text emailu ani URL nie sú odosielané na žiadny server.'},
+  {q:'Aký je rozdiel medzi FREE a PRO plánom?',a:'FREE plán umožňuje 3 analýzy denne s základnými výsledkami. PRO plán ponúka neobmedzené analýzy, plné výsledky, históriu a export do PDF.'},
+  {q:'Môžem MailGuard použiť pre celú školu?',a:'Áno! Plán ŠKOLA umožňuje až 50 používateľov na jednom účte s dashboardom pre riaditeľa a mesačnými reportmi.'},
+  {q:'Čo sa stane keď vyčerpám denný limit analýz?',a:'Po vyčerpaní 3 bezplatných analýz za deň vás upozorníme. Limit sa obnoví každý deň o polnoci.'},
+  {q:'Podporuje MailGuard slovenský jazyk?',a:'Áno, MailGuard je plne v slovenčine a detekuje phishingové vzory aj v slovenskom a českom jazyku.'},
+];
+function buildFaq(){
+  document.getElementById('faqList').innerHTML=FAQS.map((f,i)=>`
+    <div class="faq-item" id="faq${i}">
+      <div class="faq-q" onclick="toggleFaq(${i})">${f.q}<span class="faq-chevron">▼</span></div>
+      <div class="faq-a">${f.a}</div>
+    </div>`).join('');
+}
+function toggleFaq(i){document.getElementById('faq'+i).classList.toggle('open');}
+
+/* ══════════════════════════════════════════
+   TERMINAL 3D PARALLAX
+══════════════════════════════════════════ */
+(function(){
+  const wrap=document.getElementById('terminalWrap');
+  const el=document.getElementById('terminalEl');
+  if(!wrap||!el)return;
+  console.log('wrap:', wrap, 'el:', el);
+  const MAX=6; // max rotation degrees
+  wrap.addEventListener('mousemove',e=>{
+    const r=wrap.getBoundingClientRect();
+    // cursor position relative to center, normalised -1..1
+    const cx=(e.clientX-r.left)/r.width *2-1;
+    const cy=(e.clientY-r.top) /r.height*2-1;
+    const ry= cx*MAX;          // tilt left-right
+    const rx=-cy*MAX;          // tilt up-down (inverted Y)
+    el.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
+    el.style.boxShadow=`
+      ${-ry*2}px ${rx*2}px 100px rgba(0,0,0,.7),
+      0 0 0 1px rgba(255,255,255,.05),
+      0 0 70px rgba(79,142,247,${.06+Math.abs(cx)*.08})`;
+  });
+  wrap.addEventListener('mouseleave',()=>{
+    el.style.transform='rotateX(0deg) rotateY(0deg)';
+    el.style.boxShadow='';
+  });
+})();
+
+
+/* ══════════════════════════════════════════
+   SUPABASE AUTH
+══════════════════════════════════════════ */
+const _sb = supabase.createClient(
+  'https://qalcsmnvyuujsmnreglt.supabase.co',
+  'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+);
+
+function openModal(type){
+  const ol=document.getElementById('modalOverlay');
+  document.getElementById('modalLogin').style.display    = type==='login'    ? '' : 'none';
+  document.getElementById('modalRegister').style.display = type==='register' ? '' : 'none';
+  document.getElementById('loginErr').textContent='';
+  document.getElementById('regErr').textContent='';
+  ol.classList.add('open');
+  // focus first input
+  setTimeout(()=>{
+    const f=document.querySelector('#modal'+(type==='login'?'Login':'Register')+' input');
+    if(f)f.focus();
+  },120);
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+function handleOverlayClick(e){
+  if(e.target===document.getElementById('modalOverlay'))closeModal();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass =document.getElementById('loginPassword').value;
+  const btn  =document.getElementById('loginBtn');
+  const err  =document.getElementById('loginErr');
+  if(!email||!pass){err.textContent='Vyplň email a heslo.';return;}
+  btn.disabled=true;btn.textContent='Prihlasujem…';err.textContent='';
+  const {error}=await _sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false;btn.textContent='Prihlásiť sa';
+  if(error){err.textContent=translateAuthError(error.message);}
+  else{closeModal();}
+}
+
+async function doRegister(){
+  const email=document.getElementById('regEmail').value.trim();
+  const pass =document.getElementById('regPassword').value;
+  const btn  =document.getElementById('regBtn');
+  const err  =document.getElementById('regErr');
+  if(!email||!pass){err.textContent='Vyplň email a heslo.';return;}
+  if(pass.length<6){err.textContent='Heslo musí mať aspoň 6 znakov.';return;}
+  btn.disabled=true;btn.textContent='Registrujem…';err.textContent='';
+  const {error}=await _sb.auth.signUp({email,password:pass});
+  btn.disabled=false;btn.textContent='Vytvoriť účet';
+  if(error){err.textContent=translateAuthError(error.message);}
+  else{
+    err.style.color='var(--green)';
+    err.textContent='Registrácia úspešná! Skontroluj email pre potvrdenie.';
+  }
+}
+
+async function doSignOut(){
+  await _sb.auth.signOut();
+}
+
+function translateAuthError(msg){
+  if(/invalid login/i.test(msg))return'Nesprávny email alebo heslo.';
+  if(/already registered/i.test(msg))return'Tento email je už zaregistrovaný.';
+  if(/email not confirmed/i.test(msg))return'Potvrď svoju emailovú adresu.';
+  if(/password/i.test(msg))return'Heslo musí mať aspoň 6 znakov.';
+  return msg;
+}
+
+function updateNavAuth(user){
+  const navRight=document.getElementById('navRight');
+  if(user){
+    navRight.innerHTML=`
+      <div class="nav-user">
+        <span class="nav-user-email">${escHtml(user.email)}</span>
+        <button class="btn-signout" onclick="doSignOut()">Odhlásiť sa</button>
+      </div>`;
+  } else {
+    navRight.innerHTML=`
+      <button class="btn-signin" onclick="openModal('login')">Prihlásiť sa</button>
+      <button class="btn-signup" onclick="openModal('register')">Registrovať</button>`;
+  }
+}
+
+// Listen for auth state changes
+_sb.auth.onAuthStateChange((_event, session)=>{
+  _currentUser=session?.user ?? null;
+  updateNavAuth(_currentUser);
+  // re-render results if visible
+  const heroInput=document.getElementById('heroInput');
+  if(heroInput?.value.trim()&&document.getElementById('heroResults').style.display!=='none'){
+    document.getElementById('heroResults').innerHTML='<div class="hres">'+renderHeroResultHTML(heroInput.value.trim())+'</div>';
+  }
+});
+
+// Check initial session
+_sb.auth.getSession().then(({data:{session}})=>{
+  _currentUser=session?.user ?? null;
+  updateNavAuth(_currentUser);
+});
+
+// Allow Enter key in modal inputs
+['loginEmail','loginPassword'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+});
+['regEmail','regPassword'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+});
+
+/* ══════════════════════════════════════════
+   COUNTDOWN — do konca týždňa (nedeľa polnoc)
+══════════════════════════════════════════ */
+(function(){
+  function getWeekEnd(){
+    const now=new Date();
+    const day=now.getDay(); // 0=Sun
+    const daysUntilSun=day===0?7:7-day;
+    const end=new Date(now);
+    end.setDate(now.getDate()+daysUntilSun);
+    end.setHours(23,59,59,999);
+    return end;
+  }
+  function tick(){
+    const diff=getWeekEnd()-new Date();
+    if(diff<=0){document.getElementById('countdown').style.display='none';return;}
+    const d=Math.floor(diff/864e5);
+    const h=Math.floor((diff%864e5)/36e5);
+    const m=Math.floor((diff%36e5)/6e4);
+    const s=Math.floor((diff%6e4)/1e3);
+    const pad=n=>String(n).padStart(2,'0');
+    document.getElementById('cdD').textContent=pad(d);
+    document.getElementById('cdH').textContent=pad(h);
+    document.getElementById('cdM').textContent=pad(m);
+    document.getElementById('cdS').textContent=pad(s);
+  }
+  tick();
+  setInterval(tick,1000);
+})();
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+buildFaq();
+
+
+</script>
+</body>
+<script>
+(function(){
+  var sp=document.getElementById('heroPlaceholder');
+  var el=document.getElementById('heroInput');
+  if(!sp||!el){console.log('NOT FOUND');return;}
+  var words=['yoursite.com','google.com','apple.com','facebook.com','microsoft.com'];
+  var wi=0,pos=0,er=false,pause=false;
+  el.addEventListener('focus',function(){pause=true;sp.style.display='none';});
+  el.addEventListener('blur',function(){pause=false;if(!el.value)sp.style.display='block';go();});
+  function go(){
+    if(pause)return;
+    var w=words[wi];
+    if(!er){sp.textContent=w.slice(0,++pos);if(pos===w.length){er=true;setTimeout(go,1500);return;}}
+    else{sp.textContent=w.slice(0,--pos);if(pos===0){er=false;wi=(wi+1)%words.length;}}
+    setTimeout(go,er?50:80);
+  }
+  setTimeout(go,1000);
+})();
+</script>
+</html>
