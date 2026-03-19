@@ -1065,6 +1065,20 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
     <div class="modal-err" id="loginErr"></div>
     <button class="modal-btn" id="loginBtn" onclick="doLogin()">Prihlásiť sa</button>
     <div class="modal-switch">Nemáš účet? <a onclick="openModal('register')">Registrovať sa</a></div>
+    <div class="modal-switch" style="margin-top:8px"><a onclick="openModal('reset')">Zabudol som heslo</a></div>
+  </div>
+  <!-- RESET PASSWORD -->
+  <div class="modal modal-wrap" id="modalReset" style="display:none">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Obnoviť heslo</div>
+    <div class="modal-sub">Zadaj email a pošleme ti link na reset hesla</div>
+    <div class="modal-field">
+      <label>Email</label>
+      <input type="email" id="resetEmail" placeholder="vas@email.sk" autocomplete="email"/>
+    </div>
+    <div class="modal-err" id="resetErr"></div>
+    <button class="modal-btn" id="resetBtn" onclick="doResetPassword()">Odoslať link</button>
+    <div class="modal-switch">Späť na <a onclick="openModal('login')">prihlásenie</a></div>
   </div>
   <!-- REGISTER -->
   <div class="modal modal-wrap" id="modalRegister" style="display:none">
@@ -1574,12 +1588,14 @@ function openModal(type){
   const ol=document.getElementById('modalOverlay');
   document.getElementById('modalLogin').style.display    = type==='login'    ? '' : 'none';
   document.getElementById('modalRegister').style.display = type==='register' ? '' : 'none';
+  document.getElementById('modalReset').style.display    = type==='reset'    ? '' : 'none';
   document.getElementById('loginErr').textContent='';
   document.getElementById('regErr').textContent='';
+  document.getElementById('resetErr').textContent='';
   ol.classList.add('open');
-  // focus first input
   setTimeout(()=>{
-    const f=document.querySelector('#modal'+(type==='login'?'Login':'Register')+' input');
+    const idMap={login:'modalLogin',register:'modalRegister',reset:'modalReset'};
+    const f=document.querySelector('#'+(idMap[type]||'modalLogin')+' input');
     if(f)f.focus();
   },120);
 }
@@ -1590,6 +1606,25 @@ function handleOverlayClick(e){
   if(e.target===document.getElementById('modalOverlay'))closeModal();
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+async function doResetPassword(){
+  const email=document.getElementById('resetEmail').value.trim();
+  const btn  =document.getElementById('resetBtn');
+  const err  =document.getElementById('resetErr');
+  if(!email){err.textContent='Zadaj email.';return;}
+  btn.disabled=true;btn.textContent='Odosielajem…';err.textContent='';
+  const {error}=await _sb.auth.resetPasswordForEmail(email,{
+    redirectTo:'https://mailguard-eight.vercel.app/dashboard.html'
+  });
+  btn.disabled=false;btn.textContent='Odoslať link';
+  if(error){
+    err.textContent=error.message;
+  } else {
+    err.style.color='var(--green)';
+    err.textContent='Na tvoj email bol odoslaný link na obnovenie hesla.';
+    document.getElementById('resetEmail').value='';
+  }
+}
 
 async function doLogin(){
   const email=document.getElementById('loginEmail').value.trim();
