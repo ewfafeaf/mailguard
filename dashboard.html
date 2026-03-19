@@ -206,6 +206,35 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .loading-screen .spinner{width:32px;height:32px;border-width:3px}
 .loading-screen p{color:var(--muted);font-size:.9rem}
 
+/* ── SETTINGS CARDS ── */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px}
+.settings-section-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.settings-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.settings-field label{font-size:.82rem;font-weight:600;color:var(--muted)}
+.settings-field input{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-family:inherit;font-size:.92rem;outline:none;transition:border-color .2s}
+.settings-field input:focus{border-color:rgba(79,142,247,.5)}
+.settings-field input::placeholder{color:var(--muted)}
+.settings-btn{padding:10px 22px;border:none;border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s}
+.settings-btn:hover{opacity:.9}
+.settings-btn:disabled{opacity:.5;cursor:not-allowed}
+.settings-btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.settings-btn-ghost:hover{border-color:var(--border2);opacity:1}
+.settings-btn-danger{background:transparent;border:1px solid rgba(239,68,68,.5);color:var(--red)}
+.settings-btn-danger:hover{background:rgba(239,68,68,.1);opacity:1}
+.settings-msg{font-size:.81rem;margin-top:10px;min-height:1.2em}
+.settings-current-email{font-size:1rem;font-weight:600;margin-top:4px;color:var(--text)}
+.danger-zone{border-color:rgba(239,68,68,.25)!important}
+.danger-title{color:var(--red)!important}
+/* Password hints in settings */
+.pw-hints{display:flex;flex-direction:column;gap:4px;margin:-6px 0 12px}
+.pw-hint{font-size:.78rem;color:var(--red)}
+/* Confirm overlay */
+.confirm-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
+.confirm-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:30px 26px;max-width:380px;width:90%;text-align:center}
+.confirm-box h3{font-size:1.05rem;font-weight:700;margin-bottom:10px}
+.confirm-box p{font-size:.87rem;color:var(--muted);line-height:1.65;margin-bottom:22px}
+.confirm-btns{display:flex;gap:10px;justify-content:center}
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .stats-grid{grid-template-columns:1fr 1fr}
@@ -331,30 +360,62 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <!-- Section: Nastavenia -->
     <div id="sectionNastavenia" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot"></div>Nastavenia účtu</div>
-      <div class="analysis-card" style="margin-bottom:16px">
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div style="font-size:.9rem;color:var(--muted)">Email:</div>
-          <div style="font-size:1rem;font-weight:600" id="settingsEmail">—</div>
-          <div style="height:1px;background:var(--border);margin:4px 0"></div>
-          <div style="font-size:.85rem;color:var(--muted)">Pre zmenu hesla alebo emailu kontaktuj podporu na <a href="mailto:support@mailguard.sk" style="color:var(--accent)">support@mailguard.sk</a></div>
+
+      <!-- Current account info -->
+      <div class="settings-card">
+        <div class="settings-section-title">👤 Aktuálny účet</div>
+        <div style="font-size:.82rem;color:var(--muted)">Prihlásený ako:</div>
+        <div class="settings-current-email" id="settingsEmail">—</div>
+      </div>
+
+      <!-- Change email -->
+      <div class="settings-card">
+        <div class="settings-section-title">✉️ Zmena emailu</div>
+        <div class="settings-field">
+          <label>Nový email</label>
+          <input type="email" id="newEmail" placeholder="novy@email.sk" autocomplete="email"/>
         </div>
+        <button class="settings-btn" id="changeEmailBtn" onclick="changeEmail()">Zmeniť email</button>
+        <div class="settings-msg" id="emailMsg"></div>
+      </div>
+
+      <!-- Change password -->
+      <div class="settings-card">
+        <div class="settings-section-title">🔑 Zmena hesla</div>
+        <div class="settings-field">
+          <label>Nové heslo</label>
+          <input type="password" id="newPassword" placeholder="Minimálne 8 znakov" autocomplete="new-password" oninput="dashLivePasswordCheck()"/>
+        </div>
+        <div class="pw-hints" id="dashPwHints">
+          <div id="d-hint-len"   class="pw-hint">❌ Minimálne 8 znakov</div>
+          <div id="d-hint-upper" class="pw-hint">❌ Aspoň 1 veľké písmeno</div>
+          <div id="d-hint-num"   class="pw-hint">❌ Aspoň 1 číslo</div>
+        </div>
+        <button class="settings-btn" id="changePasswordBtn" onclick="changePassword()">Zmeniť heslo</button>
+        <div class="settings-msg" id="passwordMsg"></div>
       </div>
 
       <!-- GSB API KEY -->
-      <div class="dash-section-title" style="margin-top:8px"><div class="dot" style="background:var(--green)"></div>Google Safe Browsing API</div>
-      <div class="analysis-card">
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <div style="font-size:.85rem;color:var(--muted);line-height:1.6">
-            Google Safe Browsing kontroluje URL oproti databáze známych hrozieb (malware, phishing, nežiaduci softvér).
-            API kľúč získaš zadarmo na <a href="https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com" target="_blank" rel="noopener" style="color:var(--accent)">Google Cloud Console</a>.
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <input type="password" id="gsbKeyInput" class="analysis-input" style="flex:1;min-width:200px;height:44px"
-              placeholder="AIza…"/>
-            <button class="analysis-btn" style="height:44px;padding:0 20px" onclick="saveGsbKey()">Uložiť</button>
-          </div>
-          <div id="gsbKeyStatus" style="font-size:.8rem;color:var(--muted)"></div>
+      <div class="settings-card">
+        <div class="settings-section-title">🛡️ Google Safe Browsing API</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px">
+          Kontroluje URL oproti databáze známych hrozieb. API kľúč získaš zadarmo na
+          <a href="https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com" target="_blank" rel="noopener" style="color:var(--accent)">Google Cloud Console</a>.
         </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input type="password" id="gsbKeyInput" class="analysis-input" style="flex:1;min-width:200px;height:44px" placeholder="AIza…"/>
+          <button class="analysis-btn" style="height:44px;padding:0 20px" onclick="saveGsbKey()">Uložiť</button>
+        </div>
+        <div id="gsbKeyStatus" style="font-size:.8rem;color:var(--muted);margin-top:8px"></div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="settings-card danger-zone">
+        <div class="settings-section-title danger-title">⚠️ Nebezpečná zóna</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:16px">
+          Zmazaním účtu stratíš všetky uložené analýzy a históriu. Táto akcia je nevratná.
+        </div>
+        <button class="settings-btn settings-btn-danger" onclick="confirmDeleteAccount()">🗑️ Zmazať účet</button>
       </div>
     </div>
 
@@ -363,6 +424,18 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Confirm delete account overlay -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>🗑️ Zmazať účet?</h3>
+    <p>Naozaj chceš zmazať účet? Všetky tvoje analýzy a uložené údaje budú trvalo odstránené.<br/><strong>Táto akcia je nevratná.</strong></p>
+    <div class="confirm-btns">
+      <button class="settings-btn settings-btn-ghost" onclick="document.getElementById('confirmOverlay').style.display='none'">Zrušiť</button>
+      <button class="settings-btn settings-btn-danger" onclick="deleteAccount()">Áno, zmazať</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ── SUPABASE ── */
@@ -693,6 +766,81 @@ function analyzeUrl(url){
   if(/login|signin|password|credential|verify|secure|update|confirm|account/i.test(path)){findings.push({icon:'⚠️',text:'URL obsahuje slová ako "login", "verify", "password".',sev:'medium'});score+=10;}
   if(findings.length===0)findings.push({icon:'✅',text:'Nezistené zjavné red flags v URL.',sev:'ok'});
   return{url,findings,score:Math.min(score,100)};
+}
+
+/* ── SETTINGS ACTIONS ── */
+
+async function changeEmail(){
+  const email = document.getElementById('newEmail').value.trim();
+  const msg   = document.getElementById('emailMsg');
+  const btn   = document.getElementById('changeEmailBtn');
+  if(!email){ msg.textContent='Zadaj nový email.'; msg.style.color='var(--red)'; return; }
+  btn.disabled=true; btn.textContent='Mením…';
+  const {error} = await _sb.auth.updateUser({ email });
+  btn.disabled=false; btn.textContent='Zmeniť email';
+  if(error){
+    msg.textContent=error.message; msg.style.color='var(--red)';
+    showToast('Chyba: '+error.message,'error');
+  } else {
+    msg.textContent='Na nový email bol odoslaný potvrdzovací link.'; msg.style.color='var(--green)';
+    document.getElementById('newEmail').value='';
+    showToast('Potvrdzovací link odoslaný','success');
+  }
+}
+
+function dashLivePasswordCheck(){
+  const pass=document.getElementById('newPassword').value;
+  const okLen  =pass.length>=8;
+  const okUpper=/[A-Z]/.test(pass);
+  const okNum  =/[0-9]/.test(pass);
+  const set=(id,ok,label)=>{
+    const el=document.getElementById(id);
+    el.style.color=ok?'#22c55e':'#ef4444';
+    el.textContent=(ok?'✅':'❌')+' '+label;
+  };
+  set('d-hint-len',  okLen,  'Minimálne 8 znakov');
+  set('d-hint-upper',okUpper,'Aspoň 1 veľké písmeno');
+  set('d-hint-num',  okNum,  'Aspoň 1 číslo');
+}
+
+async function changePassword(){
+  const pass = document.getElementById('newPassword').value;
+  const msg  = document.getElementById('passwordMsg');
+  const btn  = document.getElementById('changePasswordBtn');
+  if(!pass){ msg.textContent='Zadaj nové heslo.'; msg.style.color='var(--red)'; return; }
+  if(pass.length<8||!/[A-Z]/.test(pass)||!/[0-9]/.test(pass)){
+    msg.textContent='Heslo musí mať aspoň 8 znakov, 1 veľké písmeno a 1 číslo.'; msg.style.color='var(--red)';
+    dashLivePasswordCheck();
+    return;
+  }
+  btn.disabled=true; btn.textContent='Mením…';
+  const {error} = await _sb.auth.updateUser({ password: pass });
+  btn.disabled=false; btn.textContent='Zmeniť heslo';
+  if(error){
+    msg.textContent=error.message; msg.style.color='var(--red)';
+    showToast('Chyba: '+error.message,'error');
+  } else {
+    msg.textContent='Heslo bolo zmenené.'; msg.style.color='var(--green)';
+    document.getElementById('newPassword').value='';
+    dashLivePasswordCheck();
+    showToast('Heslo bolo úspešne zmenené','success');
+  }
+}
+
+function confirmDeleteAccount(){
+  document.getElementById('confirmOverlay').style.display='flex';
+}
+
+async function deleteAccount(){
+  document.getElementById('confirmOverlay').style.display='none';
+  showToast('Mažem účet…','');
+  // Mark user metadata as deleted
+  await _sb.auth.updateUser({ data:{ account_deleted:true, deleted_at:new Date().toISOString() } });
+  // Delete all user's analyses
+  await _sb.from('analyses').delete().eq('user_id',_currentUser.id);
+  // Sign out and redirect
+  await _sb.auth.signOut();
+  window.location.href='index.html';
 }
 
 function showToast(msg,type=''){
