@@ -1666,7 +1666,7 @@ async function doRegister(){
     return;
   }
   btn.disabled=true;btn.textContent='Registrujem…';err.textContent='';
-  const {error}=await _sb.auth.signUp({email,password:pass});
+  const {error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
   btn.disabled=false;btn.textContent='Vytvoriť účet';
   if(error){err.textContent=translateAuthError(error.message);}
   else{window.location.href='dashboard.html';}
