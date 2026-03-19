@@ -1079,10 +1079,10 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
       <label>Heslo</label>
       <input type="password" id="regPassword" placeholder="Minimálne 8 znakov" autocomplete="new-password" oninput="livePasswordCheck()"/>
     </div>
-    <div id="regPasswordHints" style="flex-direction:column;gap:4px;margin:-6px 0 10px;display:none;">
-      <div id="hint-len"   style="font-size:.78rem;">❌ 8+ znakov</div>
-      <div id="hint-upper" style="font-size:.78rem;">❌ Veľké písmeno</div>
-      <div id="hint-num"   style="font-size:.78rem;">❌ Číslo</div>
+    <div id="regPasswordHints" style="display:flex;flex-direction:column;gap:4px;margin:-6px 0 10px;">
+      <div id="hint-len"   style="font-size:.78rem;color:#ef4444;">❌ Minimálne 8 znakov</div>
+      <div id="hint-upper" style="font-size:.78rem;color:#ef4444;">❌ Aspoň 1 veľké písmeno</div>
+      <div id="hint-num"   style="font-size:.78rem;color:#ef4444;">❌ Aspoň 1 číslo</div>
     </div>
     <div class="modal-err" id="regErr"></div>
     <button class="modal-btn" id="regBtn" onclick="doRegister()">Vytvoriť účet</button>
@@ -1606,19 +1606,17 @@ async function doLogin(){
 
 function livePasswordCheck(){
   const pass=document.getElementById('regPassword').value;
-  const hints=document.getElementById('regPasswordHints');
   const okLen  =pass.length>=8;
   const okUpper=/[A-Z]/.test(pass);
   const okNum  =/[0-9]/.test(pass);
-  hints.style.display=pass.length>0?'flex':'none';
-  const set=(id,ok)=>{
+  const set=(id,ok,label)=>{
     const el=document.getElementById(id);
     el.style.color=ok?'#22c55e':'#ef4444';
-    el.textContent=(ok?'✅':'❌')+el.textContent.slice(2);
+    el.textContent=(ok?'✅':'❌')+' '+label;
   };
-  set('hint-len',okLen);
-  set('hint-upper',okUpper);
-  set('hint-num',okNum);
+  set('hint-len',  okLen,  'Minimálne 8 znakov');
+  set('hint-upper',okUpper,'Aspoň 1 veľké písmeno');
+  set('hint-num',  okNum,  'Aspoň 1 číslo');
 }
 
 async function doRegister(){
