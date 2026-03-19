@@ -395,8 +395,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         <div class="settings-msg" id="passwordMsg"></div>
       </div>
 
-      <!-- GSB API KEY -->
-      <div class="settings-card">
+      <!-- GSB API KEY (admin only) -->
+      <div class="settings-card" id="gsbCard" style="display:none">
         <div class="settings-section-title">🛡️ Google Safe Browsing API</div>
         <div style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px">
           Kontroluje URL oproti databáze známych hrozieb. API kľúč získaš zadarmo na
@@ -469,12 +469,15 @@ function initDashboard(){
   document.getElementById('welcomeName').textContent=name;
   document.getElementById('navEmail').textContent=email;
   document.getElementById('settingsEmail').textContent=email;
-  // load saved GSB key
-  const saved=localStorage.getItem('gsb_api_key');
-  if(saved){
-    document.getElementById('gsbKeyInput').value=saved;
-    document.getElementById('gsbKeyStatus').textContent='✓ API kľúč je uložený';
-    document.getElementById('gsbKeyStatus').style.color='var(--green)';
+  // GSB card: admin only
+  if(email==='memedumpster@centrum.sk'){
+    document.getElementById('gsbCard').style.display='';
+    const saved=localStorage.getItem('gsb_api_key');
+    if(saved){
+      document.getElementById('gsbKeyInput').value=saved;
+      document.getElementById('gsbKeyStatus').textContent='✓ API kľúč je uložený';
+      document.getElementById('gsbKeyStatus').style.color='var(--green)';
+    }
   }
   loadStats();
   loadHistory();
@@ -506,6 +509,10 @@ function showSection(s){
   });
   const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
+  // hide stats & welcome in settings, show everywhere else
+  const inSettings=s==='nastavenia';
+  document.querySelector('.stats-grid').style.display=inSettings?'none':'grid';
+  document.querySelector('.welcome-row').style.display=inSettings?'none':'flex';
   if(s==='historia') loadHistory();
 }
 
