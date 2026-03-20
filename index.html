@@ -1653,7 +1653,7 @@ async function doResetPassword(){
   if(!email){err.textContent='Zadaj email.';return;}
   btn.disabled=true;btn.textContent='Odosielajem…';err.textContent='';
   const {error}=await _sb.auth.resetPasswordForEmail(email,{
-    redirectTo:'https://mailguard-eight.vercel.app/dashboard.html'
+    redirectTo:'https://mailguard-eight.vercel.app/reset-password.html'
   });
   btn.disabled=false;btn.textContent='Odoslať link';
   if(error){
@@ -1763,6 +1763,24 @@ _sb.auth.getSession().then(({data:{session}})=>{
   _currentUser=session?.user ?? null;
   updateNavAuth(_currentUser);
 });
+
+// Show password-changed toast if redirected from reset-password.html
+(()=>{
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('msg')==='password-changed'){
+    // Remove param from URL without reload
+    history.replaceState(null,'',window.location.pathname);
+    // Show toast / modal
+    const m=document.createElement('div');
+    m.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;'+
+      'background:#1a1d27;border:1px solid #22c55e;border-radius:12px;padding:14px 22px;'+
+      'display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);'+
+      'font-size:.9rem;color:#e8eaf0;white-space:nowrap;';
+    m.innerHTML='<span style="font-size:1.2rem">✅</span> Heslo bolo úspešne zmenené. Môžeš sa prihlásiť.';
+    document.body.appendChild(m);
+    setTimeout(()=>m.remove(), 5000);
+  }
+})();
 
 // Allow Enter key in modal inputs
 ['loginEmail','loginPassword'].forEach(id=>{
