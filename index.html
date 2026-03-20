@@ -1602,6 +1602,45 @@ function openModal(type){
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
 }
+
+function showEmailConfirmModal(email){
+  closeModal();
+  let m=document.getElementById('emailConfirmModal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='emailConfirmModal';
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+    document.body.appendChild(m);
+  }
+  m.innerHTML=`
+    <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:18px;padding:36px 32px;
+      max-width:400px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+      <div style="font-size:3rem;margin-bottom:16px">✉️</div>
+      <div style="font-size:1.15rem;font-weight:800;color:#e8eaf0;margin-bottom:10px">
+        Skontroluj svoju schránku
+      </div>
+      <div style="font-size:.88rem;color:#7a82a0;line-height:1.65;margin-bottom:8px">
+        Na adresu <strong style="color:#e8eaf0">${escHtmlBasic(email)}</strong> bol odoslaný potvrdzovací link.
+      </div>
+      <div style="font-size:.88rem;color:#7a82a0;line-height:1.65;margin-bottom:26px">
+        Klikni na link v emaili pre aktiváciu účtu. Bez potvrdenia sa nebudeš môcť prihlásiť.
+      </div>
+      <button onclick="document.getElementById('emailConfirmModal').remove();window.location.href='dashboard.html';"
+        style="width:100%;padding:13px;border:none;border-radius:10px;
+        background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;
+        font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;
+        transition:opacity .2s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        Rozumiem →
+      </button>
+      <div style="font-size:.76rem;color:#4a5070;margin-top:12px">
+        Email nevidíš? Skontroluj priečinok Spam.
+      </div>
+    </div>`;
+}
+
+function escHtmlBasic(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function handleOverlayClick(e){
   if(e.target===document.getElementById('modalOverlay'))closeModal();
 }
@@ -1674,7 +1713,7 @@ async function doRegister(){
     if(data?.user){
       await _sb.from('profiles').insert({id:data.user.id,email:data.user.email,plan:'free'});
     }
-    window.location.href='dashboard.html';
+    showEmailConfirmModal(email);
   }
 }
 
