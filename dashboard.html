@@ -71,7 +71,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#000000;vscode-webview://0tkbn5p1h2da0isfqflpsvjh9f0tl5nn49mmpeemnqjevlo6kh4k/Desktop/MailGuard/dashboard.html
+  --bg:#000000;
   --surface:#12121a;
   --surface2:#1a1a28;
   --surface3:#22223a;
@@ -582,6 +582,7 @@ const _sb = supabase.createClient(
 
 let _currentUser = null;
 let _currentPlan = 'free';
+const FREE_DAILY_LIMIT = 3;
 const PLAN_RANK = { free: 0, pro: 1, school: 2, business: 3 };
 const PLAN_LABELS = { free: 'Free Plan', pro: '⚡ Pro', school: '🏫 School', business: '🏢 Business' };
 
@@ -672,12 +673,23 @@ function showPlanModal(required){
 }
 
 async function loadDailyUsage(){
+  const isFree=_currentPlan==='free';
+  const usageBlock=document.getElementById('usageCount').closest('.sidebar-usage');
+  const upgradeBtn=document.querySelector('.sidebar-upgrade');
+
+  if(!isFree){
+    // PRO+ – schovaj usage bar aj upgrade tlačidlo
+    usageBlock.style.display='none';
+    if(upgradeBtn) upgradeBtn.style.display='none';
+    return;
+  }
+
   const today=new Date();today.setHours(0,0,0,0);
   const {data}=await _sb.from('analyses').select('id')
     .eq('user_id',_currentUser.id)
     .gte('created_at',today.toISOString());
   const used=data?data.length:0;
-  const limit=3;
+  const limit=FREE_DAILY_LIMIT;
   const pct=Math.min(used/limit*100,100);
   document.getElementById('usageCount').textContent=`${used}/${limit}`;
   document.getElementById('usageFill').style.width=pct+'%';
@@ -813,6 +825,36 @@ async function checkGoogleSafeBrowsing(url){
 async function dashAnalyze(){
   const val=document.getElementById('dashInput').value.trim();
   if(!val) return;
+
+  // ── FREE PLAN DAILY LIMIT ──
+  if(_currentPlan==='free'){
+    const today=new Date();today.setHours(0,0,0,0);
+    const {data:usageData}=await _sb.from('analyses').select('id')
+      .eq('user_id',_currentUser.id)
+      .gte('created_at',today.toISOString());
+    const used=usageData?usageData.length:0;
+    if(used>=FREE_DAILY_LIMIT){
+      const wrap=document.getElementById('resultWrap');
+      const resultEl=document.getElementById('dashResult');
+      wrap.style.display='block';
+      resultEl.innerHTML=`
+        <div class="hres" style="padding:24px;text-align:center">
+          <div style="font-size:2rem;margin-bottom:10px">🚫</div>
+          <div style="font-size:1.05rem;font-weight:700;margin-bottom:8px">Denný limit vyčerpaný</div>
+          <div style="font-size:.88rem;color:var(--muted);line-height:1.6;margin-bottom:18px">
+            Dosiahol si denný limit <strong>${FREE_DAILY_LIMIT} analýz</strong>. Upgraduj na PRO pre neobmedzené analýzy.
+          </div>
+          <button onclick="window.location.href='index.html#pricing'"
+            style="padding:10px 24px;border:none;border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+            color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:.9rem">
+            ⚡ Upgradovať na PRO
+          </button>
+        </div>`;
+      wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+      return;
+    }
+  }
+
   const btn=document.getElementById('dashBtn');
   const wrap=document.getElementById('resultWrap');
   const resultEl=document.getElementById('dashResult');
