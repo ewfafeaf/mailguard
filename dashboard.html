@@ -73,6 +73,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Dashboard – MailGuard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
   --bg:#000000;
@@ -493,7 +495,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
     <!-- Section: Historia -->
     <div id="sectionHistoria" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot"></div>História analýz</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div class="dash-section-title" style="margin-bottom:0"><div class="dot"></div>História analýz</div>
+        <button class="analysis-btn" style="height:38px;padding:0 16px;font-size:.82rem;display:flex;align-items:center;gap:6px"
+          onclick="exportPDF()">📄 Export PDF</button>
+      </div>
       <div class="history-card">
         <div id="historyContent"><div class="history-empty">Načítavam históriu…</div></div>
       </div>
@@ -1109,6 +1115,211 @@ async function loadHistory(){
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+}
+
+/* ── PDF EXPORT ── */
+async function exportPDF(){
+  if(!checkPlan('pro')) return;
+
+  // Load full history (no limit)
+  const{data,error}=await _sb
+    .from('analyses').select('*')
+    .eq('user_id',_currentUser.id)
+    .order('created_at',{ascending:false});
+
+  if(error||!data||data.length===0){
+    showToast('Žiadne analýzy na export.','');
+    return;
+  }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+  const pageW=doc.internal.pageSize.getWidth();
+  const margin=14;
+  let y=margin;
+
+  // ── Gradient-like header bar
+  doc.setFillColor(79,142,247);
+  doc.rect(0,0,pageW,22,'F');
+
+  // Shield icon placeholder (circle)
+  doc.setFillColor(255,255,255);
+  doc.circle(margin+5,11,4.5,'F');
+  doc.setFillColor(79,142,247);
+  doc.setFontSize(9);
+  doc.setTextColor(79,142,247);
+  doc.text('🛡',margin+2.8,13.2);
+
+  // Logo text
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(15);
+  doc.setTextColor(255,255,255);
+  doc.text('MailGuard',margin+13,13);
+
+  // Subtitle
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(200,220,255);
+  doc.text('Bezpečnostný report',margin+13,18.5);
+
+  y=30;
+
+  // ── Report meta
+  const email=_currentUser.email||'—';
+  const name=email.split('@')[0];
+  const exportDate=new Date().toLocaleDateString('sk-SK',{day:'2-digit',month:'long',year:'numeric'});
+  const exportTime=new Date().toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(30,30,50);
+  doc.text('Používateľ:',margin,y);
+  doc.setFont('helvetica','normal');
+  doc.text(`${name} (${email})`,margin+28,y);
+  y+=7;
+
+  doc.setFont('helvetica','bold');
+  doc.text('Dátum exportu:',margin,y);
+  doc.setFont('helvetica','normal');
+  doc.text(`${exportDate} ${exportTime}`,margin+35,y);
+  y+=7;
+
+  doc.setFont('helvetica','bold');
+  doc.text('Celkom analýz:',margin,y);
+  doc.setFont('helvetica','normal');
+  doc.text(String(data.length),margin+35,y);
+  y+=4;
+
+  // ── Divider
+  doc.setDrawColor(220,225,240);
+  doc.setLineWidth(0.4);
+  doc.line(margin,y,pageW-margin,y);
+  y+=8;
+
+  // ── Stats summary boxes
+  const safe=data.filter(r=>r.verdict==='safe'||r.verdict==='low').length;
+  const danger=data.filter(r=>r.verdict==='medium'||r.verdict==='high').length;
+  const avgScore=data.length
+    ? Math.round(data.reduce((s,r)=>s+(r.score||0),0)/data.length)
+    : 0;
+
+  const boxes=[
+    {label:'Celkom analýz',val:String(data.length),col:[79,142,247]},
+    {label:'Bezpečné',val:String(safe),col:[34,197,94]},
+    {label:'Rizikové',val:String(danger),col:[239,68,68]},
+    {label:'Priemerné skóre',val:String(avgScore),col:[245,158,11]},
+  ];
+  const boxW=(pageW-margin*2-9)/4;
+  boxes.forEach((b,i)=>{
+    const bx=margin+i*(boxW+3);
+    doc.setFillColor(...b.col.map(v=>Math.round(v*0.12+230)));
+    doc.roundedRect(bx,y,boxW,16,2,2,'F');
+    doc.setDrawColor(...b.col);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(bx,y,boxW,16,2,2,'S');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...b.col);
+    doc.text(b.val,bx+boxW/2,y+10,{align:'center'});
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100,100,120);
+    doc.text(b.label,bx+boxW/2,y+14.5,{align:'center'});
+  });
+  y+=22;
+
+  // ── Section title
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(30,30,50);
+  doc.text('História analýz',margin,y);
+  y+=4;
+
+  // ── Table
+  const verdictMap={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
+  const typeMap={email:'Email',url:'URL',web:'Web'};
+
+  const tableRows=data.map(r=>{
+    const d=new Date(r.created_at);
+    return[
+      d.toLocaleDateString('sk-SK')+'\n'+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}),
+      typeMap[r.type]||r.type,
+      (r.input||'').slice(0,55)+(r.input&&r.input.length>55?'…':''),
+      String(r.score??'?'),
+      verdictMap[r.verdict]||r.verdict||'—',
+    ];
+  });
+
+  const verdictColors={
+    'Bezpečné':[34,197,94],
+    'Nízke riziko':[245,158,11],
+    'Stredné riziko':[249,115,22],
+    'Vysoké riziko':[239,68,68],
+  };
+
+  doc.autoTable({
+    startY:y,
+    head:[['Dátum','Typ','Vstup','Skóre','Verdikt']],
+    body:tableRows,
+    margin:{left:margin,right:margin},
+    styles:{fontSize:7.5,cellPadding:3,overflow:'linebreak',textColor:[30,30,50]},
+    headStyles:{fillColor:[79,142,247],textColor:255,fontStyle:'bold',fontSize:8},
+    columnStyles:{
+      0:{cellWidth:28,halign:'center'},
+      1:{cellWidth:16,halign:'center'},
+      2:{cellWidth:80},
+      3:{cellWidth:14,halign:'center',fontStyle:'bold'},
+      4:{cellWidth:32,halign:'center'},
+    },
+    alternateRowStyles:{fillColor:[245,246,252]},
+    didDrawCell(data){
+      if(data.section==='body'&&data.column.index===4){
+        const verdict=tableRows[data.row.index]?.[4];
+        const col=verdictColors[verdict]||[120,120,140];
+        const {x,y:cy,width,height}=data.cell;
+        const pad=2;
+        doc.setFillColor(col[0],col[1],col[2],0.15);
+        // tint background of verdict cell
+        doc.setFillColor(Math.round(col[0]*0.15+218),Math.round(col[1]*0.15+218),Math.round(col[2]*0.15+218));
+        doc.rect(x+0.5,cy+0.5,width-1,height-1,'F');
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...col);
+        doc.text(verdict,x+width/2,cy+height/2+0.5,{align:'center',baseline:'middle'});
+      }
+      if(data.section==='body'&&data.column.index===3){
+        const score=parseInt(tableRows[data.row.index]?.[3])||0;
+        const col=score>=80?[34,197,94]:score>=55?[245,158,11]:score>=35?[249,115,22]:[239,68,68];
+        const {x,y:cy,width,height}=data.cell;
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...col);
+        doc.text(String(score),x+width/2,cy+height/2+0.5,{align:'center',baseline:'middle'});
+      }
+    },
+  });
+
+  // ── Footer on each page
+  const pageCount=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    const pageH=doc.internal.pageSize.getHeight();
+    doc.setDrawColor(220,225,240);
+    doc.setLineWidth(0.3);
+    doc.line(margin,pageH-10,pageW-margin,pageH-10);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7);
+    doc.setTextColor(150,155,175);
+    doc.text('MailGuard – Bezpečnostný report',margin,pageH-5.5);
+    doc.text(`Strana ${p} / ${pageCount}`,pageW-margin,pageH-5.5,{align:'right'});
+    doc.text(exportDate,pageW/2,pageH-5.5,{align:'center'});
+  }
+
+  // ── Save
+  const dateTag=new Date().toISOString().slice(0,10);
+  doc.save(`mailguard-report-${dateTag}.pdf`);
+  showToast('PDF stiahnuté','success');
 }
 
 /* ── GOOGLE SAFE BROWSING ── */
