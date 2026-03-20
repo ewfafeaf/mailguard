@@ -21,6 +21,28 @@
     on analyses for insert
     with check (auth.uid() = user_id);
 
+  -- ── PROFILES ──
+  create table if not exists profiles (
+    id         uuid primary key references auth.users(id) on delete cascade,
+    email      text,
+    plan       text not null default 'free' check (plan in ('free','pro','school','business')),
+    created_at timestamptz not null default now()
+  );
+
+  alter table profiles enable row level security;
+
+  create policy "Users see own profile"
+    on profiles for select
+    using (auth.uid() = id);
+
+  create policy "Users insert own profile"
+    on profiles for insert
+    with check (auth.uid() = id);
+
+  create policy "Users update own profile"
+    on profiles for update
+    using (auth.uid() = id);
+
   -- ── TICKETS ──
   create table if not exists tickets (
     id          uuid primary key default gen_random_uuid(),
@@ -341,7 +363,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       <div class="sidebar-avatar" id="sidebarAvatar">??</div>
       <div class="sidebar-user-info">
         <div class="sidebar-user-name" id="sidebarName">—</div>
-        <div class="sidebar-user-plan">Free Plan</div>
+        <div class="sidebar-user-plan" id="sidebarPlan">Free Plan</div>
       </div>
     </div>
     <!-- Usage / upgrade -->
@@ -559,6 +581,9 @@ const _sb = supabase.createClient(
 );
 
 let _currentUser = null;
+let _currentPlan = 'free';
+const PLAN_RANK = { free: 0, pro: 1, school: 2, business: 3 };
+const PLAN_LABELS = { free: 'Free Plan', pro: '⚡ Pro', school: '🏫 School', business: '🏢 Business' };
 
 /* ── AUTH CHECK ── */
 _sb.auth.getSession().then(({data:{session}})=>{
@@ -577,7 +602,7 @@ _sb.auth.onAuthStateChange((event,session)=>{
   }
 });
 
-function initDashboard(){
+async function initDashboard(){
   const email=_currentUser.email||'';
   const name=email.split('@')[0]||'používateľ';
   document.getElementById('welcomeName').textContent=name;
@@ -595,9 +620,55 @@ function initDashboard(){
       document.getElementById('gsbKeyStatus').style.color='var(--green)';
     }
   }
+  // load plan from profiles
+  await loadProfile();
   loadStats();
   loadHistory();
   loadDailyUsage();
+}
+
+async function loadProfile(){
+  const {data}=await _sb.from('profiles').select('plan').eq('id',_currentUser.id).single();
+  _currentPlan=data?.plan||'free';
+  document.getElementById('sidebarPlan').textContent=PLAN_LABELS[_currentPlan]||'Free Plan';
+}
+
+/* ── PLAN CHECK ── */
+function checkPlan(required){
+  if(PLAN_RANK[_currentPlan]>=PLAN_RANK[required]) return true;
+  showPlanModal(required);
+  return false;
+}
+
+function showPlanModal(required){
+  const label=(PLAN_LABELS[required]||required).replace(/[⚡🏫🏢]/g,'').trim();
+  // reuse existing modal backdrop approach
+  let m=document.getElementById('planUpgradeModal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='planUpgradeModal';
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    m.innerHTML=`
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:32px;max-width:380px;width:100%;text-align:center">
+        <div style="font-size:2.2rem;margin-bottom:12px">⚡</div>
+        <div style="font-size:1.15rem;font-weight:700;margin-bottom:8px">Vyžaduje ${label}</div>
+        <div style="font-size:.88rem;color:var(--muted);line-height:1.6;margin-bottom:24px">
+          Táto funkcia vyžaduje plán <strong>${label}</strong>. Upgraduj si účet a odomkni plný potenciál MailGuard.
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button onclick="document.getElementById('planUpgradeModal').remove()"
+            style="padding:10px 20px;border-radius:9px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:.9rem">
+            Neskôr
+          </button>
+          <button onclick="window.location.href='index.html#pricing'"
+            style="padding:10px 20px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:700">
+            Upgradovať
+          </button>
+        </div>
+      </div>`;
+    m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+    document.body.appendChild(m);
+  }
 }
 
 async function loadDailyUsage(){

@@ -1666,10 +1666,16 @@ async function doRegister(){
     return;
   }
   btn.disabled=true;btn.textContent='Registrujem…';err.textContent='';
-  const {error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
+  const {data,error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
   btn.disabled=false;btn.textContent='Vytvoriť účet';
   if(error){err.textContent=translateAuthError(error.message);}
-  else{window.location.href='dashboard.html';}
+  else{
+    // create profile row (ignore error if already exists)
+    if(data?.user){
+      await _sb.from('profiles').insert({id:data.user.id,email:data.user.email,plan:'free'});
+    }
+    window.location.href='dashboard.html';
+  }
 }
 
 async function doSignOut(){
