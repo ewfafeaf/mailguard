@@ -1,10 +1,14 @@
 <!--
   SUPABASE SQL – spusti raz v SQL Editore (https://supabase.com/dashboard → SQL Editor):
 
+  -- Ak tabuľka analyses už existuje, rozšír constraint:
+  -- ALTER TABLE analyses DROP CONSTRAINT IF EXISTS analyses_type_check;
+  -- ALTER TABLE analyses ADD CONSTRAINT analyses_type_check CHECK (type IN ('email','url','web'));
+
   create table if not exists analyses (
     id          uuid primary key default gen_random_uuid(),
     user_id     uuid not null references auth.users(id) on delete cascade,
-    type        text not null check (type in ('email','url')),
+    type        text not null check (type in ('email','url','web')),
     input       text,
     score       integer not null default 0,
     verdict     text not null check (verdict in ('safe','low','medium','high')),
@@ -165,6 +169,42 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   cursor:pointer;border:none;font-family:inherit;width:calc(100% - 20px);
   transition:opacity .18s}
 .sidebar-upgrade:hover{opacity:.85}
+
+/* ── WEB SCANNER ── */
+.ws-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.ws-input-row input{flex:1;min-width:200px}
+.ws-score-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:18px}
+.ws-circle{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-weight:800;flex-shrink:0;border:3px solid}
+.ws-circle-num{font-size:1.9rem;line-height:1}
+.ws-circle-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
+.ws-score-info{flex:1}
+.ws-verdict{font-size:1.1rem;font-weight:800;margin-bottom:4px}
+.ws-desc{font-size:.84rem;color:var(--muted);line-height:1.5}
+.ws-checks{display:grid;gap:8px;margin-bottom:18px}
+.ws-check{display:flex;gap:12px;align-items:flex-start;background:var(--surface2);
+  border:1px solid var(--border);border-radius:9px;padding:12px 14px;border-left:3px solid}
+.ws-check.pass{border-left-color:var(--green)}
+.ws-check.fail{border-left-color:var(--red)}
+.ws-check.warn{border-left-color:var(--yellow)}
+.ws-check.skip{border-left-color:var(--border2)}
+.ws-check-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.ws-check-body{flex:1}
+.ws-check-title{font-size:.88rem;font-weight:600}
+.ws-check-desc{font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.45}
+.ws-recs{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.18);
+  border-radius:10px;padding:14px 16px}
+.ws-recs-title{font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:8px;
+  text-transform:uppercase;letter-spacing:.06em}
+.ws-recs ul{list-style:none;display:grid;gap:5px}
+.ws-recs li{font-size:.82rem;color:var(--muted);padding-left:16px;position:relative;line-height:1.4}
+.ws-recs li::before{content:'→';position:absolute;left:0;color:var(--accent)}
+.ws-progress-bar{height:6px;border-radius:99px;background:var(--surface3);overflow:hidden;margin:10px 0 4px}
+.ws-progress-fill{height:100%;border-radius:99px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.ws-obs-badge{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;
+  padding:3px 8px;border-radius:5px;background:rgba(79,142,247,.15);color:var(--accent);
+  border:1px solid rgba(79,142,247,.2);margin-top:8px}
 
 /* ── TICKET STYLES ── */
 .ticket-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
@@ -385,6 +425,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <a class="sidebar-item" id="navHistoria" onclick="showSection('historia')">
       <span class="icon">📋</span><span>História</span>
     </a>
+    <a class="sidebar-item" id="navWebskener" onclick="showSection('webskener')">
+      <span class="icon">🌐</span><span>Web skener</span>
+    </a>
     <div class="sidebar-divider"></div>
     <div class="sidebar-label">Účet</div>
     <a class="sidebar-item" id="navNastavenia" onclick="showSection('nastavenia')">
@@ -555,6 +598,22 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       <div id="ticketsList"><div class="ticket-empty">Načítavam…</div></div>
     </div>
 
+    <!-- Section: Web skener -->
+    <div id="sectionWebskener" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Web skener</div>
+      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
+        Skontroluj bezpečnosť webstránky — HTTPS, bezpečnostné hlavičky, GSB reputácia a Mozilla Observatory skóre.
+        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+      </div>
+      <div class="ws-input-row">
+        <input type="text" id="wsInput" class="analysis-input"
+          placeholder="https://priklad.sk alebo priklad.sk"
+          onkeydown="if(event.key==='Enter')webScan()"/>
+        <button class="analysis-btn" id="wsBtn" onclick="webScan()">🌐 Skenovať</button>
+      </div>
+      <div id="wsResult" style="display:none"></div>
+    </div>
+
   </main>
 </div>
 
@@ -713,21 +772,286 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','historia','nastavenia','podpora'].forEach(id=>{
+  ['nova','historia','nastavenia','podpora','webskener'].forEach(id=>{
     const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
     if(el) el.style.display=id===s?'block':'none';
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora'].forEach(id=>{
+  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora'};
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideStats=s==='nastavenia'||s==='podpora';
+  const hideStats=['nastavenia','podpora','webskener'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
+}
+
+/* ══════════════════════════════════════════
+   WEB SCANNER
+══════════════════════════════════════════ */
+async function webScan(){
+  if(!checkPlan('pro')) return;
+
+  const raw=document.getElementById('wsInput').value.trim();
+  if(!raw) return;
+
+  const btn=document.getElementById('wsBtn');
+  const resultEl=document.getElementById('wsResult');
+
+  // Normalise URL
+  let scanUrl=raw;
+  if(!/^https?:\/\//i.test(scanUrl)) scanUrl='https://'+scanUrl;
+  let hostname;
+  try{ hostname=new URL(scanUrl).hostname; }
+  catch{
+    resultEl.style.display='block';
+    resultEl.innerHTML='<div class="hres" style="padding:18px;color:var(--red)">⚠️ Neplatná URL adresa.</div>';
+    return;
+  }
+
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
+  resultEl.style.display='block';
+  resultEl.innerHTML=wsLoadingHTML(hostname);
+
+  // Run checks in parallel where possible
+  const [urlRisk, gsbResult, obsResult] = await Promise.all([
+    Promise.resolve(analyzeUrl(scanUrl)),
+    (()=>{ const k=localStorage.getItem('gsb_api_key'); return k ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null); })(),
+    runObservatoryScan(hostname),
+  ]);
+
+  const report=buildWebReport(scanUrl, hostname, urlRisk, gsbResult, obsResult);
+  resultEl.innerHTML=renderWebResult(report);
+
+  btn.disabled=false;
+  btn.textContent='🌐 Skenovať';
+
+  // Save to analyses
+  await saveWebAnalysis(scanUrl, report.score);
+  loadStats();
+  loadDailyUsage();
+}
+
+function wsLoadingHTML(hostname){
+  return`<div class="hres" style="padding:24px 20px">
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Skenujem <strong>${escHtml(hostname)}</strong>…</div>
+    ${['Overujem HTTPS a URL štruktúru…','Kontrolujem Google Safe Browsing…','Spúšťam Mozilla Observatory sken (môže trvať 15–30 s)…'].map(t=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="spinner" style="width:12px;height:12px;border-width:2px;flex-shrink:0"></div>
+        <span style="font-size:.82rem;color:var(--muted)">${t}</span>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ── Observatory ── */
+async function runObservatoryScan(hostname){
+  const base='https://http-observatory.security.mozilla.org/api/v1';
+  try{
+    // Trigger / get cached scan
+    const postRes=await fetch(`${base}/analyze?host=${encodeURIComponent(hostname)}`,
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+       body:'hidden=true&rescan=false'});
+    if(!postRes.ok) return null;
+    let scan=await postRes.json();
+
+    // Poll up to 20× (40 s)
+    for(let i=0;i<20;i++){
+      if(scan.state==='FINISHED'||scan.state==='ABORTED'||scan.state==='FAILED') break;
+      await new Promise(r=>setTimeout(r,2000));
+      const r=await fetch(`${base}/analyze?host=${encodeURIComponent(hostname)}`);
+      scan=await r.json();
+    }
+
+    if(scan.state!=='FINISHED') return {scan,tests:null};
+
+    const testRes=await fetch(`${base}/getScanResults?scan=${scan.scan_id}`);
+    const tests=await testRes.json();
+    return {scan,tests};
+  }catch(e){
+    console.warn('Observatory error:',e);
+    return null;
+  }
+}
+
+/* ── Build report ── */
+function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult){
+  const checks=[];
+  let score=0;
+  const recs=[];
+
+  // 1. HTTPS
+  const isHttps=url.startsWith('https://');
+  checks.push({
+    id:'https', pass:isHttps,
+    title: isHttps ? 'HTTPS – spojenie je šifrované' : 'HTTP – spojenie NIE je šifrované',
+    desc: isHttps
+      ? 'Stránka používa TLS/SSL šifrovanie. Dáta medzi prehliadačom a serverom sú chránené.'
+      : 'Stránka nepoužíva HTTPS. Akékoľvek odoslané dáta (heslá, formuláre) môžu byť zachytené.',
+    points:25,
+  });
+  if(isHttps) score+=25;
+  else recs.push('Nakonfigurovať HTTPS (TLS certifikát zadarmo cez Let\'s Encrypt).');
+
+  // 2. URL risk (from existing analyzeUrl)
+  const urlOk=urlRisk.score<30;
+  checks.push({
+    id:'url_risk', pass:urlOk,
+    title: urlOk ? 'URL štruktúra vyzerá bezpečne' : 'URL obsahuje podozrivé prvky',
+    desc: urlOk
+      ? 'Doména neobsahuje znaky typické pre phishing (IP adresa, skrátená URL, typosquatting…).'
+      : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | '),
+    points:20,
+  });
+  if(urlOk) score+=20;
+  else recs.push('Skontrolovať štruktúru domény – obsahuje podozrivé prvky.');
+
+  // 3. GSB
+  if(gsbResult!==null){
+    const gsbOk=!gsbResult||gsbResult.length===0;
+    checks.push({
+      id:'gsb', pass:gsbOk,
+      title: gsbOk ? 'Google Safe Browsing – žiadna hrozba' : 'Google Safe Browsing – HROZBA DETEKOVANÁ',
+      desc: gsbOk
+        ? 'URL sa nenachádza v databáze Google Safe Browsing (phishing, malware, nežiaduce SW).'
+        : 'URL je označená ako: '+(gsbResult||[]).map(m=>m.threatType).join(', '),
+      points:25,
+    });
+    if(gsbOk) score+=25;
+    else { score-=30; recs.push('URL je v databáze Google Safe Browsing – nezverejňovať, nahlásiť.'); }
+  } else {
+    checks.push({
+      id:'gsb', pass:null,
+      title:'Google Safe Browsing – bez API kľúča',
+      desc:'Nastav GSB API kľúč v Nastaveniach (admin) pre kontrolu reputácie URL.',
+      points:0,
+    });
+  }
+
+  // 4–7. Observatory header checks
+  const HDR_DEFS=[
+    {key:'strict-transport-security', label:'HSTS',
+     desc:'Prehliadač musí vždy používať HTTPS. Chráni pred downgrade útokmi a cookie hijacking.',
+     points:10},
+    {key:'content-security-policy', label:'Content-Security-Policy (CSP)',
+     desc:'Obmedzuje, odkiaľ môže stránka načítavať skripty, obrázky a iné zdroje. Chráni pred XSS.',
+     points:10},
+    {key:'x-frame-options', label:'X-Frame-Options',
+     desc:'Zabraňuje vloženiu stránky do iFrame iných domén. Ochrana pred clickjacking útokmi.',
+     points:5},
+    {key:'x-content-type-options', label:'X-Content-Type-Options',
+     desc:'Zabraňuje prehliadaču hádať MIME typ súborov. Ochrana pred MIME sniffing útokmi.',
+     points:5},
+  ];
+
+  let obsGrade=null;
+  if(obsResult?.tests){
+    const t=obsResult.tests;
+    obsGrade=obsResult.scan?.grade||null;
+    for(const def of HDR_DEFS){
+      const result=t[def.key];
+      const pass=result?.pass===true;
+      checks.push({
+        id:def.key, pass,
+        title:(pass?'✓ ':'✗ ')+def.label,
+        desc:def.desc,
+        points:def.points,
+        obs:true,
+      });
+      if(pass) score+=def.points;
+      else recs.push(`Nastaviť hlavičku ${def.label} na serveri.`);
+    }
+  } else {
+    for(const def of HDR_DEFS){
+      checks.push({
+        id:def.key, pass:null,
+        title:def.label+' (Observatory nedostupné)',
+        desc:def.desc+' Výsledok nie je k dispozícii – skus znova neskôr.',
+        points:def.points,
+        obs:true,
+      });
+    }
+    recs.push('Mozilla Observatory neodpovedal – zopakuj sken neskôr pre kontrolu bezpečnostných hlavičiek.');
+  }
+
+  score=Math.max(0,Math.min(100,score));
+
+  return {url,hostname,score,checks,recs,obsGrade,gsbChecked:gsbResult!==null};
+}
+
+/* ── Render ── */
+function renderWebResult(r){
+  const level=r.score>=80?'safe':r.score>=55?'low':r.score>=35?'medium':'high';
+  const colors={safe:'var(--green)',low:'var(--yellow)',medium:'var(--orange)',high:'var(--red)'};
+  const verdicts={
+    safe:'Stránka je dobre zabezpečená',
+    low:'Dobré zabezpečenie, menšie nedostatky',
+    medium:'Stredné riziko – odporúčame opravy',
+    high:'Slabé zabezpečenie – potrebná okamžitá akcia',
+  };
+  const col=colors[level];
+
+  const circleHTML=`
+    <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
+      <span class="ws-circle-num">${r.score}</span>
+      <span class="ws-circle-lbl">/ 100</span>
+    </div>`;
+
+  const progressFill=`background:${r.score>=80?'var(--green)':r.score>=55?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--orange),var(--red))'}`;
+
+  const obsInfo=r.obsGrade
+    ? `<span class="ws-obs-badge">Mozilla Observatory: ${escHtml(r.obsGrade)}</span>`
+    : '';
+
+  const checksHTML=r.checks.map(c=>{
+    const cls=c.pass===true?'pass':c.pass===false?'fail':'skip';
+    const icon=c.pass===true?'✅':c.pass===false?'❌':'⏭️';
+    return`<div class="ws-check ${cls}">
+      <div class="ws-check-icon">${icon}</div>
+      <div class="ws-check-body">
+        <div class="ws-check-title">${escHtml(c.title)}</div>
+        <div class="ws-check-desc">${escHtml(c.desc)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const recsHTML=r.recs.length
+    ? `<div class="ws-recs">
+        <div class="ws-recs-title">💡 Odporúčania</div>
+        <ul>${r.recs.map(rec=>`<li>${escHtml(rec)}</li>`).join('')}</ul>
+      </div>`
+    : `<div class="ws-recs"><div class="ws-recs-title">✅ Výborne! Žiadne ďalšie odporúčania.</div></div>`;
+
+  return`<div class="hres" style="padding:20px">
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;font-family:monospace">${escHtml(r.url)}</div>
+    <div class="ws-score-wrap">
+      ${circleHTML}
+      <div class="ws-score-info">
+        <div class="ws-verdict" style="color:${col}">${verdicts[level]}</div>
+        <div class="ws-desc">Bezpečnostné skóre: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
+        <div class="ws-progress-bar"><div class="ws-progress-fill" style="${progressFill};width:${r.score}%"></div></div>
+        ${obsInfo}
+      </div>
+    </div>
+    <div class="dash-section-title" style="margin-bottom:10px"><div class="dot"></div>Výsledky kontrol</div>
+    <div class="ws-checks">${checksHTML}</div>
+    ${recsHTML}
+  </div>`;
+}
+
+async function saveWebAnalysis(url, score){
+  const verdict=score>=80?'safe':score>=55?'low':score>=35?'medium':'high';
+  const {error}=await _sb.from('analyses').insert({
+    user_id:_currentUser.id,
+    type:'web',
+    input:url,
+    score,
+    verdict,
+  });
+  if(error) console.warn('saveWebAnalysis error:',error.message);
 }
 
 /* ── STATS ── */
