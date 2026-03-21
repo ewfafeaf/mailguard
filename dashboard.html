@@ -342,6 +342,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .settings-current-email{font-size:1rem;font-weight:600;margin-top:4px;color:var(--text)}
 .danger-zone{border-color:rgba(239,68,68,.25)!important}
 .danger-title{color:var(--red)!important}
+/* ── PLANS SECTION ── */
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:4px}
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;display:flex;flex-direction:column;gap:0;transition:border-color .2s,transform .15s}
+.plan-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.plan-card.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 24px rgba(79,142,247,.15)}
+.plan-card.popular{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2),0 0 24px rgba(124,95,247,.15)}
+.plan-badge{display:inline-block;font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.07em}
+.plan-badge.badge-current{background:rgba(79,142,247,.18);color:var(--accent)}
+.plan-badge.badge-popular{background:rgba(124,95,247,.18);color:var(--accent2)}
+.plan-badge.badge-placeholder{visibility:hidden}
+.plan-name{font-size:1.05rem;font-weight:800;margin-bottom:4px}
+.plan-price{font-size:1.85rem;font-weight:900;line-height:1;margin-bottom:2px}
+.plan-price span{font-size:.8rem;font-weight:500;color:var(--muted)}
+.plan-period{font-size:.75rem;color:var(--muted);margin-bottom:18px}
+.plan-divider{height:1px;background:var(--border);margin-bottom:16px}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:8px;flex:1;margin-bottom:20px}
+.plan-features li{font-size:.82rem;color:var(--muted);display:flex;align-items:flex-start;gap:7px;line-height:1.4}
+.plan-features li .fi{flex-shrink:0;font-size:.85rem}
+.plan-btn{padding:10px;border-radius:9px;border:none;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .18s;text-align:center}
+.plan-btn.btn-current{background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.3);cursor:default}
+.plan-btn.btn-upgrade{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
+.plan-btn.btn-upgrade:hover{opacity:.88}
+.plan-btn.btn-contact{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.plan-btn.btn-contact:hover{opacity:.85}
 /* Password hints in settings */
 .pw-hints{display:flex;flex-direction:column;gap:4px;margin:-6px 0 12px}
 .pw-hint{font-size:.78rem;color:var(--red)}
@@ -418,7 +442,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         <div class="sidebar-usage-fill" id="usageFill" style="width:0%"></div>
       </div>
     </div>
-    <button class="sidebar-upgrade" onclick="window.location.href='index.html#pricing'">⚡ Upgrade na Pro</button>
+    <button class="sidebar-upgrade" onclick="showSection('plans')">⚡ Upgrade na Pro</button>
     <div class="sidebar-divider" style="margin-top:10px;margin-bottom:12px"></div>
     <div class="sidebar-label">Menu</div>
     <a class="sidebar-item active" id="navAnalyza" onclick="showSection('nova')">
@@ -429,6 +453,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     </a>
     <a class="sidebar-item" id="navWebskener" onclick="showSection('webskener')">
       <span class="icon">🌐</span><span>Web skener</span>
+    </a>
+    <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
+      <span class="icon">💎</span><span>Plány</span>
     </a>
     <div class="sidebar-divider"></div>
     <div class="sidebar-label">Účet</div>
@@ -620,6 +647,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       <div id="wsResult" style="display:none"></div>
     </div>
 
+    <!-- Section: Plány -->
+    <div id="sectionPlans" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:var(--accent2)"></div>Plány & Ceny</div>
+      <div id="plansGrid" class="plans-grid"></div>
+    </div>
+
   </main>
 </div>
 
@@ -726,7 +759,7 @@ function showPlanModal(required){
             style="padding:10px 20px;border-radius:9px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:.9rem">
             Neskôr
           </button>
-          <button onclick="window.location.href='index.html#pricing'"
+          <button onclick="document.getElementById('planUpgradeModal').remove();showSection('plans')"
             style="padding:10px 20px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:700">
             Upgradovať
           </button>
@@ -778,21 +811,126 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','historia','nastavenia','podpora','webskener'].forEach(id=>{
-    const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
+  ['nova','historia','nastavenia','podpora','webskener','plans'].forEach(id=>{
+    const key=id.charAt(0).toUpperCase()+id.slice(1);
+    const el=document.getElementById('section'+key);
     if(el) el.style.display=id===s?'block':'none';
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener'].forEach(id=>{
+  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener'};
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideStats=['nastavenia','podpora','webskener'].includes(s);
+  const hideStats=['nastavenia','podpora','webskener','plans'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
+  if(s==='plans') renderPlans();
+}
+
+/* ══════════════════════════════════════════
+   PLANS
+══════════════════════════════════════════ */
+const PLANS_DATA = [
+  {
+    id: 'free',
+    name: 'FREE',
+    price: '0',
+    period: 'navždy zadarmo',
+    features: [
+      { ok: true,  text: '3 analýzy emailov / deň' },
+      { ok: true,  text: 'Základná detekcia phishingu' },
+      { ok: true,  text: 'Analýza URL adries' },
+      { ok: false, text: 'Web skener' },
+      { ok: false, text: 'Export PDF reportov' },
+      { ok: false, text: 'Google Safe Browsing' },
+      { ok: false, text: 'Prioritná podpora' },
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'PRO',
+    price: '4,99',
+    period: '€ / mesiac',
+    popular: true,
+    features: [
+      { ok: true,  text: 'Neobmedzené analýzy' },
+      { ok: true,  text: 'Pokročilá detekcia phishingu' },
+      { ok: true,  text: 'Analýza URL adries' },
+      { ok: true,  text: 'Web skener' },
+      { ok: true,  text: 'Export PDF reportov' },
+      { ok: true,  text: 'Google Safe Browsing' },
+      { ok: false, text: 'Prioritná podpora' },
+    ],
+  },
+  {
+    id: 'school',
+    name: 'ŠKOLA',
+    price: '19,99',
+    period: '€ / mesiac',
+    features: [
+      { ok: true,  text: 'Všetko z PRO' },
+      { ok: true,  text: 'Až 50 žiackych účtov' },
+      { ok: true,  text: 'Správa tried a skupín' },
+      { ok: true,  text: 'Reporty pre učiteľov' },
+      { ok: true,  text: 'Vzdelávacie materiály' },
+      { ok: true,  text: 'Prioritná podpora' },
+      { ok: true,  text: 'Onboarding konzultácia' },
+    ],
+  },
+  {
+    id: 'business',
+    name: 'FIRMA',
+    price: '49,99',
+    period: '€ / mesiac',
+    features: [
+      { ok: true,  text: 'Všetko zo ŠKOLY' },
+      { ok: true,  text: 'Neobmedzené účty' },
+      { ok: true,  text: 'API prístup' },
+      { ok: true,  text: 'SIEM integrácia' },
+      { ok: true,  text: 'Vlastná doména' },
+      { ok: true,  text: 'SLA 99,9 %' },
+      { ok: true,  text: 'Dedikovaný account manager' },
+    ],
+  },
+];
+
+function renderPlans(){
+  const grid = document.getElementById('plansGrid');
+  const current = _currentPlan || 'free';
+  grid.innerHTML = PLANS_DATA.map(p => {
+    const isCurrent = p.id === current;
+    const isPopular = !!p.popular && !isCurrent;
+    const cardClass = isCurrent ? 'plan-card current' : isPopular ? 'plan-card popular' : 'plan-card';
+    const badge = isCurrent
+      ? '<span class="plan-badge badge-current">Váš plán</span>'
+      : isPopular
+        ? '<span class="plan-badge badge-popular">Najpopulárnejší</span>'
+        : '<span class="plan-badge badge-placeholder">·</span>';
+    const featureList = p.features.map(f =>
+      `<li><span class="fi">${f.ok ? '✅' : '❌'}</span>${f.text}</li>`
+    ).join('');
+    let btn;
+    if(isCurrent){
+      btn = '<button class="plan-btn btn-current" disabled>Aktuálny plán</button>';
+    } else if(p.id === 'business'){
+      btn = '<button class="plan-btn btn-contact" onclick="showSection(\'podpora\')">Kontaktujte nás</button>';
+    } else {
+      btn = `<button class="plan-btn btn-upgrade" onclick="showToast('Platobná brána bude čoskoro dostupná 🚀')">Upgradovať</button>`;
+    }
+    return `
+      <div class="${cardClass}">
+        ${badge}
+        <div class="plan-name">${p.name}</div>
+        <div class="plan-price">${p.price}<span> €</span></div>
+        <div class="plan-period">${p.period}</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">${featureList}</ul>
+        ${btn}
+      </div>`;
+  }).join('');
 }
 
 /* ══════════════════════════════════════════
