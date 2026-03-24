@@ -738,6 +738,7 @@ async function initDashboard(){
   loadStats();
   loadHistory();
   loadDailyUsage();
+  handlePaymentReturn();
 }
 
 async function loadProfile(){
@@ -816,6 +817,57 @@ function saveGsbKey(){
   localStorage.setItem('gsb_api_key',key);
   status.textContent='✓ API kľúč uložený.';
   status.style.color='var(--green)';
+}
+
+/* ── STRIPE UPGRADE ── */
+async function upgradeToPro(){
+  const btn = document.querySelector('.plan-btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='Presmerovávam…'; }
+  try {
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: _currentUser.id,
+        email:  _currentUser.email,
+      }),
+    });
+    const data = await res.json();
+    if(data.url){
+      window.location.href = data.url;
+    } else {
+      throw new Error(data.error || 'Nepodarilo sa vytvoriť platbu.');
+    }
+  } catch(err){
+    showToast('Chyba: ' + err.message, 'error');
+    if(btn){ btn.disabled=false; btn.textContent='Vyskúšať Pro'; }
+  }
+}
+
+async function handlePaymentReturn(){
+  const params = new URLSearchParams(window.location.search);
+  const payment = params.get('payment');
+  if(!payment) return;
+
+  // Vyčisti URL parameter
+  const clean = window.location.pathname;
+  window.history.replaceState({}, '', clean);
+
+  if(payment === 'success'){
+    // Aktualizuj plán v Supabase
+    await _sb.from('profiles')
+      .update({ plan: 'pro' })
+      .eq('id', _currentUser.id);
+    currentPlan = 'pro';
+
+    // Aktualizuj badge v sidebari
+    const planEl = document.getElementById('sidebarPlan');
+    if(planEl) planEl.textContent = 'Pro Plan';
+
+    showToast('🎉 Vitaj v PRO! Tvoj účet bol aktualizovaný.', 'success');
+  } else if(payment === 'cancelled'){
+    showToast('Platba bola zrušená.', '');
+  }
 }
 
 async function signOut(){
@@ -907,7 +959,7 @@ function renderPlans(){
       </ul>
       ${current==='pro'
         ? '<button class="plan-btn plan-btn-current" disabled>Aktuálny plán</button>'
-        : '<button class="plan-btn plan-btn-primary" onclick="showToast(\'Platobná brána bude čoskoro dostupná 🚀\')">Vyskúšať Pro</button>'}
+        : '<button class="plan-btn plan-btn-primary" onclick="upgradeToPro()">Vyskúšať Pro</button>'}
     </div>
 
     <!-- ŠKOLA -->
