@@ -1,5 +1,9 @@
 // Vercel Serverless Function – SSL Labs API proxy
-// SSL Labs v3 API docs: https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md
+// Non-blocking: makes exactly ONE request to SSL Labs and returns immediately.
+// All polling is done by the client (dashboard.html).
+//
+// ?host=DOMAIN&startNew=true  → triggers a new scan
+// ?host=DOMAIN                → fetches current scan state (for polling)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,76 +16,66 @@ module.exports = async function handler(req, res) {
   const { host, startNew } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
 
-  // Sanitize
   const clean = host.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
   if (!/^[a-z0-9.-]+$/.test(clean)) {
     return res.status(400).json({ error: 'Invalid hostname' });
   }
 
-  console.log(`[ssl-check] host=${clean} startNew=${startNew}`);
+  const params = new URLSearchParams({
+    host: clean,
+    publish: 'off',
+    all: 'done',
+    ignoreMismatch: 'on',
+  });
+  if (startNew === 'true') params.set('startNew', 'on');
+
+  const apiUrl = `https://api.ssllabs.com/api/v3/analyze?${params}`;
+  console.log(`[ssl-check] ${startNew === 'true' ? 'START' : 'POLL'} host=${clean} → ${apiUrl}`);
 
   try {
-    const params = new URLSearchParams({
-      host: clean,
-      publish: 'off',
-      all: 'done',
-      ignoreMismatch: 'on',
+    const apiRes = await fetch(apiUrl, {
+      headers: { 'User-Agent': 'MailGuard-SecurityScanner/1.0' },
+      signal: AbortSignal.timeout(8000),
     });
-    if (startNew === 'true') params.set('startNew', 'on');
 
-    const apiUrl = `https://api.ssllabs.com/api/v3/analyze?${params}`;
-    console.log(`[ssl-check] calling: ${apiUrl}`);
-
-    // Retry logika pre 529 (server preťažený) – max 3 pokusy, 10s pauza
-    let apiRes;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      apiRes = await fetch(apiUrl, {
-        headers: { 'User-Agent': 'MailGuard-SecurityScanner/1.0' },
-      });
-      console.log(`[ssl-check] attempt ${attempt} → HTTP ${apiRes.status}`);
-
-      if (apiRes.status !== 529) break;
-
-      console.warn(`[ssl-check] 529 – SSL Labs preťažený, čakám 10s (pokus ${attempt}/3)`);
-      if (attempt < 3) await new Promise(r => setTimeout(r, 10000));
-    }
+    console.log(`[ssl-check] SSL Labs HTTP ${apiRes.status}`);
 
     if (apiRes.status === 529) {
       return res.status(200).json({
-        status: 'ERROR',
-        error: 'SSL Labs dočasne nedostupný (server preťažený). Skús skenovanie znova neskôr.',
+        status: 'DNS',
+        statusMessage: 'SSL Labs preťažený, čakám…',
       });
     }
 
     if (!apiRes.ok) {
       const errText = await apiRes.text();
-      console.error(`[ssl-check] HTTP ${apiRes.status}: ${errText}`);
+      console.error(`[ssl-check] HTTP ${apiRes.status}: ${errText.slice(0, 200)}`);
       return res.status(200).json({ status: 'ERROR', error: `SSL Labs HTTP ${apiRes.status}` });
     }
 
     const data = await apiRes.json();
     const ep = data.endpoints?.[0];
-    console.log(`[ssl-check] status=${data.status} ep.grade=${ep?.grade} ep.status=${ep?.statusMessage}`);
+    console.log(`[ssl-check] status=${data.status} grade=${ep?.grade || '-'} epStatus=${ep?.statusMessage || '-'}`);
 
-    // SSL Labs niekedy vracia IN_PROGRESS aj keď endpoint už má grade —
-    // považujeme to za hotové keď hlavný status je READY ALEBO endpoint má grade
+    // Ready if main status says so, OR if endpoint already has a grade
     const isReady = data.status === 'READY' || (ep?.grade && ep.grade !== '');
 
     if (isReady) {
       const parsed = parseSSLResult(data);
-      console.log(`[ssl-check] parsed grade=${parsed.grade} cert=${parsed.cert?.issuer}`);
+      console.log(`[ssl-check] READY – grade=${parsed.grade} cert=${parsed.cert?.issuer}`);
       return res.status(200).json({ status: 'READY', parsed });
     }
 
-    // IN_PROGRESS / DNS / ERROR – klient bude pollovať
+    // Still scanning – client will poll again in 5 s
     return res.status(200).json({
-      status: data.status,
+      status: data.status || 'IN_PROGRESS',
       statusMessage: data.statusMessage || ep?.statusMessage || null,
     });
 
   } catch (err) {
     console.error('[ssl-check] exception:', err.message);
-    return res.status(500).json({ status: 'ERROR', error: err.message });
+    // Treat timeout as transient – client will retry
+    return res.status(200).json({ status: 'IN_PROGRESS', statusMessage: 'Čakám na SSL Labs…' });
   }
 };
 
@@ -92,13 +86,11 @@ function parseSSLResult(data) {
   const grade = endpoint?.grade || 'N/A';
 
   // ── Certifikát ──
-  // SSL Labs v3: data.certs[] (top-level) prepojené cez certChains
-  // SSL Labs niekedy vracia details.cert priamo (starší formát)
   let cert = null;
   try {
     let raw = null;
 
-    // 1. Skús v3 certChains → data.certs[]
+    // 1. v3 certChains → data.certs[]
     const certId = details?.certChains?.[0]?.certIds?.[0];
     if (certId) {
       raw = (data.certs || []).find(c => c.id === certId);
@@ -107,12 +99,10 @@ function parseSSLResult(data) {
     if (!raw && data.certs?.length) {
       raw = data.certs[0];
     }
-    // 3. Fallback: details.cert (starší SSL Labs formát)
+    // 3. Fallback: details.cert (starší formát)
     if (!raw && details?.cert) {
       raw = details.cert;
     }
-
-    console.log(`[ssl-check] cert raw keys: ${raw ? Object.keys(raw).join(',') : 'null'}`);
 
     if (raw) {
       cert = {
@@ -140,19 +130,19 @@ function parseSSLResult(data) {
   // ── Zraniteľnosti ──
   const vulns = [];
   if (details) {
-    if (details.poodle)                    vulns.push({ id: 'POODLE',       desc: 'POODLE (SSLv3)' });
-    if (details.poodleTls === 2)           vulns.push({ id: 'POODLE_TLS',   desc: 'POODLE-TLS' });
-    if (details.heartbleed)                vulns.push({ id: 'HEARTBLEED',   desc: 'Heartbleed' });
-    if (details.freak)                     vulns.push({ id: 'FREAK',        desc: 'FREAK' });
-    if (details.logjam)                    vulns.push({ id: 'LOGJAM',       desc: 'Logjam' });
-    if (details.drownVulnerable)           vulns.push({ id: 'DROWN',        desc: 'DROWN' });
-    if (details.ticketbleed === 2)         vulns.push({ id: 'TICKETBLEED',  desc: 'Ticketbleed' });
+    if (details.poodle)                        vulns.push({ id: 'POODLE',       desc: 'POODLE (SSLv3)' });
+    if (details.poodleTls === 2)               vulns.push({ id: 'POODLE_TLS',   desc: 'POODLE-TLS' });
+    if (details.heartbleed)                    vulns.push({ id: 'HEARTBLEED',   desc: 'Heartbleed' });
+    if (details.freak)                         vulns.push({ id: 'FREAK',        desc: 'FREAK' });
+    if (details.logjam)                        vulns.push({ id: 'LOGJAM',       desc: 'Logjam' });
+    if (details.drownVulnerable)               vulns.push({ id: 'DROWN',        desc: 'DROWN' });
+    if (details.ticketbleed === 2)             vulns.push({ id: 'TICKETBLEED',  desc: 'Ticketbleed' });
     if (details.bleichenbacher === 2 || details.bleichenbacher === 3)
-                                           vulns.push({ id: 'ROBOT',        desc: 'ROBOT (Bleichenbacher)' });
-    if (details.zombiePoodle === 2)        vulns.push({ id: 'ZOMBIE',       desc: 'Zombie POODLE' });
-    if (details.goldenDoodle === 2)        vulns.push({ id: 'GOLDENDOODLE', desc: 'GoldenDoodle' });
-    if (details.zeroLengthPaddingOracle === 2) vulns.push({ id: 'ZLPOODLE', desc: '0-Length Padding Oracle' });
-    if (details.sleepingPoodle === 2)      vulns.push({ id: 'SLEEPING',     desc: 'Sleeping POODLE' });
+                                               vulns.push({ id: 'ROBOT',        desc: 'ROBOT (Bleichenbacher)' });
+    if (details.zombiePoodle === 2)            vulns.push({ id: 'ZOMBIE',       desc: 'Zombie POODLE' });
+    if (details.goldenDoodle === 2)            vulns.push({ id: 'GOLDENDOODLE', desc: 'GoldenDoodle' });
+    if (details.zeroLengthPaddingOracle === 2) vulns.push({ id: 'ZLPOODLE',     desc: '0-Length Padding Oracle' });
+    if (details.sleepingPoodle === 2)          vulns.push({ id: 'SLEEPING',     desc: 'Sleeping POODLE' });
   }
 
   // ── HSTS / Forward Secrecy ──
