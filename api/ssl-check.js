@@ -32,14 +32,31 @@ module.exports = async function handler(req, res) {
     const apiUrl = `https://api.ssllabs.com/api/v3/analyze?${params}`;
     console.log(`[ssl-check] calling: ${apiUrl}`);
 
-    const apiRes = await fetch(apiUrl, {
-      headers: { 'User-Agent': 'MailGuard-SecurityScanner/1.0' },
-    });
+    // Retry logika pre 529 (server preťažený) – max 3 pokusy, 10s pauza
+    let apiRes;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      apiRes = await fetch(apiUrl, {
+        headers: { 'User-Agent': 'MailGuard-SecurityScanner/1.0' },
+      });
+      console.log(`[ssl-check] attempt ${attempt} → HTTP ${apiRes.status}`);
+
+      if (apiRes.status !== 529) break;
+
+      console.warn(`[ssl-check] 529 – SSL Labs preťažený, čakám 10s (pokus ${attempt}/3)`);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 10000));
+    }
+
+    if (apiRes.status === 529) {
+      return res.status(200).json({
+        status: 'ERROR',
+        error: 'SSL Labs dočasne nedostupný (server preťažený). Skús skenovanie znova neskôr.',
+      });
+    }
 
     if (!apiRes.ok) {
       const errText = await apiRes.text();
-      console.error(`[ssl-check] SSL Labs HTTP ${apiRes.status}: ${errText}`);
-      return res.status(apiRes.status).json({ error: `SSL Labs API error ${apiRes.status}: ${errText}` });
+      console.error(`[ssl-check] HTTP ${apiRes.status}: ${errText}`);
+      return res.status(200).json({ status: 'ERROR', error: `SSL Labs HTTP ${apiRes.status}` });
     }
 
     const data = await apiRes.json();
@@ -59,7 +76,7 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error('[ssl-check] exception:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ status: 'ERROR', error: err.message });
   }
 };
 

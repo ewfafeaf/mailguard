@@ -1098,26 +1098,33 @@ async function webScan(){
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
   resultEl.style.display='block';
   resultEl.innerHTML=wsLoadingHTML(hostname);
-  startWsCountdown(60);
+  startWsCountdown(120);
 
-  // Run SSL check first (longest), then others in parallel
-  const [sslResult, urlRisk, gsbResult, obsResult] = await Promise.all([
-    runSSLCheck(hostname),
-    Promise.resolve(analyzeUrl(scanUrl)),
-    (()=>{ const k=localStorage.getItem('gsb_api_key'); return k ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null); })(),
-    runObservatoryScan(hostname),
-  ]);
+  let sslResult=null, urlRisk=null, gsbResult=null, obsResult=null;
+  try {
+    [sslResult, urlRisk, gsbResult, obsResult] = await Promise.all([
+      runSSLCheck(hostname),
+      Promise.resolve(analyzeUrl(scanUrl)),
+      (()=>{ const k=localStorage.getItem('gsb_api_key'); return k ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null); })(),
+      runObservatoryScan(hostname),
+    ]);
+  } catch(err) {
+    console.error('[webScan] Promise.all error:', err);
+    // Pokračuj s tým čo máme — urlRisk je synchronný, ostatné môžu byť null
+    if(!urlRisk) urlRisk = analyzeUrl(scanUrl);
+  }
+
   stopWsCountdown();
-
   console.log('[webScan] sslResult:', sslResult);
-  console.log('[webScan] urlRisk:', urlRisk?.score, '| gsbResult:', gsbResult, '| obs:', obsResult?.scan?.grade);
+  console.log('[webScan] urlRisk score:', urlRisk?.score, '| gsbResult:', gsbResult, '| obs grade:', obsResult?.scan?.grade);
+
   const report=buildWebReport(scanUrl, hostname, urlRisk, gsbResult, obsResult, sslResult);
+  console.log('[webScan] report:', report.score, report.checks.map(c=>c.id+':'+c.pass));
   resultEl.innerHTML=renderWebResult(report);
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
 
-  // Save to analyses
   await saveWebAnalysis(scanUrl, report.score);
   loadStats();
   loadDailyUsage();
@@ -1154,12 +1161,13 @@ function startWsCountdown(seconds){
   numEl.textContent = left + 's';
   _wsCountdownInterval = setInterval(()=>{
     left--;
-    if(numEl) numEl.textContent = Math.max(0,left) + 's';
+    if(numEl) numEl.textContent = left > 0 ? left + 's' : '⏳';
     if(lblEl){
-      if(left > 40)      lblEl.textContent = 'Skenujeme SSL certifikát…';
-      else if(left > 20) lblEl.textContent = 'Analyzujeme protokoly a slabiny…';
-      else if(left > 0)  lblEl.textContent = 'Finalizujeme výsledok…';
-      else               lblEl.textContent = 'Dokončujeme…';
+      if(left > 80)      lblEl.textContent = 'Skenujeme SSL certifikát (môže trvať až 2 min)…';
+      else if(left > 50) lblEl.textContent = 'SSL Labs analyzuje protokoly a certifikát…';
+      else if(left > 20) lblEl.textContent = 'Kontrolujeme bezpečnostné hlavičky…';
+      else if(left > 0)  lblEl.textContent = 'Finalizujeme výsledky…';
+      else               lblEl.textContent = 'Čakáme na posledné výsledky, ešte chvíľu…';
     }
     if(left <= 0) clearInterval(_wsCountdownInterval);
   }, 1000);
@@ -1199,32 +1207,32 @@ async function runSSLCheck(hostname){
   }
 }
 
-/* ── Observatory ── */
+/* ── Observatory (cez Vercel proxy – bez CORS problémov) ── */
 async function runObservatoryScan(hostname){
-  const base='https://http-observatory.security.mozilla.org/api/v1';
-  try{
-    // Trigger / get cached scan
-    const postRes=await fetch(`${base}/analyze?host=${encodeURIComponent(hostname)}`,
-      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-       body:'hidden=true&rescan=false'});
-    if(!postRes.ok) return null;
-    let scan=await postRes.json();
-
-    // Poll up to 20× (40 s)
-    for(let i=0;i<20;i++){
-      if(scan.state==='FINISHED'||scan.state==='ABORTED'||scan.state==='FAILED') break;
-      await new Promise(r=>setTimeout(r,2000));
-      const r=await fetch(`${base}/analyze?host=${encodeURIComponent(hostname)}`);
-      scan=await r.json();
+  console.log('[Observatory] Starting for:', hostname);
+  try {
+    const res  = await fetch(`/api/observatory-check?host=${encodeURIComponent(hostname)}`);
+    if(!res.ok){
+      console.warn('[Observatory] proxy HTTP error:', res.status);
+      return null;
     }
+    const data = await res.json();
+    console.log('[Observatory] state:', data.state, '| grade:', data.scan?.grade);
 
-    if(scan.state!=='FINISHED') return {scan,tests:null};
+    if(data.state === 'ERROR'){
+      console.warn('[Observatory] error:', data.error);
+      return null;
+    }
+    if(data.state !== 'FINISHED') return null;
 
-    const testRes=await fetch(`${base}/getScanResults?scan=${scan.scan_id}`);
-    const tests=await testRes.json();
-    return {scan,tests};
-  }catch(e){
-    console.warn('Observatory error:',e);
+    // Preveď headers formát na pôvodný {tests} formát ktorý buildWebReport očakáva
+    const tests = {};
+    for(const [key, val] of Object.entries(data.headers || {})){
+      if(val) tests[key] = val;
+    }
+    return { scan: data.scan, tests };
+  } catch(e) {
+    console.warn('[Observatory] exception:', e);
     return null;
   }
 }
