@@ -2,7 +2,6 @@
   "name": "mailguard",
   "version": "1.0.0",
   "dependencies": {
-    "stripe": "^14.0.0",
-    "whois": "^2.15.0"
+    "stripe": "^14.0.0"
   }
 }

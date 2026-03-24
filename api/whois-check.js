@@ -1,7 +1,6 @@
-// Vercel Serverless Function – WHOIS kontrola domény
-// Vracia: creation_date, expiry_date, registrar, country, age_days
-
-const whois = require('whois');
+// Vercel Serverless Function – RDAP/WHOIS kontrola domény
+// Primárny:  https://rdap.org/domain/DOMAIN  (IANA RDAP bootstrap, JSON)
+// Fallback:  https://who-dat.as93.net/DOMAIN.json (verejné API)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,95 +24,124 @@ module.exports = async function handler(req, res) {
 
   console.log(`[whois-check] Looking up: ${domain}`);
 
-  try {
-    const result = await lookupWhois(domain);
-    console.log(`[whois-check] age_days=${result.age_days} registrar=${result.registrar} country=${result.country}`);
-    return res.status(200).json(result);
-  } catch (err) {
-    console.error('[whois-check] error:', err.message);
-    return res.status(200).json({ ok: false, error: err.message });
+  const result = await tryRDAP(domain) || await tryWhoDat(domain);
+
+  if (!result) {
+    console.warn(`[whois-check] All sources failed for ${domain}`);
+    return res.status(200).json({ ok: false, error: 'RDAP/WHOIS nedostupné pre túto doménu' });
   }
+
+  console.log(`[whois-check] ok – age_days=${result.age_days} registrar=${result.registrar}`);
+  return res.status(200).json({ ok: true, domain, ...result });
 };
 
-function lookupWhois(domain) {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      resolve({ ok: false, error: 'WHOIS timeout (8s)' });
-    }, 8000);
-
-    whois.lookup(domain, { timeout: 7000 }, (err, raw) => {
-      clearTimeout(timer);
-
-      if (err) {
-        return resolve({ ok: false, error: err.message });
-      }
-      if (!raw) {
-        return resolve({ ok: false, error: 'Prázdna WHOIS odpoveď' });
-      }
-
-      const parsed = parseWhois(raw);
-      resolve({ ok: true, domain, ...parsed });
+/* ═══════════════════════════════════════
+   RDAP (rdap.org – IANA bootstrap)
+═══════════════════════════════════════ */
+async function tryRDAP(domain) {
+  try {
+    const r = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+      headers: { Accept: 'application/rdap+json, application/json' },
+      signal:  AbortSignal.timeout(7000),
     });
-  });
+
+    if (!r.ok) {
+      console.warn(`[rdap] HTTP ${r.status} for ${domain}`);
+      return null;
+    }
+
+    const data = await r.json();
+
+    // Dátumy sú v events[]
+    const events = Array.isArray(data.events) ? data.events : [];
+    const getEvent = (action) => {
+      const ev = events.find(e =>
+        typeof e.eventAction === 'string' &&
+        e.eventAction.toLowerCase().includes(action)
+      );
+      return ev?.eventDate || null;
+    };
+
+    const created = fmtDate(getEvent('registr'));   // "registration"
+    const expires = fmtDate(getEvent('expir'));     // "expiration"
+    const ageDays = calcAge(created);
+
+    // Registrátor z entities
+    let registrar = null;
+    const entities = Array.isArray(data.entities) ? data.entities : [];
+    const regEntity = entities.find(e => e.roles?.includes('registrar'));
+    if (regEntity) {
+      // vcardArray: [["vcard", [ ["fn",{},"text","Name"], ... ]]]
+      const vcard = regEntity.vcardArray?.[1];
+      if (Array.isArray(vcard)) {
+        const fn = vcard.find(([name]) => name === 'fn');
+        registrar = fn?.[3] || null;
+      }
+      // Fallback: publicIds
+      if (!registrar && regEntity.publicIds?.[0]?.identifier) {
+        registrar = regEntity.publicIds[0].identifier;
+      }
+    }
+
+    // Krajina z registrant entity
+    let country = null;
+    const registrant = entities.find(e => e.roles?.includes('registrant'));
+    if (registrant) {
+      const vcard = registrant.vcardArray?.[1];
+      if (Array.isArray(vcard)) {
+        const adr = vcard.find(([name]) => name === 'adr');
+        country = adr?.[1]?.cc || adr?.[3]?.[6] || null;
+      }
+    }
+
+    return { creation_date: created, expiry_date: expires, registrar, country, age_days: ageDays, source: 'rdap' };
+
+  } catch (err) {
+    console.warn('[rdap] exception:', err.message);
+    return null;
+  }
 }
 
-function parseWhois(raw) {
-  // Pomocná funkcia – vyskúša viac regex vzorov, vráti prvý match
-  const get = (...patterns) => {
-    for (const p of patterns) {
-      const m = raw.match(p);
-      if (m?.[1]?.trim()) return m[1].trim();
+/* ═══════════════════════════════════════
+   Fallback: who-dat.as93.net
+═══════════════════════════════════════ */
+async function tryWhoDat(domain) {
+  try {
+    const r = await fetch(`https://who-dat.as93.net/${encodeURIComponent(domain)}.json`, {
+      signal: AbortSignal.timeout(7000),
+    });
+
+    if (!r.ok) {
+      console.warn(`[who-dat] HTTP ${r.status} for ${domain}`);
+      return null;
     }
+
+    const data = await r.json();
+    if (data.error || (!data.domain && !data.created_date)) return null;
+
+    const d = data.domain || data;
+    const created = fmtDate(d.created_date || d.creation_date || data.created_date);
+    const expires = fmtDate(d.expiration_date || d.expiry_date || data.expiration_date);
+    const registrar = data.registrar?.name || d.registrar || null;
+    const country   = data.registrant?.country || data.administrative?.country || null;
+    const ageDays   = calcAge(created);
+
+    return { creation_date: created, expiry_date: expires, registrar, country, age_days: ageDays, source: 'who-dat' };
+
+  } catch (err) {
+    console.warn('[who-dat] exception:', err.message);
     return null;
-  };
+  }
+}
 
-  const creationRaw = get(
-    /Creation Date:\s*(.+)/i,
-    /Created(?:\s+On)?:\s*(.+)/i,
-    /Domain Create Date:\s*(.+)/i,
-    /Registered(?:\s+On)?:\s*(.+)/i,
-    /created:\s*(.+)/i,
-    /Registration Time:\s*(.+)/i,
-  );
+/* ── Helpers ── */
+function fmtDate(s) {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+}
 
-  const expiryRaw = get(
-    /Registry Expiry Date:\s*(.+)/i,
-    /Expir(?:ation|y|es)(?:\s+Date|\s+On)?:\s*(.+)/i,
-    /Domain Expiration Date:\s*(.+)/i,
-    /paid-till:\s*(.+)/i,
-    /Renewal Date:\s*(.+)/i,
-  );
-
-  const registrar = get(
-    /Registrar:\s*(.+)/i,
-    /Registrar Name:\s*(.+)/i,
-    /Sponsoring Registrar:\s*(.+)/i,
-  );
-
-  const country = get(
-    /Registrant Country:\s*(.+)/i,
-    /Country:\s*(.+)/i,
-    /Registrant State\/Province:\s*(.+)/i,
-  );
-
-  // Parsuj dátumy – orezaj timestamp ak je ISO formát
-  const parseDate = (s) => {
-    if (!s) return null;
-    // Orezaj čas, timezone a URL poznámky
-    const clean = s.replace(/T[\d:.Z+\-]+.*/i, '').replace(/\s+.*/, '').trim();
-    const d = new Date(clean);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const created = parseDate(creationRaw);
-  const expires = parseDate(expiryRaw);
-  const ageDays = created ? Math.floor((Date.now() - created.getTime()) / 86400000) : null;
-
-  return {
-    creation_date: created ? created.toISOString().split('T')[0] : null,
-    expiry_date:   expires ? expires.toISOString().split('T')[0] : null,
-    registrar:     registrar ? registrar.replace(/\s+/g, ' ').slice(0, 60) : null,
-    country:       country ? country.slice(0, 50) : null,
-    age_days:      ageDays,
-  };
+function calcAge(isoDate) {
+  if (!isoDate) return null;
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000);
 }
