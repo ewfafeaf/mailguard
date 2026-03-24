@@ -1109,6 +1109,8 @@ async function webScan(){
   ]);
   stopWsCountdown();
 
+  console.log('[webScan] sslResult:', sslResult);
+  console.log('[webScan] urlRisk:', urlRisk?.score, '| gsbResult:', gsbResult, '| obs:', obsResult?.scan?.grade);
   const report=buildWebReport(scanUrl, hostname, urlRisk, gsbResult, obsResult, sslResult);
   resultEl.innerHTML=renderWebResult(report);
 
@@ -1166,25 +1168,33 @@ function stopWsCountdown(){ clearInterval(_wsCountdownInterval); }
 
 /* ── SSL Labs ── */
 async function runSSLCheck(hostname){
+  console.log('[SSL] Starting check for:', hostname);
   try {
-    // Spusti sken
     let res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}&startNew=true`);
-    if(!res.ok) return null;
+    console.log('[SSL] Initial response status:', res.status);
+    if(!res.ok){
+      console.warn('[SSL] API error HTTP:', res.status, await res.text());
+      return null;
+    }
     let data = await res.json();
+    console.log('[SSL] Initial data:', data);
 
-    // Ak nie je hotový, polluj max 24× (každé 5s = 120s)
+    // Polluj max 24× (každé 5s = 120s)
     let attempts = 0;
     while(data.status !== 'READY' && data.status !== 'ERROR' && attempts < 24){
+      console.log(`[SSL] Polling attempt ${attempts+1}, status: ${data.status} – ${data.statusMessage||''}`);
       await new Promise(r => setTimeout(r, 5000));
       res  = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
       data = await res.json();
       attempts++;
     }
 
+    console.log('[SSL] Final status:', data.status, '| parsed:', data.parsed);
     if(data.status === 'READY') return data.parsed || null;
+    console.warn('[SSL] Did not reach READY, last status:', data.status);
     return null;
   } catch(e){
-    console.warn('SSL check error:', e);
+    console.error('[SSL] Exception:', e);
     return null;
   }
 }
