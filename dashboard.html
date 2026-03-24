@@ -1109,7 +1109,7 @@ async function webScan(){
           : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | ')||'Podozrivá štruktúra URL.');
 
   // ── 2. Async – všetky beží naraz, DOM sa aktualizuje hneď po každom ──
-  let sslResult=null, gsbResult=null, obsResult=null;
+  let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null;
 
   const sslPromise=runSSLCheck(hostname).then(r=>{
     sslResult=r;
@@ -1178,10 +1178,21 @@ async function webScan(){
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
   }).catch(e=>console.error('[Headers]',e));
 
-  // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
-  await Promise.all([sslPromise, gsbPromise, headersPromise]);
+  const whoisPromise=runWhoisCheck(hostname).then(r=>{
+    whoisResult=r;
+    console.log('[webScan] WHOIS done:', r ? `age=${r.age_days}d registrar=${r.registrar}` : 'null');
+    const el=document.getElementById('wsWhoisSection');
+    if(el){
+      try{ el.innerHTML=renderWhoisPanel(r); }
+      catch(e){ console.error('[webScan] renderWhoisPanel threw:',e); }
+    }
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
+  }).catch(e=>console.error('[WHOIS]',e));
 
-  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+  // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
+  await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise]);
+
+  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
   const scoreEl=document.getElementById('wsScoreSection');
   if(scoreEl) scoreEl.innerHTML=renderScoreHTML(report);
   const recsEl=document.getElementById('wsRecsSection');
@@ -1218,8 +1229,8 @@ function setWsCheckSkip(id,title,desc){
 }
 
 /* ── Priebežná aktualizácia skóre po každom výsledku ── */
-function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult){
-  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult){
+  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
   const el=document.getElementById('wsScoreSection');
   if(el) el.innerHTML=renderScoreHTML(report);
 }
@@ -1239,6 +1250,15 @@ function wsSkeletonHTML(hostname, scanUrl){
         <div style="display:flex;align-items:center;gap:10px">
           <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
           <span style="font-size:.86rem;color:var(--muted)">Overujem SSL certifikát…</span>
+        </div>
+      </div>
+    </div>
+    <div id="wsWhoisSection">
+      <div class="ssl-panel" style="opacity:.65">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🌐 WHOIS – Informácie o doméne</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
+          <span style="font-size:.86rem;color:var(--muted)">Vyhľadávam WHOIS záznamy…</span>
         </div>
       </div>
     </div>
@@ -1333,8 +1353,24 @@ async function runHeadersCheck(hostname){
   }
 }
 
+/* ── WHOIS ── */
+async function runWhoisCheck(hostname){
+  console.log('[WHOIS] Checking:', hostname);
+  try {
+    const res = await fetch(`/api/whois-check?host=${encodeURIComponent(hostname)}`);
+    if(!res.ok){ console.warn('[WHOIS] HTTP error:', res.status); return null; }
+    const data = await res.json();
+    if(!data.ok){ console.warn('[WHOIS] no results:', data.error); return null; }
+    console.log('[WHOIS] age_days=', data.age_days, 'registrar=', data.registrar);
+    return data;
+  } catch(e){
+    console.warn('[WHOIS] exception:', e.message);
+    return null;
+  }
+}
+
 /* ── Build report ── */
-function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null){
+function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null, whoisResult=null){
   const checks=[];
   let score=0;
   const recs=[];
@@ -1350,6 +1386,20 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
       recs.push(`SSL certifikát expiruje za ${dl} dní – obnov ho čo najskôr.`);
     if(sslResult.cert?.expired)
       recs.push('SSL certifikát je expirovaný – stránka zobrazuje bezpečnostné varovania!');
+  }
+
+  // 0b. WHOIS – vek domény
+  if(whoisResult?.age_days !== null && whoisResult?.age_days !== undefined){
+    const age=whoisResult.age_days;
+    if(age < 30){
+      score-=30;
+      recs.push(`Doména má len ${age} dní – extrémne nová, vysoké riziko phishingu.`);
+    } else if(age < 180){
+      score-=15;
+      recs.push(`Doména má len ${Math.round(age/30)} mesiacov – nová doména, zvýšená opatrnosť.`);
+    } else if(age > 730){
+      score+=10;
+    }
   }
 
   // 1. HTTPS
@@ -1446,7 +1496,7 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
 
   score=Math.max(0,Math.min(100,score));
 
-  return {url,hostname,score,checks,recs,gsbChecked:gsbResult!==null,sslResult};
+  return {url,hostname,score,checks,recs,gsbChecked:gsbResult!==null,sslResult,whoisResult};
 }
 
 /* ── SSL Panel Render ── */
@@ -1531,6 +1581,71 @@ function renderSSLPanel(ssl){
   </div>`;
 }
 
+/* ── WHOIS Panel Render ── */
+function renderWhoisPanel(w){
+  if(!w){
+    return`<div class="ssl-panel" style="opacity:.7">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🌐 WHOIS – Informácie o doméne</div>
+      <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.86rem">
+        <span style="font-size:1.4rem">⚠️</span>
+        <div>
+          <div style="font-weight:600;color:var(--text)">WHOIS údaje nedostupné</div>
+          <div style="margin-top:2px">WHOIS server neodpovedal alebo doména nie je registrovaná.</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const age     = w.age_days;
+  const ageText = age === null ? null
+    : age < 1    ? 'Dnes zaregistrovaná'
+    : age < 30   ? `${age} dní`
+    : age < 365  ? `${Math.round(age/30)} mesiacov`
+    : `${(age/365).toFixed(1)} rokov`;
+
+  const ageColor = age === null ? 'var(--muted)'
+    : age < 30   ? 'var(--red)'
+    : age < 180  ? 'var(--yellow)'
+    : 'var(--green)';
+
+  const badge = age === null ? ''
+    : age < 180
+    ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:7px;font-size:.82rem;color:var(--red);font-weight:600">
+        ⚠️ Nová doména – zvýšené riziko phishingu
+       </div>`
+    : age > 730
+    ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:7px;font-size:.82rem;color:var(--green);font-weight:600">
+        ✅ Etablovaná doména (${(age/365).toFixed(1)} rokov)
+       </div>`
+    : '';
+
+  return`<div class="ssl-panel">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">🌐 WHOIS – Informácie o doméne</div>
+    <div class="ssl-details-grid">
+      ${ageText ? `<div class="ssl-detail-item">
+        <div class="ssl-detail-label">Vek domény</div>
+        <div class="ssl-detail-value" style="color:${ageColor}">${escHtml(ageText)}</div>
+      </div>` : ''}
+      ${w.creation_date ? `<div class="ssl-detail-item">
+        <div class="ssl-detail-label">Registrovaná</div>
+        <div class="ssl-detail-value">${escHtml(w.creation_date)}</div>
+      </div>` : ''}
+      ${w.expiry_date ? `<div class="ssl-detail-item">
+        <div class="ssl-detail-label">Expiruje</div>
+        <div class="ssl-detail-value">${escHtml(w.expiry_date)}</div>
+      </div>` : ''}
+      ${w.registrar ? `<div class="ssl-detail-item">
+        <div class="ssl-detail-label">Registrátor</div>
+        <div class="ssl-detail-value" style="font-size:.8rem">${escHtml(w.registrar)}</div>
+      </div>` : ''}
+      ${w.country ? `<div class="ssl-detail-item">
+        <div class="ssl-detail-label">Krajina</div>
+        <div class="ssl-detail-value">${escHtml(w.country)}</div>
+      </div>` : ''}
+    </div>
+    ${badge}
+  </div>`;
+}
 
 async function saveWebAnalysis(url, score){
   const verdict=score>=80?'safe':score>=55?'low':score>=35?'medium':'high';
