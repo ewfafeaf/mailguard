@@ -1243,42 +1243,18 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   let score=0;
   const recs=[];
 
-  // 0. SSL Labs grade
+  // 0. SSL Labs – skóre, recs (panel sa renderuje zvlášť z report.sslResult)
   if(sslResult){
     const grade=sslResult.grade||'N/A';
     const gradeOk=/^A/.test(grade);
     const gradeWarn=grade==='B';
-    const gradeFail=!gradeOk&&!gradeWarn;
-    checks.push({
-      id:'ssl_grade', pass: gradeOk ? true : gradeFail ? false : null,
-      ssl: sslResult,
-      title: `SSL Labs grade: ${grade}`,
-      desc: gradeOk
-        ? 'Výborná SSL konfigurácia. Certifikát a protokoly sú správne nastavené.'
-        : gradeWarn
-          ? 'Dobrá SSL konfigurácia, ale sú niektoré nedostatky (napr. starší protokol).'
-          : 'Slabá SSL konfigurácia – certifikát môže byť neplatný, vypršaný alebo použité zraniteľné protokoly.',
-      points: gradeOk ? 20 : gradeWarn ? 10 : 0,
-    });
     if(gradeOk) score+=20;
     else if(gradeWarn) score+=10;
     else recs.push(`SSL Labs udelil grade ${grade} – skontroluj certifikát a TLS konfiguráciu.`);
-
-    // Expired cert warning
-    if(sslResult.cert?.daysLeft !== null && sslResult.cert.daysLeft < 30){
+    if(sslResult.cert?.daysLeft!==null && sslResult.cert?.daysLeft<30)
       recs.push(`SSL certifikát expiruje za ${sslResult.cert.daysLeft} dní – obnov ho čo najskôr.`);
-    }
-    // Vulns
-    if(sslResult.vulns?.length){
-      sslResult.vulns.forEach(v => recs.push(`Kritická zraniteľnosť: ${v.desc}`));
-    }
-  } else {
-    checks.push({
-      id:'ssl_grade', pass:null,
-      title:'SSL Labs – nedostupné alebo trvá dlhšie',
-      desc:'SSL Labs API nevrátilo výsledok v limite. Skús skenovanie zopakovať neskôr.',
-      points:20,
-    });
+    if(sslResult.vulns?.length)
+      sslResult.vulns.forEach(v=>recs.push(`Kritická zraniteľnosť: ${v.desc}`));
   }
 
   // 1. HTTPS
@@ -1377,11 +1353,25 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
 
   score=Math.max(0,Math.min(100,score));
 
-  return {url,hostname,score,checks,recs,obsGrade,gsbChecked:gsbResult!==null};
+  return {url,hostname,score,checks,recs,obsGrade,gsbChecked:gsbResult!==null,sslResult};
 }
 
 /* ── SSL Panel Render ── */
 function renderSSLPanel(ssl){
+  // Ak SSL Labs nezískal výsledok, zobraz "nedostupné" panel
+  if(!ssl){
+    return`<div class="ssl-panel" style="opacity:.7">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Analýza (SSL Labs)</div>
+      <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.86rem">
+        <span style="font-size:1.4rem">⏳</span>
+        <div>
+          <div style="font-weight:600;color:var(--text)">SSL Labs výsledok nedostupný</div>
+          <div style="margin-top:2px">Server mohol byť preťažený (529) alebo analýza trvala príliš dlho. Skús skenovanie zopakovať.</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   const grade = ssl.grade || 'N/A';
   const gradeColor = /^A\+/.test(grade) ? 'var(--green)'
     : /^A/.test(grade)  ? 'var(--green)'
@@ -1468,12 +1458,10 @@ function renderWebResult(r){
     ? `<span class="ws-obs-badge">Mozilla Observatory: ${escHtml(r.obsGrade)}</span>`
     : '';
 
-  // SSL panel (first check with ssl data)
-  const sslCheck = r.checks.find(c => c.id === 'ssl_grade');
-  const sslPanelHTML = sslCheck?.ssl ? renderSSLPanel(sslCheck.ssl) : '';
+  // SSL panel – vždy zobrazený, buď s dátami alebo "nedostupné"
+  const sslPanelHTML = renderSSLPanel(r.sslResult || null);
 
   const checksHTML=r.checks.map(c=>{
-    if(c.id === 'ssl_grade') return ''; // rendered separately as panel
     const cls=c.pass===true?'pass':c.pass===false?'fail':'skip';
     const icon=c.pass===true?'✅':c.pass===false?'❌':'⏭️';
     return`<div class="ws-check ${cls}">
