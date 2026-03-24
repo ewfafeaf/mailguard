@@ -1,9 +1,7 @@
-// Vercel Serverless Function – SSL Labs API proxy
-// Non-blocking: makes exactly ONE request to SSL Labs and returns immediately.
-// All polling is done by the client (dashboard.html).
-//
-// ?host=DOMAIN&startNew=true  → triggers a new scan
-// ?host=DOMAIN                → fetches current scan state (for polling)
+// Vercel Serverless Function – vlastná SSL/TLS kontrola cez Node.js tls modul
+// Nepotrebuje SSL Labs – výsledok do 3 sekúnd
+
+const tls = require('tls');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,7 +11,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { host, startNew } = req.query;
+  const { host } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
 
   const clean = host.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
@@ -21,133 +19,99 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid hostname' });
   }
 
-  const params = new URLSearchParams({
-    host: clean,
-    publish: 'off',
-    all: 'done',
-    ignoreMismatch: 'on',
-  });
-  if (startNew === 'true') params.set('startNew', 'on');
-
-  const apiUrl = `https://api.ssllabs.com/api/v3/analyze?${params}`;
-  console.log(`[ssl-check] ${startNew === 'true' ? 'START' : 'POLL'} host=${clean} → ${apiUrl}`);
+  console.log(`[ssl-check] Connecting to ${clean}:443`);
 
   try {
-    const apiRes = await fetch(apiUrl, {
-      headers: { 'User-Agent': 'MailGuard-SecurityScanner/1.0' },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    console.log(`[ssl-check] SSL Labs HTTP ${apiRes.status}`);
-
-    if (apiRes.status === 529) {
-      return res.status(200).json({
-        status: 'DNS',
-        statusMessage: 'SSL Labs preťažený, čakám…',
-      });
-    }
-
-    if (!apiRes.ok) {
-      const errText = await apiRes.text();
-      console.error(`[ssl-check] HTTP ${apiRes.status}: ${errText.slice(0, 200)}`);
-      return res.status(200).json({ status: 'ERROR', error: `SSL Labs HTTP ${apiRes.status}` });
-    }
-
-    const data = await apiRes.json();
-    const ep = data.endpoints?.[0];
-    console.log(`[ssl-check] status=${data.status} grade=${ep?.grade || '-'} epStatus=${ep?.statusMessage || '-'}`);
-
-    // Ready if main status says so, OR if endpoint already has a grade
-    const isReady = data.status === 'READY' || (ep?.grade && ep.grade !== '');
-
-    if (isReady) {
-      const parsed = parseSSLResult(data);
-      console.log(`[ssl-check] READY – grade=${parsed.grade} cert=${parsed.cert?.issuer}`);
-      return res.status(200).json({ status: 'READY', parsed });
-    }
-
-    // Still scanning – client will poll again in 5 s
-    return res.status(200).json({
-      status: data.status || 'IN_PROGRESS',
-      statusMessage: data.statusMessage || ep?.statusMessage || null,
-    });
-
+    const result = await checkSSL(clean);
+    console.log(`[ssl-check] grade=${result.grade} protocol=${result.protocol} daysLeft=${result.cert?.daysLeft}`);
+    return res.status(200).json(result);
   } catch (err) {
-    console.error('[ssl-check] exception:', err.message);
-    // Treat timeout as transient – client will retry
-    return res.status(200).json({ status: 'IN_PROGRESS', statusMessage: 'Čakám na SSL Labs…' });
+    console.error('[ssl-check] error:', err.message);
+    return res.status(200).json({ ok: false, error: err.message });
   }
 };
 
-function parseSSLResult(data) {
-  const endpoint = data.endpoints?.[0] || null;
-  const details  = endpoint?.details  || null;
+function checkSSL(hostname) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
 
-  const grade = endpoint?.grade || 'N/A';
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      reject(new Error('Spojenie vypršalo (timeout 8s)'));
+    }, 8000);
 
-  // ── Certifikát ──
-  let cert = null;
-  try {
-    let raw = null;
+    const socket = tls.connect(
+      {
+        host:               hostname,
+        port:               443,
+        servername:         hostname,
+        rejectUnauthorized: false,   // chceme cert aj keď je self-signed
+      },
+      () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
 
-    // 1. v3 certChains → data.certs[]
-    const certId = details?.certChains?.[0]?.certIds?.[0];
-    if (certId) {
-      raw = (data.certs || []).find(c => c.id === certId);
-    }
-    // 2. Fallback: prvý cert v data.certs[]
-    if (!raw && data.certs?.length) {
-      raw = data.certs[0];
-    }
-    // 3. Fallback: details.cert (starší formát)
-    if (!raw && details?.cert) {
-      raw = details.cert;
-    }
+        try {
+          const raw      = socket.getPeerCertificate(true);
+          const protocol = socket.getProtocol();          // 'TLSv1.3', 'TLSv1.2', …
+          const cipher   = socket.getCipher();
+          socket.end();
 
-    if (raw) {
-      cert = {
-        issuer:    raw.issuerLabel || raw.issuerSubject || 'Neznámy',
-        subject:   raw.commonNames?.[0] || raw.subject || data.host,
-        notBefore: raw.notBefore ? new Date(raw.notBefore).toISOString().split('T')[0] : null,
-        notAfter:  raw.notAfter  ? new Date(raw.notAfter).toISOString().split('T')[0]  : null,
-        daysLeft:  raw.notAfter  ? Math.round((raw.notAfter - Date.now()) / 86400000)  : null,
-        keyAlg:    raw.keyAlg  || null,
-        keySize:   raw.keySize || null,
-        sigAlg:    raw.sigAlg  || null,
-      };
-    }
-  } catch (e) {
-    console.warn('[ssl-check] cert parse error:', e.message);
-  }
+          if (!raw || !raw.subject) {
+            return resolve({ ok: false, error: 'Certifikát nebol získaný' });
+          }
 
-  // ── Protokoly ──
-  const protocols = (details?.protocols || []).map(p => ({
-    name:    p.name,
-    version: p.version,
-    id:      p.id,
-  }));
+          const validTo   = raw.valid_to   ? new Date(raw.valid_to)   : null;
+          const validFrom = raw.valid_from ? new Date(raw.valid_from) : null;
+          const daysLeft  = validTo ? Math.round((validTo - Date.now()) / 86400000) : null;
+          const expired   = daysLeft !== null && daysLeft < 0;
 
-  // ── Zraniteľnosti ──
-  const vulns = [];
-  if (details) {
-    if (details.poodle)                        vulns.push({ id: 'POODLE',       desc: 'POODLE (SSLv3)' });
-    if (details.poodleTls === 2)               vulns.push({ id: 'POODLE_TLS',   desc: 'POODLE-TLS' });
-    if (details.heartbleed)                    vulns.push({ id: 'HEARTBLEED',   desc: 'Heartbleed' });
-    if (details.freak)                         vulns.push({ id: 'FREAK',        desc: 'FREAK' });
-    if (details.logjam)                        vulns.push({ id: 'LOGJAM',       desc: 'Logjam' });
-    if (details.drownVulnerable)               vulns.push({ id: 'DROWN',        desc: 'DROWN' });
-    if (details.ticketbleed === 2)             vulns.push({ id: 'TICKETBLEED',  desc: 'Ticketbleed' });
-    if (details.bleichenbacher === 2 || details.bleichenbacher === 3)
-                                               vulns.push({ id: 'ROBOT',        desc: 'ROBOT (Bleichenbacher)' });
-    if (details.zombiePoodle === 2)            vulns.push({ id: 'ZOMBIE',       desc: 'Zombie POODLE' });
-    if (details.goldenDoodle === 2)            vulns.push({ id: 'GOLDENDOODLE', desc: 'GoldenDoodle' });
-    if (details.zeroLengthPaddingOracle === 2) vulns.push({ id: 'ZLPOODLE',     desc: '0-Length Padding Oracle' });
-    if (details.sleepingPoodle === 2)          vulns.push({ id: 'SLEEPING',     desc: 'Sleeping POODLE' });
-  }
+          const cert = {
+            subject:   raw.subject?.CN || hostname,
+            issuer:    raw.issuer?.O   || raw.issuer?.CN || 'Neznámy',
+            validFrom: validFrom ? validFrom.toISOString().split('T')[0] : null,
+            validTo:   validTo   ? validTo.toISOString().split('T')[0]   : null,
+            daysLeft,
+            expired,
+            keyBits:   raw.bits        || null,
+            sigAlg:    raw.asn1Curve   || null,
+          };
 
-  // ── HSTS / Forward Secrecy ──
-  const hsts           = details?.hstsPolicy?.status === 'present';
-  const forwardSecrecy = (details?.forwardSecrecy ?? 0) >= 2;
+          resolve({
+            ok:       true,
+            grade:    computeGrade(protocol, daysLeft, expired),
+            cert,
+            protocol: protocol || null,
+            cipher:   cipher?.name || null,
+          });
+        } catch (e) {
+          socket.destroy();
+          reject(e);
+        }
+      }
+    );
 
-  return { grade, cert, protocols, vulns, hsts, forwardSecrecy };
+    socket.on('error', err => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
+function computeGrade(protocol, daysLeft, expired) {
+  if (expired)                             return 'F';
+  if (daysLeft !== null && daysLeft < 14)  return 'F';
+  const p = (protocol || '').toUpperCase();
+  if (p === 'SSLV2' || p === 'SSLV3')     return 'F';
+  if (p === 'TLSV1' || p === 'TLSV1.0')   return 'F';
+  if (p === 'TLSV1.1')                     return 'C';
+  if (daysLeft !== null && daysLeft < 30)  return 'B';
+  if (p === 'TLSV1.2')                     return 'A';
+  if (p === 'TLSV1.3')                     return 'A+';
+  return 'B';
 }

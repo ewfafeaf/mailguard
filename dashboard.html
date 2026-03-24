@@ -230,10 +230,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .ssl-vuln-list{display:grid;gap:5px;margin-top:10px}
 .ssl-vuln-item{display:flex;align-items:center;gap:8px;font-size:.82rem;
   background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:6px 10px;color:var(--red)}
-.ssl-countdown{display:flex;align-items:center;gap:10px;padding:12px 16px;
-  background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.15);border-radius:8px;margin-bottom:10px}
-.ssl-countdown-text{font-size:.84rem;color:var(--muted);flex:1}
-.ssl-countdown-num{font-size:1.1rem;font-weight:800;color:var(--accent);min-width:32px;text-align:right}
+
 
 /* ── TICKET STYLES ── */
 .ticket-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
@@ -1097,7 +1094,6 @@ async function webScan(){
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
   resultEl.style.display='block';
   resultEl.innerHTML=wsSkeletonHTML(hostname, scanUrl);
-  startWsCountdown(120);
 
   // ── 1. Sync – okamžité výsledky ──
   const urlRisk=analyzeUrl(scanUrl);
@@ -1118,7 +1114,6 @@ async function webScan(){
   const sslPromise=runSSLCheck(hostname).then(r=>{
     sslResult=r;
     console.log('[webScan] SSL done, sslResult:', r ? `grade=${r.grade}` : 'null');
-    stopWsCountdown();
 
     // Nájdi wsSSLSection — vždy existuje vďaka wsSkeletonHTML
     let el=document.getElementById('wsSSLSection');
@@ -1166,9 +1161,9 @@ async function webScan(){
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
   }).catch(e=>console.error('[GSB]',e));
 
-  const obsPromise=runObservatoryScan(hostname).then(r=>{
+  const headersPromise=runHeadersCheck(hostname).then(r=>{
     obsResult=r;
-    console.log('[webScan] Observatory done:', r?.source, r?.scan?.grade);
+    console.log('[webScan] Headers done, present:', r ? Object.keys(r.tests).filter(k=>r.tests[k].pass) : 'null');
     const HDR=[
       {id:'wsChkHsts',  key:'strict-transport-security',label:'HSTS',               desc:'Vynucuje HTTPS pri každom načítaní. Chráni pred downgrade útokmi.'},
       {id:'wsChkCsp',   key:'content-security-policy',  label:'Content-Security-Policy',desc:'Obmedzuje zdroje skriptov. Chráni pred XSS útokmi.'},
@@ -1181,11 +1176,10 @@ async function webScan(){
       else        setWsCheckSkip(d.id,d.label+' (nedostupné)',d.desc);
     }
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
-  }).catch(e=>console.error('[Observatory]',e));
+  }).catch(e=>console.error('[Headers]',e));
 
   // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
-  await Promise.all([sslPromise, gsbPromise, obsPromise]);
-  stopWsCountdown();
+  await Promise.all([sslPromise, gsbPromise, headersPromise]);
 
   const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
   const scoreEl=document.getElementById('wsScoreSection');
@@ -1241,15 +1235,10 @@ function wsSkeletonHTML(hostname, scanUrl){
     <div id="wsScoreSection">${renderScoreHTML(null,true)}</div>
     <div id="wsSSLSection">
       <div class="ssl-panel" style="opacity:.65">
-        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Analýza (SSL Labs)</div>
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Certifikát</div>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
-          <span style="font-size:.86rem;color:var(--muted)">SSL Labs analýza prebieha (1–2 min)…</span>
-        </div>
-        <div class="ssl-countdown" style="margin-top:12px">
-          <div class="spinner" style="width:12px;height:12px;border-width:2px;flex-shrink:0"></div>
-          <span class="ssl-countdown-text" id="wsCountdownLabel">Pripájam sa na SSL Labs…</span>
-          <span class="ssl-countdown-num" id="wsCountdownNum">120s</span>
+          <span style="font-size:.86rem;color:var(--muted)">Overujem SSL certifikát…</span>
         </div>
       </div>
     </div>
@@ -1286,7 +1275,6 @@ function renderScoreHTML(r, loading=false){
   const verdict={safe:'Stránka je dobre zabezpečená',low:'Dobré zabezpečenie, menšie nedostatky',
     medium:'Stredné riziko – odporúčame opravy',high:'Slabé zabezpečenie – potrebná okamžitá akcia'}[level];
   const progressFill=r.score>=80?'var(--green)':r.score>=55?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--orange),var(--red))';
-  const obsInfo=r.obsGrade?`<span class="ws-obs-badge">Mozilla Observatory: ${escHtml(r.obsGrade)}</span>`:'';
   return`<div class="ws-score-wrap" style="margin-bottom:16px">
     <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
       <span class="ws-circle-num">${r.score}</span><span class="ws-circle-lbl">/ 100</span>
@@ -1295,7 +1283,6 @@ function renderScoreHTML(r, loading=false){
       <div class="ws-verdict" style="color:${col}">${verdict}</div>
       <div class="ws-desc">Bezpečnostné skóre: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
       <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${r.score}%"></div></div>
-      ${obsInfo}
     </div>
   </div>`;
 }
@@ -1310,99 +1297,38 @@ function renderRecsHTML(recs){
   </div>`;
 }
 
-let _wsCountdownInterval=null;
-function startWsCountdown(seconds){
-  clearInterval(_wsCountdownInterval);
-  let left=seconds;
-  _wsCountdownInterval=setInterval(()=>{
-    left--;
-    const numEl=document.getElementById('wsCountdownNum');
-    const lblEl=document.getElementById('wsCountdownLabel');
-    if(numEl) numEl.textContent=left>0?left+'s':'⏳';
-    if(lblEl){
-      if(left>80)      lblEl.textContent='SSL Labs analýza prebieha…';
-      else if(left>50) lblEl.textContent='Analyzujeme certifikát a protokoly…';
-      else if(left>20) lblEl.textContent='Kontrolujeme zraniteľnosti…';
-      else if(left>0)  lblEl.textContent='Finalizujeme SSL výsledky…';
-      else             lblEl.textContent='Ešte chvíľu…';
-    }
-    if(left<=0) clearInterval(_wsCountdownInterval);
-  },1000);
-}
-function stopWsCountdown(){ clearInterval(_wsCountdownInterval); }
-
-/* ── SSL Labs ── */
+/* ── SSL certifikát (vlastná TLS kontrola) ── */
 async function runSSLCheck(hostname){
-  console.log('[SSL] Starting check for:', hostname);
+  console.log('[SSL] Checking:', hostname);
   try {
-    let res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}&startNew=true`);
-    console.log('[SSL] Initial response status:', res.status);
-    if(!res.ok){
-      console.warn('[SSL] API error HTTP:', res.status);
-      return null;
-    }
-    let data = await res.json();
-    console.log('[SSL] Initial data: status=', data.status, 'parsed=', !!data.parsed);
-
-    // Polluj max 24× (každé 5s = 120s)
-    let attempts = 0;
-    while(data.status !== 'READY' && data.status !== 'ERROR' && !data.parsed && attempts < 24){
-      console.log(`[SSL] Polling attempt ${attempts+1}, status: ${data.status} – ${data.statusMessage||''}`);
-      await new Promise(r => setTimeout(r, 5000));
-      const pollRes = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
-      if(!pollRes.ok){
-        console.warn('[SSL] Polling HTTP error:', pollRes.status);
-        attempts++;
-        continue;
-      }
-      data = await pollRes.json();
-      attempts++;
-    }
-
-    console.log('[SSL] Loop done: status=', data.status, 'parsed grade=', data.parsed?.grade, 'attempts=', attempts);
-
-    if(data.parsed){
-      console.log('[SSL] Returning parsed result, grade:', data.parsed.grade);
-      return data.parsed;
-    }
-    if(data.status === 'READY'){
-      console.warn('[SSL] Status READY but no parsed data');
-      return null;
-    }
-    console.warn('[SSL] No result after', attempts, 'attempts, last status:', data.status);
-    return null;
+    const res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
+    if(!res.ok){ console.warn('[SSL] HTTP error:', res.status); return null; }
+    const data = await res.json();
+    console.log('[SSL] ok=', data.ok, 'grade=', data.grade, 'protocol=', data.protocol, 'daysLeft=', data.cert?.daysLeft);
+    return data.ok ? data : null;
   } catch(e){
-    console.error('[SSL] Exception:', e.message, e);
+    console.error('[SSL] Exception:', e.message);
     return null;
   }
 }
 
-/* ── Observatory / Direct header check (cez Vercel proxy) ── */
-async function runObservatoryScan(hostname){
-  console.log('[Observatory] Starting for:', hostname);
+/* ── Bezpečnostné HTTP hlavičky ── */
+async function runHeadersCheck(hostname){
+  console.log('[Headers] Checking:', hostname);
   try {
-    const res  = await fetch(`/api/observatory-check?host=${encodeURIComponent(hostname)}`);
-    if(!res.ok){
-      console.warn('[Observatory] proxy HTTP error:', res.status);
-      return null;
-    }
+    const res = await fetch(`/api/headers-check?host=${encodeURIComponent(hostname)}`);
+    if(!res.ok){ console.warn('[Headers] HTTP error:', res.status); return null; }
     const data = await res.json();
-    console.log('[Observatory] source:', data.source, '| state:', data.state, '| grade:', data.grade);
-    console.log('[Observatory] headers:', data.headers);
-
-    if(data.state === 'ERROR' || !data.headers){
-      console.warn('[Observatory] no results:', data.error);
-      return null;
-    }
-
-    // Normalizuj headers na {tests} formát: { key: { pass: bool } }
+    if(!data.ok || !data.headers){ console.warn('[Headers] no results'); return null; }
+    console.log('[Headers] httpStatus=', data.httpStatus, 'headers=', Object.keys(data.headers).filter(k=>data.headers[k].present));
+    // Normalizuj na {tests} formát kompatibilný s buildWebReport
     const tests = {};
-    for(const [key, val] of Object.entries(data.headers || {})){
-      if(val !== null) tests[key] = val;
+    for(const [key, val] of Object.entries(data.headers)){
+      tests[key] = { pass: val.present, value: val.value };
     }
-    return { scan: data.scan, tests, source: data.source };
-  } catch(e) {
-    console.warn('[Observatory] exception:', e);
+    return { tests };
+  } catch(e){
+    console.warn('[Headers] exception:', e.message);
     return null;
   }
 }
@@ -1413,18 +1339,17 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   let score=0;
   const recs=[];
 
-  // 0. SSL Labs – skóre, recs (panel sa renderuje zvlášť z report.sslResult)
+  // 0. SSL / TLS – skóre (panel sa renderuje zvlášť)
   if(sslResult){
     const grade=sslResult.grade||'N/A';
-    const gradeOk=/^A/.test(grade);
-    const gradeWarn=grade==='B';
-    if(gradeOk) score+=20;
-    else if(gradeWarn) score+=10;
-    else recs.push(`SSL Labs udelil grade ${grade} – skontroluj certifikát a TLS konfiguráciu.`);
-    if(sslResult.cert?.daysLeft!==null && sslResult.cert?.daysLeft<30)
-      recs.push(`SSL certifikát expiruje za ${sslResult.cert.daysLeft} dní – obnov ho čo najskôr.`);
-    if(sslResult.vulns?.length)
-      sslResult.vulns.forEach(v=>recs.push(`Kritická zraniteľnosť: ${v.desc}`));
+    if(/^A/.test(grade)) score+=20;
+    else if(grade==='B') score+=10;
+    else recs.push(`TLS grade ${grade} – skontroluj konfiguráciu certifikátu a verziu protokolu.`);
+    const dl=sslResult.cert?.daysLeft;
+    if(dl!==null && dl!==undefined && dl<30)
+      recs.push(`SSL certifikát expiruje za ${dl} dní – obnov ho čo najskôr.`);
+    if(sslResult.cert?.expired)
+      recs.push('SSL certifikát je expirovaný – stránka zobrazuje bezpečnostné varovania!');
   }
 
   // 1. HTTPS
@@ -1491,10 +1416,8 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
      points:5},
   ];
 
-  let obsGrade=null;
   if(obsResult?.tests){
     const t=obsResult.tests;
-    obsGrade=obsResult.scan?.grade||null;
     for(const def of HDR_DEFS){
       const result=t[def.key];
       const pass=result?.pass===true;
@@ -1512,96 +1435,99 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     for(const def of HDR_DEFS){
       checks.push({
         id:def.key, pass:null,
-        title:def.label+' (Observatory nedostupné)',
-        desc:def.desc+' Výsledok nie je k dispozícii – skus znova neskôr.',
+        title:def.label+' (nedostupné)',
+        desc:def.desc+' Kontrola hlavičiek zlyhala – skús znova neskôr.',
         points:def.points,
         obs:true,
       });
     }
-    recs.push('Mozilla Observatory neodpovedal – zopakuj sken neskôr pre kontrolu bezpečnostných hlavičiek.');
+    recs.push('Kontrola bezpečnostných hlavičiek zlyhala – skús skenovanie zopakovať.');
   }
 
   score=Math.max(0,Math.min(100,score));
 
-  return {url,hostname,score,checks,recs,obsGrade,gsbChecked:gsbResult!==null,sslResult};
+  return {url,hostname,score,checks,recs,gsbChecked:gsbResult!==null,sslResult};
 }
 
 /* ── SSL Panel Render ── */
 function renderSSLPanel(ssl){
-  console.log('[renderSSLPanel] called with:', ssl);
-  // Ak SSL Labs nezískal výsledok, zobraz "nedostupné" panel
   if(!ssl){
     return`<div class="ssl-panel" style="opacity:.7">
-      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Analýza (SSL Labs)</div>
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Certifikát</div>
       <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.86rem">
-        <span style="font-size:1.4rem">⏳</span>
+        <span style="font-size:1.4rem">⚠️</span>
         <div>
-          <div style="font-weight:600;color:var(--text)">SSL Labs výsledok nedostupný</div>
-          <div style="margin-top:2px">Server mohol byť preťažený (529) alebo analýza trvala príliš dlho. Skús skenovanie zopakovať.</div>
+          <div style="font-weight:600;color:var(--text)">SSL certifikát nedostupný</div>
+          <div style="margin-top:2px">Nepodarilo sa pripojiť na port 443 alebo doména nepoužíva HTTPS.</div>
         </div>
       </div>
     </div>`;
   }
 
   const grade = ssl.grade || 'N/A';
-  const gradeColor = /^A\+/.test(grade) ? 'var(--green)'
-    : /^A/.test(grade)  ? 'var(--green)'
-    : grade === 'B'     ? 'var(--yellow)'
-    : grade === 'C'     ? 'var(--orange)'
+  const gradeColor = grade === 'A+' ? 'var(--green)'
+    : /^A/.test(grade) ? 'var(--green)'
+    : grade === 'B'    ? 'var(--yellow)'
+    : grade === 'C'    ? 'var(--orange)'
     : 'var(--red)';
 
+  // TLS protokol tag
+  const proto = ssl.protocol || '';
+  const protoIsOld = /1\.0|1\.1|SSL/i.test(proto);
+  const protoIsNew = /1\.3/.test(proto);
+  const protoCls = protoIsOld ? 'ssl-proto-bad' : protoIsNew ? 'ssl-proto-ok' : 'ssl-proto-warn';
+  const protoTag = proto
+    ? `<span class="ssl-proto-tag ${protoCls}">${escHtml(proto)}</span>`
+    : '';
+
+  // Certifikát
   const cert = ssl.cert;
+  const daysLeft = cert?.daysLeft ?? null;
+  const daysColor = daysLeft === null ? 'var(--muted)'
+    : daysLeft < 14  ? 'var(--red)'
+    : daysLeft < 30  ? 'var(--yellow)'
+    : 'var(--green)';
+
   const certDetails = cert ? `
     <div class="ssl-detail-item">
       <div class="ssl-detail-label">Vydavateľ</div>
       <div class="ssl-detail-value">${escHtml(cert.issuer)}</div>
     </div>
     <div class="ssl-detail-item">
-      <div class="ssl-detail-label">Platný do</div>
-      <div class="ssl-detail-value" style="color:${cert.daysLeft<30?'var(--red)':cert.daysLeft<90?'var(--yellow)':'var(--green)'}">
-        ${escHtml(cert.notAfter||'N/A')}${cert.daysLeft!==null?` <span style="font-size:.75rem;opacity:.7">(${cert.daysLeft}d)</span>`:''}
-      </div>
+      <div class="ssl-detail-label">Subjekt</div>
+      <div class="ssl-detail-value">${escHtml(cert.subject)}</div>
     </div>
     <div class="ssl-detail-item">
-      <div class="ssl-detail-label">Kľúč</div>
-      <div class="ssl-detail-value">${escHtml(cert.keyAlg||'N/A')} ${cert.keySize||''}</div>
+      <div class="ssl-detail-label">Platný do</div>
+      <div class="ssl-detail-value" style="color:${daysColor}">
+        ${escHtml(cert.validTo || 'N/A')}${daysLeft !== null ? ` <span style="font-size:.75rem;opacity:.8">(${daysLeft}d)</span>` : ''}
+      </div>
     </div>
+    ${ssl.cipher ? `<div class="ssl-detail-item">
+      <div class="ssl-detail-label">Cipher</div>
+      <div class="ssl-detail-value" style="font-size:.78rem">${escHtml(ssl.cipher)}</div>
+    </div>` : ''}
   ` : '';
 
-  const protoHTML = (ssl.protocols||[]).map(p => {
-    const ver = `${p.name} ${p.version}`;
-    const isOld = p.version === '1.0' || p.version === '1.1' || p.name === 'SSL';
-    const isNew = p.version === '1.3';
-    const cls = isOld ? 'ssl-proto-bad' : isNew ? 'ssl-proto-ok' : 'ssl-proto-warn';
-    return `<span class="ssl-proto-tag ${cls}">${escHtml(ver)}</span>`;
-  }).join('');
-
-  const vulnHTML = ssl.vulns?.length
-    ? `<div style="margin-top:10px">
-        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px">⚠️ Zraniteľnosti</div>
-        <div class="ssl-vuln-list">
-          ${ssl.vulns.map(v=>`<div class="ssl-vuln-item">🚨 ${escHtml(v.desc)}</div>`).join('')}
-        </div>
-      </div>`
-    : `<div style="margin-top:8px;font-size:.8rem;color:var(--green)">✅ Žiadne známe zraniteľnosti</div>`;
+  const certWarning = cert?.expired
+    ? `<div style="margin-top:10px;font-size:.82rem;color:var(--red);font-weight:600">🚨 Certifikát je expirovaný!</div>`
+    : daysLeft !== null && daysLeft < 30
+    ? `<div style="margin-top:10px;font-size:.82rem;color:var(--yellow)">⚠️ Certifikát expiruje za ${daysLeft} dní – obnov ho čo najskôr.</div>`
+    : '';
 
   return`<div class="ssl-panel">
-    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">🔒 SSL / TLS Analýza (SSL Labs)</div>
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">🔒 SSL / TLS Certifikát</div>
     <div class="ssl-grade-row">
-      <div class="ssl-grade-circle" style="color:${gradeColor};border-color:${gradeColor};background:${gradeColor}18">
+      <div class="ssl-grade-circle" style="color:${gradeColor};border-color:${gradeColor}">
         ${escHtml(grade)}
       </div>
       <div class="ssl-grade-info">
-        <div class="ssl-grade-title">SSL Grade: <strong style="color:${gradeColor}">${escHtml(grade)}</strong></div>
-        <div class="ssl-grade-sub">
-          ${ssl.hsts ? '✅ HSTS aktívny' : '❌ HSTS chýba'} &nbsp;·&nbsp;
-          ${ssl.forwardSecrecy ? '✅ Forward Secrecy' : '❌ Bez Forward Secrecy'}
-        </div>
-        ${protoHTML ? `<div class="ssl-protocols" style="margin-top:8px">${protoHTML}</div>` : ''}
+        <div class="ssl-grade-title">TLS Grade: <strong style="color:${gradeColor}">${escHtml(grade)}</strong></div>
+        <div class="ssl-grade-sub" style="margin-top:4px">${protoTag}</div>
       </div>
     </div>
     <div class="ssl-details-grid">${certDetails}</div>
-    ${vulnHTML}
+    ${certWarning}
   </div>`;
 }
 
