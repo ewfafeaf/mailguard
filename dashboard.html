@@ -208,6 +208,33 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   padding:3px 8px;border-radius:5px;background:rgba(79,142,247,.15);color:var(--accent);
   border:1px solid rgba(79,142,247,.2);margin-top:8px}
 
+/* ── SSL PANEL STYLES ── */
+.ssl-panel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:12px}
+.ssl-grade-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:14px}
+.ssl-grade-circle{width:80px;height:80px;border-radius:50%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;
+  border:3px solid currentColor;flex-shrink:0;line-height:1}
+.ssl-grade-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;opacity:.75;margin-top:2px}
+.ssl-grade-info{flex:1}
+.ssl-grade-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+.ssl-grade-sub{font-size:.82rem;color:var(--muted);line-height:1.5}
+.ssl-details-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px}
+.ssl-detail-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ssl-detail-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+.ssl-detail-value{font-size:.86rem;font-weight:600;color:var(--text)}
+.ssl-protocols{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ssl-proto-tag{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:5px;border:1px solid}
+.ssl-proto-ok{background:rgba(34,197,94,.1);color:var(--green);border-color:rgba(34,197,94,.3)}
+.ssl-proto-bad{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.3)}
+.ssl-proto-warn{background:rgba(245,158,11,.1);color:var(--yellow);border-color:rgba(245,158,11,.3)}
+.ssl-vuln-list{display:grid;gap:5px;margin-top:10px}
+.ssl-vuln-item{display:flex;align-items:center;gap:8px;font-size:.82rem;
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:6px 10px;color:var(--red)}
+.ssl-countdown{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.15);border-radius:8px;margin-bottom:10px}
+.ssl-countdown-text{font-size:.84rem;color:var(--muted);flex:1}
+.ssl-countdown-num{font-size:1.1rem;font-weight:800;color:var(--accent);min-width:32px;text-align:right}
+
 /* ── TICKET STYLES ── */
 .ticket-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
 .ticket-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -845,23 +872,29 @@ async function upgradeToPro(){
 }
 
 async function handlePaymentReturn(){
+  console.log('handlePaymentReturn: URL search =', window.location.search);
   const params = new URLSearchParams(window.location.search);
   const payment = params.get('payment');
+  console.log('Payment param:', payment);
   if(!payment) return;
 
+  console.log('Payment return detected');
+
   // Vyčisti URL parameter
-  const clean = window.location.pathname;
-  window.history.replaceState({}, '', clean);
+  window.history.replaceState({}, '', window.location.pathname);
 
   if(payment === 'success'){
     // Čerstvý user z auth
-    const { data: { user } } = await _sb.auth.getUser();
+    const { data: { user }, error: userError } = await _sb.auth.getUser();
+    console.log('User:', user, 'userError:', userError);
 
     // Aktualizuj plán v Supabase
-    const { error } = await _sb.from('profiles')
+    const { data, error } = await _sb.from('profiles')
       .update({ plan: 'pro' })
-      .eq('id', user.id);
-    if(error) console.log('profiles update error:', error);
+      .eq('id', user.id)
+      .select();
+    console.log('Update result:', data, error);
+    if(error) console.error('profiles update error:', error);
 
     // Znova načítaj profil (aktualizuje sidebar + currentPlan)
     await loadProfile(user);
@@ -1065,15 +1098,18 @@ async function webScan(){
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
   resultEl.style.display='block';
   resultEl.innerHTML=wsLoadingHTML(hostname);
+  startWsCountdown(60);
 
-  // Run checks in parallel where possible
-  const [urlRisk, gsbResult, obsResult] = await Promise.all([
+  // Run SSL check first (longest), then others in parallel
+  const [sslResult, urlRisk, gsbResult, obsResult] = await Promise.all([
+    runSSLCheck(hostname),
     Promise.resolve(analyzeUrl(scanUrl)),
     (()=>{ const k=localStorage.getItem('gsb_api_key'); return k ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null); })(),
     runObservatoryScan(hostname),
   ]);
+  stopWsCountdown();
 
-  const report=buildWebReport(scanUrl, hostname, urlRisk, gsbResult, obsResult);
+  const report=buildWebReport(scanUrl, hostname, urlRisk, gsbResult, obsResult, sslResult);
   resultEl.innerHTML=renderWebResult(report);
 
   btn.disabled=false;
@@ -1087,13 +1123,70 @@ async function webScan(){
 
 function wsLoadingHTML(hostname){
   return`<div class="hres" style="padding:24px 20px">
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Skenujem <strong>${escHtml(hostname)}</strong>…</div>
-    ${['Overujem HTTPS a URL štruktúru…','Kontrolujem Google Safe Browsing…','Spúšťam Mozilla Observatory sken (môže trvať 15–30 s)…'].map(t=>`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <div style="font-size:.9rem;font-weight:700;margin-bottom:14px">Skenujem <strong>${escHtml(hostname)}</strong>…</div>
+    <div class="ssl-countdown" id="wsCountdownBar">
+      <div class="spinner" style="width:14px;height:14px;border-width:2px;flex-shrink:0"></div>
+      <span class="ssl-countdown-text" id="wsCountdownLabel">Skenujeme SSL certifikát…</span>
+      <span class="ssl-countdown-num" id="wsCountdownNum">60s</span>
+    </div>
+    ${[
+      {id:'wsStep0', text:'🔒 SSL Labs analýza (môže trvať 30–60 s)…'},
+      {id:'wsStep1', text:'🌐 URL štruktúra a reputácia…'},
+      {id:'wsStep2', text:'🛡️ Google Safe Browsing…'},
+      {id:'wsStep3', text:'📡 Mozilla Observatory – bezpečnostné hlavičky…'},
+    ].map(s=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px" id="${s.id}">
         <div class="spinner" style="width:12px;height:12px;border-width:2px;flex-shrink:0"></div>
-        <span style="font-size:.82rem;color:var(--muted)">${t}</span>
+        <span style="font-size:.82rem;color:var(--muted)">${s.text}</span>
       </div>`).join('')}
   </div>`;
+}
+
+let _wsCountdownInterval = null;
+function startWsCountdown(seconds){
+  clearInterval(_wsCountdownInterval);
+  let left = seconds;
+  const numEl = document.getElementById('wsCountdownNum');
+  const lblEl = document.getElementById('wsCountdownLabel');
+  if(!numEl) return;
+  numEl.textContent = left + 's';
+  _wsCountdownInterval = setInterval(()=>{
+    left--;
+    if(numEl) numEl.textContent = Math.max(0,left) + 's';
+    if(lblEl){
+      if(left > 40)      lblEl.textContent = 'Skenujeme SSL certifikát…';
+      else if(left > 20) lblEl.textContent = 'Analyzujeme protokoly a slabiny…';
+      else if(left > 0)  lblEl.textContent = 'Finalizujeme výsledok…';
+      else               lblEl.textContent = 'Dokončujeme…';
+    }
+    if(left <= 0) clearInterval(_wsCountdownInterval);
+  }, 1000);
+}
+function stopWsCountdown(){ clearInterval(_wsCountdownInterval); }
+
+/* ── SSL Labs ── */
+async function runSSLCheck(hostname){
+  try {
+    // Spusti sken
+    let res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}&startNew=true`);
+    if(!res.ok) return null;
+    let data = await res.json();
+
+    // Ak nie je hotový, polluj max 24× (každé 5s = 120s)
+    let attempts = 0;
+    while(data.status !== 'READY' && data.status !== 'ERROR' && attempts < 24){
+      await new Promise(r => setTimeout(r, 5000));
+      res  = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
+      data = await res.json();
+      attempts++;
+    }
+
+    if(data.status === 'READY') return data.parsed || null;
+    return null;
+  } catch(e){
+    console.warn('SSL check error:', e);
+    return null;
+  }
 }
 
 /* ── Observatory ── */
@@ -1127,10 +1220,48 @@ async function runObservatoryScan(hostname){
 }
 
 /* ── Build report ── */
-function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult){
+function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null){
   const checks=[];
   let score=0;
   const recs=[];
+
+  // 0. SSL Labs grade
+  if(sslResult){
+    const grade=sslResult.grade||'N/A';
+    const gradeOk=/^A/.test(grade);
+    const gradeWarn=grade==='B';
+    const gradeFail=!gradeOk&&!gradeWarn;
+    checks.push({
+      id:'ssl_grade', pass: gradeOk ? true : gradeFail ? false : null,
+      ssl: sslResult,
+      title: `SSL Labs grade: ${grade}`,
+      desc: gradeOk
+        ? 'Výborná SSL konfigurácia. Certifikát a protokoly sú správne nastavené.'
+        : gradeWarn
+          ? 'Dobrá SSL konfigurácia, ale sú niektoré nedostatky (napr. starší protokol).'
+          : 'Slabá SSL konfigurácia – certifikát môže byť neplatný, vypršaný alebo použité zraniteľné protokoly.',
+      points: gradeOk ? 20 : gradeWarn ? 10 : 0,
+    });
+    if(gradeOk) score+=20;
+    else if(gradeWarn) score+=10;
+    else recs.push(`SSL Labs udelil grade ${grade} – skontroluj certifikát a TLS konfiguráciu.`);
+
+    // Expired cert warning
+    if(sslResult.cert?.daysLeft !== null && sslResult.cert.daysLeft < 30){
+      recs.push(`SSL certifikát expiruje za ${sslResult.cert.daysLeft} dní – obnov ho čo najskôr.`);
+    }
+    // Vulns
+    if(sslResult.vulns?.length){
+      sslResult.vulns.forEach(v => recs.push(`Kritická zraniteľnosť: ${v.desc}`));
+    }
+  } else {
+    checks.push({
+      id:'ssl_grade', pass:null,
+      title:'SSL Labs – nedostupné alebo trvá dlhšie',
+      desc:'SSL Labs API nevrátilo výsledok v limite. Skús skenovanie zopakovať neskôr.',
+      points:20,
+    });
+  }
 
   // 1. HTTPS
   const isHttps=url.startsWith('https://');
@@ -1231,6 +1362,70 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult){
   return {url,hostname,score,checks,recs,obsGrade,gsbChecked:gsbResult!==null};
 }
 
+/* ── SSL Panel Render ── */
+function renderSSLPanel(ssl){
+  const grade = ssl.grade || 'N/A';
+  const gradeColor = /^A\+/.test(grade) ? 'var(--green)'
+    : /^A/.test(grade)  ? 'var(--green)'
+    : grade === 'B'     ? 'var(--yellow)'
+    : grade === 'C'     ? 'var(--orange)'
+    : 'var(--red)';
+
+  const cert = ssl.cert;
+  const certDetails = cert ? `
+    <div class="ssl-detail-item">
+      <div class="ssl-detail-label">Vydavateľ</div>
+      <div class="ssl-detail-value">${escHtml(cert.issuer)}</div>
+    </div>
+    <div class="ssl-detail-item">
+      <div class="ssl-detail-label">Platný do</div>
+      <div class="ssl-detail-value" style="color:${cert.daysLeft<30?'var(--red)':cert.daysLeft<90?'var(--yellow)':'var(--green)'}">
+        ${escHtml(cert.notAfter||'N/A')}${cert.daysLeft!==null?` <span style="font-size:.75rem;opacity:.7">(${cert.daysLeft}d)</span>`:''}
+      </div>
+    </div>
+    <div class="ssl-detail-item">
+      <div class="ssl-detail-label">Kľúč</div>
+      <div class="ssl-detail-value">${escHtml(cert.keyAlg||'N/A')} ${cert.keySize||''}</div>
+    </div>
+  ` : '';
+
+  const protoHTML = (ssl.protocols||[]).map(p => {
+    const ver = `${p.name} ${p.version}`;
+    const isOld = p.version === '1.0' || p.version === '1.1' || p.name === 'SSL';
+    const isNew = p.version === '1.3';
+    const cls = isOld ? 'ssl-proto-bad' : isNew ? 'ssl-proto-ok' : 'ssl-proto-warn';
+    return `<span class="ssl-proto-tag ${cls}">${escHtml(ver)}</span>`;
+  }).join('');
+
+  const vulnHTML = ssl.vulns?.length
+    ? `<div style="margin-top:10px">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px">⚠️ Zraniteľnosti</div>
+        <div class="ssl-vuln-list">
+          ${ssl.vulns.map(v=>`<div class="ssl-vuln-item">🚨 ${escHtml(v.desc)}</div>`).join('')}
+        </div>
+      </div>`
+    : `<div style="margin-top:8px;font-size:.8rem;color:var(--green)">✅ Žiadne známe zraniteľnosti</div>`;
+
+  return`<div class="ssl-panel">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">🔒 SSL / TLS Analýza (SSL Labs)</div>
+    <div class="ssl-grade-row">
+      <div class="ssl-grade-circle" style="color:${gradeColor};border-color:${gradeColor};background:${gradeColor}18">
+        ${escHtml(grade)}
+      </div>
+      <div class="ssl-grade-info">
+        <div class="ssl-grade-title">SSL Grade: <strong style="color:${gradeColor}">${escHtml(grade)}</strong></div>
+        <div class="ssl-grade-sub">
+          ${ssl.hsts ? '✅ HSTS aktívny' : '❌ HSTS chýba'} &nbsp;·&nbsp;
+          ${ssl.forwardSecrecy ? '✅ Forward Secrecy' : '❌ Bez Forward Secrecy'}
+        </div>
+        ${protoHTML ? `<div class="ssl-protocols" style="margin-top:8px">${protoHTML}</div>` : ''}
+      </div>
+    </div>
+    <div class="ssl-details-grid">${certDetails}</div>
+    ${vulnHTML}
+  </div>`;
+}
+
 /* ── Render ── */
 function renderWebResult(r){
   const level=r.score>=80?'safe':r.score>=55?'low':r.score>=35?'medium':'high';
@@ -1255,7 +1450,12 @@ function renderWebResult(r){
     ? `<span class="ws-obs-badge">Mozilla Observatory: ${escHtml(r.obsGrade)}</span>`
     : '';
 
+  // SSL panel (first check with ssl data)
+  const sslCheck = r.checks.find(c => c.id === 'ssl_grade');
+  const sslPanelHTML = sslCheck?.ssl ? renderSSLPanel(sslCheck.ssl) : '';
+
   const checksHTML=r.checks.map(c=>{
+    if(c.id === 'ssl_grade') return ''; // rendered separately as panel
     const cls=c.pass===true?'pass':c.pass===false?'fail':'skip';
     const icon=c.pass===true?'✅':c.pass===false?'❌':'⏭️';
     return`<div class="ws-check ${cls}">
@@ -1285,6 +1485,7 @@ function renderWebResult(r){
         ${obsInfo}
       </div>
     </div>
+    ${sslPanelHTML}
     <div class="dash-section-title" style="margin-bottom:10px"><div class="dot"></div>Výsledky kontrol</div>
     <div class="ws-checks">${checksHTML}</div>
     ${recsHTML}
