@@ -854,15 +854,17 @@ async function handlePaymentReturn(){
   window.history.replaceState({}, '', clean);
 
   if(payment === 'success'){
-    // Aktualizuj plán v Supabase
-    await _sb.from('profiles')
-      .update({ plan: 'pro' })
-      .eq('id', _currentUser.id);
-    currentPlan = 'pro';
+    // Čerstvý user z auth
+    const { data: { user } } = await _sb.auth.getUser();
 
-    // Aktualizuj badge v sidebari
-    const planEl = document.getElementById('sidebarPlan');
-    if(planEl) planEl.textContent = 'Pro Plan';
+    // Aktualizuj plán v Supabase
+    const { error } = await _sb.from('profiles')
+      .update({ plan: 'pro' })
+      .eq('id', user.id);
+    if(error) console.log('profiles update error:', error);
+
+    // Znova načítaj profil (aktualizuje sidebar + currentPlan)
+    await loadProfile(user);
 
     showToast('🎉 Vitaj v PRO! Tvoj účet bol aktualizovaný.', 'success');
   } else if(payment === 'cancelled'){
