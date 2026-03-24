@@ -1083,7 +1083,6 @@ async function webScan(){
   const btn=document.getElementById('wsBtn');
   const resultEl=document.getElementById('wsResult');
 
-  // Normalise URL
   let scanUrl=raw;
   if(!/^https?:\/\//i.test(scanUrl)) scanUrl='https://'+scanUrl;
   let hostname;
@@ -1097,80 +1096,229 @@ async function webScan(){
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
   resultEl.style.display='block';
-  resultEl.innerHTML=wsLoadingHTML(hostname);
+  resultEl.innerHTML=wsSkeletonHTML(hostname, scanUrl);
   startWsCountdown(120);
 
-  let sslResult=null, urlRisk=null, gsbResult=null, obsResult=null;
-  try {
-    [sslResult, urlRisk, gsbResult, obsResult] = await Promise.all([
-      runSSLCheck(hostname),
-      Promise.resolve(analyzeUrl(scanUrl)),
-      (()=>{ const k=localStorage.getItem('gsb_api_key'); return k ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null); })(),
-      runObservatoryScan(hostname),
-    ]);
-  } catch(err) {
-    console.error('[webScan] Promise.all error:', err);
-    // Pokračuj s tým čo máme — urlRisk je synchronný, ostatné môžu byť null
-    if(!urlRisk) urlRisk = analyzeUrl(scanUrl);
-  }
+  // ── 1. Sync – okamžité výsledky ──
+  const urlRisk=analyzeUrl(scanUrl);
+  const isHttps=scanUrl.startsWith('https://');
+  setWsCheck('wsChkHttps', isHttps,
+    isHttps ? 'HTTPS – spojenie je šifrované' : 'HTTP – spojenie NIE je šifrované',
+    isHttps ? 'Stránka používa TLS/SSL šifrovanie. Dáta sú chránené.'
+            : 'Stránka nepoužíva HTTPS. Odoslané dáta môžu byť zachytené.');
+  const urlOk=urlRisk.score<30;
+  setWsCheck('wsChkUrl', urlOk,
+    urlOk ? 'URL štruktúra vyzerá bezpečne' : 'URL obsahuje podozrivé prvky',
+    urlOk ? 'Doména neobsahuje znaky typické pre phishing.'
+          : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | ')||'Podozrivá štruktúra URL.');
 
+  // ── 2. Async – všetky beží naraz, DOM sa aktualizuje hneď po každom ──
+  let sslResult=null, gsbResult=null, obsResult=null;
+
+  const sslPromise=runSSLCheck(hostname).then(r=>{
+    sslResult=r;
+    console.log('[webScan] SSL done, result:', r);
+    stopWsCountdown();
+    // Nájdi sekciu — ak neexistuje, vlož pred "Výsledky kontrol"
+    let el=document.getElementById('wsSSLSection');
+    if(!el){
+      console.warn('[webScan] wsSSLSection not found, inserting before checks');
+      const checksTitle=document.querySelector('#wsResult .dash-section-title');
+      if(checksTitle){
+        const wrapper=document.createElement('div');
+        wrapper.id='wsSSLSection';
+        checksTitle.parentNode.insertBefore(wrapper, checksTitle);
+        el=wrapper;
+      }
+    }
+    if(el){
+      el.innerHTML=renderSSLPanel(r);
+      console.log('[webScan] SSL panel HTML set, length:', el.innerHTML.length);
+    } else {
+      console.error('[webScan] Cannot find place to insert SSL panel');
+    }
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+  }).catch(e=>console.error('[SSL]',e));
+
+  const gsbKey=localStorage.getItem('gsb_api_key');
+  const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null)).then(r=>{
+    gsbResult=r;
+    console.log('[webScan] GSB done:', r);
+    if(r!==null){
+      const ok=!r||r.length===0;
+      setWsCheck('wsChkGsb',ok,
+        ok?'Google Safe Browsing – žiadna hrozba':'Google Safe Browsing – HROZBA DETEKOVANÁ',
+        ok?'URL nie je v databáze Google Safe Browsing (phishing/malware).'
+          :'Hrozba: '+(r||[]).map(m=>m.threatType).join(', '));
+    } else {
+      setWsCheckSkip('wsChkGsb','Google Safe Browsing – bez API kľúča',
+        'Nastav GSB API kľúč v Nastaveniach pre kontrolu reputácie URL.');
+    }
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+  }).catch(e=>console.error('[GSB]',e));
+
+  const obsPromise=runObservatoryScan(hostname).then(r=>{
+    obsResult=r;
+    console.log('[webScan] Observatory done:', r?.source, r?.scan?.grade);
+    const HDR=[
+      {id:'wsChkHsts',  key:'strict-transport-security',label:'HSTS',               desc:'Vynucuje HTTPS pri každom načítaní. Chráni pred downgrade útokmi.'},
+      {id:'wsChkCsp',   key:'content-security-policy',  label:'Content-Security-Policy',desc:'Obmedzuje zdroje skriptov. Chráni pred XSS útokmi.'},
+      {id:'wsChkXframe',key:'x-frame-options',           label:'X-Frame-Options',    desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.'},
+      {id:'wsChkXcont', key:'x-content-type-options',    label:'X-Content-Type-Options',desc:'Zabraňuje MIME sniffingu. Ochrana pred injekciou obsahu.'},
+    ];
+    for(const d of HDR){
+      const t=r?.tests?.[d.key];
+      if(t!=null) setWsCheck(d.id,t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc);
+      else        setWsCheckSkip(d.id,d.label+' (nedostupné)',d.desc);
+    }
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+  }).catch(e=>console.error('[Observatory]',e));
+
+  // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
+  await Promise.all([sslPromise, gsbPromise, obsPromise]);
   stopWsCountdown();
-  console.log('[webScan] sslResult:', sslResult);
-  console.log('[webScan] urlRisk score:', urlRisk?.score, '| gsbResult:', gsbResult, '| obs grade:', obsResult?.scan?.grade);
 
-  const report=buildWebReport(scanUrl, hostname, urlRisk, gsbResult, obsResult, sslResult);
-  console.log('[webScan] report:', report.score, report.checks.map(c=>c.id+':'+c.pass));
-  resultEl.innerHTML=renderWebResult(report);
+  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+  const scoreEl=document.getElementById('wsScoreSection');
+  if(scoreEl) scoreEl.innerHTML=renderScoreHTML(report);
+  const recsEl=document.getElementById('wsRecsSection');
+  if(recsEl) recsEl.innerHTML=renderRecsHTML(report.recs);
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
 
-  await saveWebAnalysis(scanUrl, report.score);
+  await saveWebAnalysis(scanUrl,report.score);
   loadStats();
   loadDailyUsage();
 }
 
-function wsLoadingHTML(hostname){
-  return`<div class="hres" style="padding:24px 20px">
-    <div style="font-size:.9rem;font-weight:700;margin-bottom:14px">Skenujem <strong>${escHtml(hostname)}</strong>…</div>
-    <div class="ssl-countdown" id="wsCountdownBar">
-      <div class="spinner" style="width:14px;height:14px;border-width:2px;flex-shrink:0"></div>
-      <span class="ssl-countdown-text" id="wsCountdownLabel">Skenujeme SSL certifikát…</span>
-      <span class="ssl-countdown-num" id="wsCountdownNum">60s</span>
+/* ── Helper: nastav check riadok podľa ID ── */
+function setWsCheck(id,pass,title,desc){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.className='ws-check '+(pass?'pass':'fail');
+  el.innerHTML=`<div class="ws-check-icon">${pass?'✅':'❌'}</div>
+    <div class="ws-check-body">
+      <div class="ws-check-title">${escHtml(title)}</div>
+      <div class="ws-check-desc">${escHtml(desc)}</div>
+    </div>`;
+}
+function setWsCheckSkip(id,title,desc){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.className='ws-check skip';
+  el.innerHTML=`<div class="ws-check-icon">⏭️</div>
+    <div class="ws-check-body">
+      <div class="ws-check-title">${escHtml(title)}</div>
+      <div class="ws-check-desc">${escHtml(desc)}</div>
+    </div>`;
+}
+
+/* ── Priebežná aktualizácia skóre po každom výsledku ── */
+function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult){
+  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+  const el=document.getElementById('wsScoreSection');
+  if(el) el.innerHTML=renderScoreHTML(report);
+}
+
+/* ── Skeleton HTML – zobrazí sa hneď, každá sekcia má spinner ── */
+function wsSkeletonHTML(hostname, scanUrl){
+  const spinRow=(id,label)=>`<div class="ws-check skip" id="${id}">
+    <div class="spinner" style="width:14px;height:14px;border-width:2px;flex-shrink:0;margin-top:1px"></div>
+    <div class="ws-check-body"><div class="ws-check-title" style="color:var(--muted)">${escHtml(label)}</div></div>
+  </div>`;
+  return`<div class="hres" style="padding:20px">
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;font-family:monospace">${escHtml(scanUrl)}</div>
+    <div id="wsScoreSection">${renderScoreHTML(null,true)}</div>
+    <div id="wsSSLSection">
+      <div class="ssl-panel" style="opacity:.65">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Analýza (SSL Labs)</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
+          <span style="font-size:.86rem;color:var(--muted)">SSL Labs analýza prebieha (1–2 min)…</span>
+        </div>
+        <div class="ssl-countdown" style="margin-top:12px">
+          <div class="spinner" style="width:12px;height:12px;border-width:2px;flex-shrink:0"></div>
+          <span class="ssl-countdown-text" id="wsCountdownLabel">Pripájam sa na SSL Labs…</span>
+          <span class="ssl-countdown-num" id="wsCountdownNum">120s</span>
+        </div>
+      </div>
     </div>
-    ${[
-      {id:'wsStep0', text:'🔒 SSL Labs analýza (môže trvať 30–60 s)…'},
-      {id:'wsStep1', text:'🌐 URL štruktúra a reputácia…'},
-      {id:'wsStep2', text:'🛡️ Google Safe Browsing…'},
-      {id:'wsStep3', text:'📡 Mozilla Observatory – bezpečnostné hlavičky…'},
-    ].map(s=>`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px" id="${s.id}">
-        <div class="spinner" style="width:12px;height:12px;border-width:2px;flex-shrink:0"></div>
-        <span style="font-size:.82rem;color:var(--muted)">${s.text}</span>
-      </div>`).join('')}
+    <div class="dash-section-title" style="margin:14px 0 10px"><div class="dot"></div>Výsledky kontrol</div>
+    <div class="ws-checks">
+      ${spinRow('wsChkHttps','Kontrola HTTPS…')}
+      ${spinRow('wsChkUrl',  'Analýza URL štruktúry…')}
+      ${spinRow('wsChkGsb',  'Google Safe Browsing…')}
+      ${spinRow('wsChkHsts', 'HSTS…')}
+      ${spinRow('wsChkCsp',  'Content-Security-Policy…')}
+      ${spinRow('wsChkXframe','X-Frame-Options…')}
+      ${spinRow('wsChkXcont','X-Content-Type-Options…')}
+    </div>
+    <div id="wsRecsSection"></div>
   </div>`;
 }
 
-let _wsCountdownInterval = null;
+/* ── Score kruh ── */
+function renderScoreHTML(r, loading=false){
+  if(loading||!r){
+    return`<div class="ws-score-wrap" style="opacity:.45;margin-bottom:16px">
+      <div class="ws-circle" style="border-color:var(--border);color:var(--muted)">
+        <span class="ws-circle-num">—</span><span class="ws-circle-lbl">/ 100</span>
+      </div>
+      <div class="ws-score-info">
+        <div class="ws-verdict" style="color:var(--muted)">Skenujeme…</div>
+        <div class="ws-desc">Skóre sa aktualizuje po každej kontrole</div>
+        <div class="ws-progress-bar"><div class="ws-progress-fill" style="width:0%"></div></div>
+      </div>
+    </div>`;
+  }
+  const level=r.score>=80?'safe':r.score>=55?'low':r.score>=35?'medium':'high';
+  const col={safe:'var(--green)',low:'var(--yellow)',medium:'var(--orange)',high:'var(--red)'}[level];
+  const verdict={safe:'Stránka je dobre zabezpečená',low:'Dobré zabezpečenie, menšie nedostatky',
+    medium:'Stredné riziko – odporúčame opravy',high:'Slabé zabezpečenie – potrebná okamžitá akcia'}[level];
+  const progressFill=r.score>=80?'var(--green)':r.score>=55?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--orange),var(--red))';
+  const obsInfo=r.obsGrade?`<span class="ws-obs-badge">Mozilla Observatory: ${escHtml(r.obsGrade)}</span>`:'';
+  return`<div class="ws-score-wrap" style="margin-bottom:16px">
+    <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
+      <span class="ws-circle-num">${r.score}</span><span class="ws-circle-lbl">/ 100</span>
+    </div>
+    <div class="ws-score-info">
+      <div class="ws-verdict" style="color:${col}">${verdict}</div>
+      <div class="ws-desc">Bezpečnostné skóre: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
+      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${r.score}%"></div></div>
+      ${obsInfo}
+    </div>
+  </div>`;
+}
+
+/* ── Odporúčania ── */
+function renderRecsHTML(recs){
+  if(!recs||!recs.length)
+    return`<div class="ws-recs"><div class="ws-recs-title">✅ Výborne! Žiadne ďalšie odporúčania.</div></div>`;
+  return`<div class="ws-recs">
+    <div class="ws-recs-title">💡 Odporúčania</div>
+    <ul>${recs.map(r=>`<li>${escHtml(r)}</li>`).join('')}</ul>
+  </div>`;
+}
+
+let _wsCountdownInterval=null;
 function startWsCountdown(seconds){
   clearInterval(_wsCountdownInterval);
-  let left = seconds;
-  const numEl = document.getElementById('wsCountdownNum');
-  const lblEl = document.getElementById('wsCountdownLabel');
-  if(!numEl) return;
-  numEl.textContent = left + 's';
-  _wsCountdownInterval = setInterval(()=>{
+  let left=seconds;
+  _wsCountdownInterval=setInterval(()=>{
     left--;
-    if(numEl) numEl.textContent = left > 0 ? left + 's' : '⏳';
+    const numEl=document.getElementById('wsCountdownNum');
+    const lblEl=document.getElementById('wsCountdownLabel');
+    if(numEl) numEl.textContent=left>0?left+'s':'⏳';
     if(lblEl){
-      if(left > 80)      lblEl.textContent = 'Skenujeme SSL certifikát (môže trvať až 2 min)…';
-      else if(left > 50) lblEl.textContent = 'SSL Labs analyzuje protokoly a certifikát…';
-      else if(left > 20) lblEl.textContent = 'Kontrolujeme bezpečnostné hlavičky…';
-      else if(left > 0)  lblEl.textContent = 'Finalizujeme výsledky…';
-      else               lblEl.textContent = 'Čakáme na posledné výsledky, ešte chvíľu…';
+      if(left>80)      lblEl.textContent='SSL Labs analýza prebieha…';
+      else if(left>50) lblEl.textContent='Analyzujeme certifikát a protokoly…';
+      else if(left>20) lblEl.textContent='Kontrolujeme zraniteľnosti…';
+      else if(left>0)  lblEl.textContent='Finalizujeme SSL výsledky…';
+      else             lblEl.textContent='Ešte chvíľu…';
     }
-    if(left <= 0) clearInterval(_wsCountdownInterval);
-  }, 1000);
+    if(left<=0) clearInterval(_wsCountdownInterval);
+  },1000);
 }
 function stopWsCountdown(){ clearInterval(_wsCountdownInterval); }
 
@@ -1358,6 +1506,7 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
 
 /* ── SSL Panel Render ── */
 function renderSSLPanel(ssl){
+  console.log('[renderSSLPanel] called with:', ssl);
   // Ak SSL Labs nezískal výsledok, zobraz "nedostupné" panel
   if(!ssl){
     return`<div class="ssl-panel" style="opacity:.7">
@@ -1434,69 +1583,6 @@ function renderSSLPanel(ssl){
   </div>`;
 }
 
-/* ── Render ── */
-function renderWebResult(r){
-  const level=r.score>=80?'safe':r.score>=55?'low':r.score>=35?'medium':'high';
-  const colors={safe:'var(--green)',low:'var(--yellow)',medium:'var(--orange)',high:'var(--red)'};
-  const verdicts={
-    safe:'Stránka je dobre zabezpečená',
-    low:'Dobré zabezpečenie, menšie nedostatky',
-    medium:'Stredné riziko – odporúčame opravy',
-    high:'Slabé zabezpečenie – potrebná okamžitá akcia',
-  };
-  const col=colors[level];
-
-  const circleHTML=`
-    <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
-      <span class="ws-circle-num">${r.score}</span>
-      <span class="ws-circle-lbl">/ 100</span>
-    </div>`;
-
-  const progressFill=`background:${r.score>=80?'var(--green)':r.score>=55?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--orange),var(--red))'}`;
-
-  const obsInfo=r.obsGrade
-    ? `<span class="ws-obs-badge">Mozilla Observatory: ${escHtml(r.obsGrade)}</span>`
-    : '';
-
-  // SSL panel – vždy zobrazený, buď s dátami alebo "nedostupné"
-  const sslPanelHTML = renderSSLPanel(r.sslResult || null);
-
-  const checksHTML=r.checks.map(c=>{
-    const cls=c.pass===true?'pass':c.pass===false?'fail':'skip';
-    const icon=c.pass===true?'✅':c.pass===false?'❌':'⏭️';
-    return`<div class="ws-check ${cls}">
-      <div class="ws-check-icon">${icon}</div>
-      <div class="ws-check-body">
-        <div class="ws-check-title">${escHtml(c.title)}</div>
-        <div class="ws-check-desc">${escHtml(c.desc)}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const recsHTML=r.recs.length
-    ? `<div class="ws-recs">
-        <div class="ws-recs-title">💡 Odporúčania</div>
-        <ul>${r.recs.map(rec=>`<li>${escHtml(rec)}</li>`).join('')}</ul>
-      </div>`
-    : `<div class="ws-recs"><div class="ws-recs-title">✅ Výborne! Žiadne ďalšie odporúčania.</div></div>`;
-
-  return`<div class="hres" style="padding:20px">
-    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;font-family:monospace">${escHtml(r.url)}</div>
-    <div class="ws-score-wrap">
-      ${circleHTML}
-      <div class="ws-score-info">
-        <div class="ws-verdict" style="color:${col}">${verdicts[level]}</div>
-        <div class="ws-desc">Bezpečnostné skóre: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
-        <div class="ws-progress-bar"><div class="ws-progress-fill" style="${progressFill};width:${r.score}%"></div></div>
-        ${obsInfo}
-      </div>
-    </div>
-    ${sslPanelHTML}
-    <div class="dash-section-title" style="margin-bottom:10px"><div class="dot"></div>Výsledky kontrol</div>
-    <div class="ws-checks">${checksHTML}</div>
-    ${recsHTML}
-  </div>`;
-}
 
 async function saveWebAnalysis(url, score){
   const verdict=score>=80?'safe':score>=55?'low':score>=35?'medium':'high';
