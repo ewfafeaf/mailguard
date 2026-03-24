@@ -60,9 +60,14 @@ module.exports = async function handler(req, res) {
     }
 
     const data = await apiRes.json();
-    console.log(`[ssl-check] status=${data.status} endpoints=${data.endpoints?.length ?? 0}`);
+    const ep = data.endpoints?.[0];
+    console.log(`[ssl-check] status=${data.status} ep.grade=${ep?.grade} ep.status=${ep?.statusMessage}`);
 
-    if (data.status === 'READY') {
+    // SSL Labs niekedy vracia IN_PROGRESS aj keď endpoint už má grade —
+    // považujeme to za hotové keď hlavný status je READY ALEBO endpoint má grade
+    const isReady = data.status === 'READY' || (ep?.grade && ep.grade !== '');
+
+    if (isReady) {
       const parsed = parseSSLResult(data);
       console.log(`[ssl-check] parsed grade=${parsed.grade} cert=${parsed.cert?.issuer}`);
       return res.status(200).json({ status: 'READY', parsed });
@@ -71,7 +76,7 @@ module.exports = async function handler(req, res) {
     // IN_PROGRESS / DNS / ERROR – klient bude pollovať
     return res.status(200).json({
       status: data.status,
-      statusMessage: data.statusMessage || data.endpoints?.[0]?.statusMessage || null,
+      statusMessage: data.statusMessage || ep?.statusMessage || null,
     });
 
   } catch (err) {
@@ -86,26 +91,39 @@ function parseSSLResult(data) {
 
   const grade = endpoint?.grade || 'N/A';
 
-  // ── Certifikát (v3: data.certs[] + certChains na prepojenie) ──
+  // ── Certifikát ──
+  // SSL Labs v3: data.certs[] (top-level) prepojené cez certChains
+  // SSL Labs niekedy vracia details.cert priamo (starší formát)
   let cert = null;
   try {
-    // Najdi certId z prvého chainu prvého endpointu
+    let raw = null;
+
+    // 1. Skús v3 certChains → data.certs[]
     const certId = details?.certChains?.[0]?.certIds?.[0];
-    // data.certs je pole certov – hľadaj podľa id
-    const raw = certId
-      ? (data.certs || []).find(c => c.id === certId)
-      : (data.certs || [])[0];             // fallback: prvý cert
+    if (certId) {
+      raw = (data.certs || []).find(c => c.id === certId);
+    }
+    // 2. Fallback: prvý cert v data.certs[]
+    if (!raw && data.certs?.length) {
+      raw = data.certs[0];
+    }
+    // 3. Fallback: details.cert (starší SSL Labs formát)
+    if (!raw && details?.cert) {
+      raw = details.cert;
+    }
+
+    console.log(`[ssl-check] cert raw keys: ${raw ? Object.keys(raw).join(',') : 'null'}`);
 
     if (raw) {
       cert = {
-        issuer:   raw.issuerLabel || raw.issuerSubject || 'Neznámy',
-        subject:  raw.commonNames?.[0] || raw.subject || data.host,
+        issuer:    raw.issuerLabel || raw.issuerSubject || 'Neznámy',
+        subject:   raw.commonNames?.[0] || raw.subject || data.host,
         notBefore: raw.notBefore ? new Date(raw.notBefore).toISOString().split('T')[0] : null,
         notAfter:  raw.notAfter  ? new Date(raw.notAfter).toISOString().split('T')[0]  : null,
         daysLeft:  raw.notAfter  ? Math.round((raw.notAfter - Date.now()) / 86400000)  : null,
-        keyAlg:   raw.keyAlg  || null,
-        keySize:  raw.keySize || null,
-        sigAlg:   raw.sigAlg  || null,
+        keyAlg:    raw.keyAlg  || null,
+        keySize:   raw.keySize || null,
+        sigAlg:    raw.sigAlg  || null,
       };
     }
   } catch (e) {

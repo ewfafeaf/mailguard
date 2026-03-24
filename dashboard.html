@@ -1343,11 +1343,13 @@ async function runSSLCheck(hostname){
       res  = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
       data = await res.json();
       attempts++;
+      // Záloha: API mohlo vrátiť IN_PROGRESS ale parsed je už k dispozícii
+      if(data.parsed) break;
     }
 
-    console.log('[SSL] Final status:', data.status, '| parsed:', data.parsed);
-    if(data.status === 'READY') return data.parsed || null;
-    console.warn('[SSL] Did not reach READY, last status:', data.status);
+    console.log('[SSL] Final status:', data.status, '| parsed grade:', data.parsed?.grade);
+    if(data.status === 'READY' || data.parsed) return data.parsed || null;
+    console.warn('[SSL] Did not reach READY after', attempts, 'attempts, last status:', data.status);
     return null;
   } catch(e){
     console.error('[SSL] Exception:', e);
