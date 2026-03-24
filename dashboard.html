@@ -1207,7 +1207,7 @@ async function runSSLCheck(hostname){
   }
 }
 
-/* ── Observatory (cez Vercel proxy – bez CORS problémov) ── */
+/* ── Observatory / Direct header check (cez Vercel proxy) ── */
 async function runObservatoryScan(hostname){
   console.log('[Observatory] Starting for:', hostname);
   try {
@@ -1217,20 +1217,20 @@ async function runObservatoryScan(hostname){
       return null;
     }
     const data = await res.json();
-    console.log('[Observatory] state:', data.state, '| grade:', data.scan?.grade);
+    console.log('[Observatory] source:', data.source, '| state:', data.state, '| grade:', data.grade);
+    console.log('[Observatory] headers:', data.headers);
 
-    if(data.state === 'ERROR'){
-      console.warn('[Observatory] error:', data.error);
+    if(data.state === 'ERROR' || !data.headers){
+      console.warn('[Observatory] no results:', data.error);
       return null;
     }
-    if(data.state !== 'FINISHED') return null;
 
-    // Preveď headers formát na pôvodný {tests} formát ktorý buildWebReport očakáva
+    // Normalizuj headers na {tests} formát: { key: { pass: bool } }
     const tests = {};
     for(const [key, val] of Object.entries(data.headers || {})){
-      if(val) tests[key] = val;
+      if(val !== null) tests[key] = val;
     }
-    return { scan: data.scan, tests };
+    return { scan: data.scan, tests, source: data.source };
   } catch(e) {
     console.warn('[Observatory] exception:', e);
     return null;
