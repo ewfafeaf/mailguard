@@ -1117,12 +1117,14 @@ async function webScan(){
 
   const sslPromise=runSSLCheck(hostname).then(r=>{
     sslResult=r;
-    console.log('[webScan] SSL done, result:', r);
+    console.log('[webScan] SSL done, sslResult:', r ? `grade=${r.grade}` : 'null');
     stopWsCountdown();
-    // Nájdi sekciu — ak neexistuje, vlož pred "Výsledky kontrol"
+
+    // Nájdi wsSSLSection — vždy existuje vďaka wsSkeletonHTML
     let el=document.getElementById('wsSSLSection');
     if(!el){
-      console.warn('[webScan] wsSSLSection not found, inserting before checks');
+      // Záloha: vlož pred sekciu "Výsledky kontrol"
+      console.warn('[webScan] wsSSLSection not found – inserting dynamically');
       const checksTitle=document.querySelector('#wsResult .dash-section-title');
       if(checksTitle){
         const wrapper=document.createElement('div');
@@ -1131,14 +1133,21 @@ async function webScan(){
         el=wrapper;
       }
     }
+
     if(el){
-      el.innerHTML=renderSSLPanel(r);
-      console.log('[webScan] SSL panel HTML set, length:', el.innerHTML.length);
-    } else {
+      try{
+        const html=renderSSLPanel(r);
+        el.innerHTML=html;
+        console.log('[webScan] SSL panel rendered, grade:', r?.grade||'(null)', 'html length:', html.length);
+      }catch(renderErr){
+        console.error('[webScan] renderSSLPanel threw:', renderErr);
+        el.innerHTML=`<div class="ssl-panel" style="color:var(--red);padding:14px">⚠️ SSL panel error: ${renderErr.message}</div>`;
+      }
+    }else{
       console.error('[webScan] Cannot find place to insert SSL panel');
     }
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
-  }).catch(e=>console.error('[SSL]',e));
+  }).catch(e=>console.error('[webScan][SSL promise]',e));
 
   const gsbKey=localStorage.getItem('gsb_api_key');
   const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null)).then(r=>{
@@ -1329,30 +1338,41 @@ async function runSSLCheck(hostname){
     let res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}&startNew=true`);
     console.log('[SSL] Initial response status:', res.status);
     if(!res.ok){
-      console.warn('[SSL] API error HTTP:', res.status, await res.text());
+      console.warn('[SSL] API error HTTP:', res.status);
       return null;
     }
     let data = await res.json();
-    console.log('[SSL] Initial data:', data);
+    console.log('[SSL] Initial data: status=', data.status, 'parsed=', !!data.parsed);
 
     // Polluj max 24× (každé 5s = 120s)
     let attempts = 0;
-    while(data.status !== 'READY' && data.status !== 'ERROR' && attempts < 24){
+    while(data.status !== 'READY' && data.status !== 'ERROR' && !data.parsed && attempts < 24){
       console.log(`[SSL] Polling attempt ${attempts+1}, status: ${data.status} – ${data.statusMessage||''}`);
       await new Promise(r => setTimeout(r, 5000));
-      res  = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
-      data = await res.json();
+      const pollRes = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`);
+      if(!pollRes.ok){
+        console.warn('[SSL] Polling HTTP error:', pollRes.status);
+        attempts++;
+        continue;
+      }
+      data = await pollRes.json();
       attempts++;
-      // Záloha: API mohlo vrátiť IN_PROGRESS ale parsed je už k dispozícii
-      if(data.parsed) break;
     }
 
-    console.log('[SSL] Final status:', data.status, '| parsed grade:', data.parsed?.grade);
-    if(data.status === 'READY' || data.parsed) return data.parsed || null;
-    console.warn('[SSL] Did not reach READY after', attempts, 'attempts, last status:', data.status);
+    console.log('[SSL] Loop done: status=', data.status, 'parsed grade=', data.parsed?.grade, 'attempts=', attempts);
+
+    if(data.parsed){
+      console.log('[SSL] Returning parsed result, grade:', data.parsed.grade);
+      return data.parsed;
+    }
+    if(data.status === 'READY'){
+      console.warn('[SSL] Status READY but no parsed data');
+      return null;
+    }
+    console.warn('[SSL] No result after', attempts, 'attempts, last status:', data.status);
     return null;
   } catch(e){
-    console.error('[SSL] Exception:', e);
+    console.error('[SSL] Exception:', e.message, e);
     return null;
   }
 }
