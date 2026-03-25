@@ -1770,8 +1770,12 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     { key:'x-content-type-options',    label:'X-Content-Type-Options', pts:3, desc:'Zabraňuje MIME sniffingu.' },
   ];
   for(const d of hdrDefs){
-    if(hdr[d.key]?.pass === true) score += d.pts;
-    else if(obsResult?.tests)     recs.push(`Nastaviť hlavičku ${d.label} na serveri.`);
+    if(hdr[d.key]?.pass === true){
+      score += d.pts;
+    } else if(obsResult?.tests){
+      score -= 5; // penalizácia za chýbajúcu bezpečnostnú hlavičku
+      recs.push(`Nastaviť hlavičku ${d.label} na serveri.`);
+    }
   }
 
   // ── Stropy pre phishing indikátory (override akéhokoľvek skóre) ──
@@ -1864,12 +1868,12 @@ function renderVTPanel(vt){
 async function runShodanCheck(hostname){
   try{
     const r=await fetch(`/api/shodan-check?host=${encodeURIComponent(hostname)}`);
-    if(!r.ok) return null;
     const data=await r.json();
-    return data.ok ? data : null;
+    console.log('[Shodan] response:', data);
+    return data; // vždy vráť objekt, renderShodanPanel spracuje ok:false
   }catch(e){
     console.warn('[Shodan] exception:',e.message);
-    return null;
+    return { ok:false, error: e.message };
   }
 }
 
@@ -1877,14 +1881,18 @@ async function runShodanCheck(hostname){
 function renderShodanPanel(sh){
   const RISK_COLOR={high:'var(--red)',medium:'var(--yellow)',low:'var(--muted)',safe:'var(--green)',unknown:'var(--muted)'};
 
-  if(!sh){
+  if(!sh || !sh.ok){
+    const msg = sh?.error || 'API kľúč nie je nastavený alebo DNS lookup zlyhal.';
     return`<div class="ssl-panel" style="opacity:.7">
       <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔍 Shodan – Network Intelligence</div>
       <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.86rem">
         <span style="font-size:1.4rem">⚠️</span>
-        <div><div style="font-weight:600;color:var(--text)">Shodan nedostupný</div>
-        <div style="margin-top:2px">API kľúč nie je nastavený alebo DNS lookup zlyhal.</div></div>
-      </div></div>`;
+        <div>
+          <div style="font-weight:600;color:var(--text)">Shodan nedostupný</div>
+          <div style="margin-top:2px">${escHtml(msg)}</div>
+        </div>
+      </div>
+    </div>`;
   }
 
   if(!sh.inShodan){
