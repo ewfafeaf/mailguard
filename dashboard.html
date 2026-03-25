@@ -1480,12 +1480,38 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     else { score -= 30; recs.push(`VirusTotal: ${threats} antivírusov označilo doménu ako nebezpečnú.`); }
   }
 
-  // ── Typosquatting / URL risk ───────────
-  const suspiciousUrl = urlRisk && urlRisk.score >= 30;
-  if(suspiciousUrl){
+  // ── URL risk / Typosquatting / Subdomain / TLD ────────────
+  const urlFindings = urlRisk?.findings || [];
+
+  // 1. Typosquatting (imitácia brand)
+  const hasTyposquat = urlFindings.some(f => f.sev === 'high' && f.text.includes('typosquatting'));
+  if(hasTyposquat){
+    score -= 30;
+    recs.push('⚠️ Doména imituje známu značku (typosquatting) – vysoké riziko phishingu.');
+  }
+
+  // 2. Ostatné high-sev URL flags (IP adresa, @, skrátená URL…) ale nie typosquat
+  const otherHighFlags = urlFindings.filter(f => f.sev === 'high' && !f.text.includes('typosquatting'));
+  if(otherHighFlags.length){
+    score -= 15;
+    recs.push('Podozrivá URL: ' + otherHighFlags.map(f => f.text).join(' | '));
+  }
+
+  // 3. Počet subdomén (>2 = podozrivé, napr. paypal.secure.login.ru)
+  let hostParts = [];
+  try{ hostParts = new URL(url).hostname.split('.'); }catch{}
+  const subdomainCount = Math.max(0, hostParts.length - 2);
+  if(subdomainCount > 2){
     score -= 20;
-    const flags = (urlRisk.findings || []).filter(f => f.sev !== 'ok').map(f => f.text);
-    recs.push('Podozrivá URL štruktúra: ' + (flags.join(' | ') || 'skontroluj doménu.'));
+    recs.push(`Doména má ${subdomainCount} úrovní subdomén – typická technika phishingu.`);
+  }
+
+  // 4. Riziková TLD
+  const riskyTLDs = ['.ru', '.cn', '.tk', '.ga', '.ml'];
+  const tldStr = hostname ? '.'+hostname.split('.').pop() : '';
+  if(riskyTLDs.includes(tldStr)){
+    score -= 15;
+    recs.push(`Riziková TLD "${tldStr}" – vysoký výskyt phishingových domén.`);
   }
 
   // ── WHOIS – vek domény ─────────────────
