@@ -1206,26 +1206,14 @@ async function webScan(){
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[VT promise]',e));
 
-  // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
+  // ── 3. Čakaj na všetko, potom finalizeReport ──
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
-
-  let report;
-  try{
-    report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }catch(e){
-    console.error('[webScan] buildWebReport final threw:', e);
-    report={score:0,recs:[],gsbChecked:false};
-  }
-  console.log('[webScan] FINAL score:', report.score, 'recs:', report.recs.length);
-  const scoreEl=document.getElementById('wsScoreSection');
-  if(scoreEl) scoreEl.innerHTML=renderScoreHTML(report, false); // false = finálny verdikt
-  const recsEl=document.getElementById('wsRecsSection');
-  if(recsEl) recsEl.innerHTML=renderRecsHTML(report.recs);
+  const finalReport=finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
 
-  await saveWebAnalysis(scanUrl,report.score);
+  await saveWebAnalysis(scanUrl, finalReport?.score ?? 0);
   loadStats();
   loadDailyUsage();
 }
@@ -1257,10 +1245,28 @@ function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
   try{
     const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
     const el=document.getElementById('wsScoreSection');
-    if(el) el.innerHTML=renderScoreHTML(report, true); // true = priebežné, ešte beží
+    if(el) el.innerHTML=renderScoreHTML(report,true);
+    console.log('[wsRefreshScore] partial score:', report.score);
   }catch(e){
-    console.error('[wsRefreshScore] buildWebReport threw:', e);
+    console.error('[wsRefreshScore] threw:', e);
   }
+}
+
+/* ── Finálne skóre + verdikt + odporúčania ── */
+function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult){
+  let report;
+  try{
+    report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
+  }catch(e){
+    console.error('[finalizeReport] buildWebReport threw:', e);
+    report={score:0,recs:['Chyba pri výpočte skóre.'],gsbChecked:false};
+  }
+  console.log('[finalizeReport] score:', report.score, 'recs:', report.recs.length);
+  const scoreEl=document.getElementById('wsScoreSection');
+  if(scoreEl) scoreEl.innerHTML=renderFinalScore(report);
+  const recsEl=document.getElementById('wsRecsSection');
+  if(recsEl) recsEl.innerHTML=renderRecsHTML(report.recs);
+  return report;
 }
 
 /* ── Skeleton HTML – zobrazí sa hneď, každá sekcia má spinner ── */
@@ -1314,8 +1320,8 @@ function wsSkeletonHTML(hostname, scanUrl){
 }
 
 /* ── Score kruh ── */
+/* Skeleton – pred akýmikoľvek dátami */
 function renderScoreHTML(r, partial=false){
-  // Skeleton: žiadne dáta ešte
   if(!r){
     return`<div class="ws-score-wrap" style="opacity:.45;margin-bottom:16px">
       <div class="ws-circle" style="border-color:var(--border);color:var(--muted)">
@@ -1328,26 +1334,48 @@ function renderScoreHTML(r, partial=false){
       </div>
     </div>`;
   }
-  const level=r.score>=80?'safe':r.score>=55?'low':r.score>=35?'medium':'high';
-  const col={safe:'var(--green)',low:'var(--yellow)',medium:'var(--orange)',high:'var(--red)'}[level];
-  const verdicts={safe:'Stránka je dobre zabezpečená',low:'Dobré zabezpečenie, menšie nedostatky',
-    medium:'Stredné riziko – odporúčame opravy',high:'Slabé zabezpečenie – potrebná okamžitá akcia'};
-  const verdictText = partial ? `<span style="display:inline-flex;align-items:center;gap:6px">
-    <span class="spinner" style="width:10px;height:10px;border-width:2px;flex-shrink:0;border-color:${col}40;border-top-color:${col}"></span>
-    Skenujeme… (${r.score}/100)
-  </span>` : verdicts[level];
-  const progressFill=r.score>=80?'var(--green)':r.score>=55?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--orange),var(--red))';
-  const opacity = partial ? 'opacity:.75;' : '';
-  return`<div class="ws-score-wrap" style="${opacity}margin-bottom:16px">
+  const {col,progressFill}=scoreStyle(r.score);
+  const progressFillCss=r.score>=80?'var(--green)':r.score>=60?'var(--yellow)':r.score>=40?'var(--orange)':'var(--red)';
+  return`<div class="ws-score-wrap" style="opacity:.8;margin-bottom:16px">
     <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
       <span class="ws-circle-num">${r.score}</span><span class="ws-circle-lbl">/ 100</span>
     </div>
     <div class="ws-score-info">
-      <div class="ws-verdict" style="color:${col}">${verdictText}</div>
-      <div class="ws-desc">${partial?'Priebežné skóre':'Bezpečnostné skóre'}: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
-      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${r.score}%;transition:width .4s ease"></div></div>
+      <div class="ws-verdict" style="color:var(--muted);display:flex;align-items:center;gap:6px">
+        <span class="spinner" style="width:10px;height:10px;border-width:2px;flex-shrink:0"></span>Skenujeme…
+      </div>
+      <div class="ws-desc">Priebežné skóre: <strong>${r.score}/100</strong></div>
+      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFillCss};width:${r.score}%;transition:width .4s ease"></div></div>
     </div>
   </div>`;
+}
+
+/* Finálne skóre – volaný z finalizeReport() */
+function renderFinalScore(r){
+  if(!r) return renderScoreHTML(null);
+  const s=r.score;
+  const {col}=scoreStyle(s);
+  const verdict=s>=80?'Stránka je dobre zabezpečená'
+    :s>=60?'Dobré zabezpečenie, menšie nedostatky'
+    :s>=40?'Stredné riziko – odporúčame opravy'
+    :'Slabé zabezpečenie – potrebná okamžitá akcia';
+  const badge=s>=80?'✅':s>=60?'⚠️':s>=40?'🟠':'🚨';
+  const progressFill=s>=80?'var(--green)':s>=60?'var(--yellow)':s>=40?'var(--orange)':'var(--red)';
+  return`<div class="ws-score-wrap" style="margin-bottom:16px">
+    <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
+      <span class="ws-circle-num">${s}</span><span class="ws-circle-lbl">/ 100</span>
+    </div>
+    <div class="ws-score-info">
+      <div class="ws-verdict" style="color:${col}">${badge} ${verdict}</div>
+      <div class="ws-desc">Bezpečnostné skóre: <strong>${s}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
+      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${s}%;transition:width .5s ease"></div></div>
+    </div>
+  </div>`;
+}
+
+function scoreStyle(s){
+  const col=s>=80?'var(--green)':s>=60?'var(--yellow)':s>=40?'var(--orange)':'var(--red)';
+  return{col};
 }
 
 /* ── Odporúčania ── */
@@ -1413,7 +1441,7 @@ async function runWhoisCheck(hostname){
 }
 
 /* ── Build report ── */
-function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null, whoisResult=null){
+function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null, whoisResult=null, vtResult=null){
   const checks=[];
   let score=0;
   const recs=[];
