@@ -1142,7 +1142,7 @@ async function webScan(){
   termLine('[*]',`Connecting to ${hostname}:443...`,'info','info',450);
 
   const urlRisk=analyzeUrl(scanUrl);
-  let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null;
+  let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null, shodanResult=null;
 
   const sslPromise=runSSLCheck(hostname).then(r=>{
     sslResult=r;
@@ -1195,11 +1195,30 @@ async function webScan(){
     termLine(csp ?'[+]':'[-]',`CSP: ${csp ?'PRESENT':'MISSING'}`,csp ?'ok':'err',csp ?'ok':'err',200);
   }).catch(e=>{ console.error('[Headers]',e); termLine('[-]','Header scan failed','err','err',200); });
 
-  await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
+  const shodanPromise=runShodanCheck(hostname).then(r=>{
+    shodanResult=r;
+    termLine('[*]','Querying Shodan intelligence database...','info','info',280);
+    if(r?.ok && r.inShodan){
+      const dangerous=(r.openDangerous||[]).filter(p=>p.risk==='high');
+      const portCount=r.ports?.length||0;
+      if(dangerous.length){
+        termLine('[-]',`${portCount} ports found – DANGEROUS: ${dangerous.map(p=>p.port).join(', ')}`,
+          'err','err',300);
+      } else {
+        termLine('[+]',`${portCount} open ports – no dangerous services exposed`,'ok','ok',300);
+      }
+    } else if(r?.ok && !r.inShodan){
+      termLine('[*]','Host not indexed in Shodan','info','muted',250);
+    } else {
+      termLine('[*]','Shodan unavailable (API key not configured)','info','muted',200);
+    }
+  }).catch(e=>{ console.error('[Shodan]',e); termLine('[*]','Shodan check skipped','info','muted',200); });
+
+  await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise, shodanPromise]);
 
   // Záverečné riadky s reálnym skóre
   let report;
-  try{ report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult); }
+  try{ report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult,shodanResult); }
   catch(e){ console.error('[webScan] buildWebReport threw:',e); report={score:0,recs:[],gsbChecked:false}; }
 
   if(gsbKey){
@@ -1218,7 +1237,7 @@ async function webScan(){
 
   // Vyrenderuj výsledky
   console.log('[webScan] FINAL score:', report.score);
-  resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report);
+  resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report,shodanResult);
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
@@ -1406,7 +1425,7 @@ function wsProgressDone(){
 }
 
 /* ── Finálny render výsledkov (volaný po dokončení všetkých kontrol) ── */
-function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report){
+function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report,shodanResult=null){
   const isHttps=scanUrl.startsWith('https://');
   const urlOk=!urlRisk||urlRisk.score<30;
 
@@ -1460,6 +1479,7 @@ function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,ob
     ${renderSSLPanel(sslResult)}
     ${renderWhoisPanel(whoisResult)}
     ${renderVTPanel(vtResult)}
+    ${renderShodanPanel(shodanResult)}
     <div class="dash-section-title" style="margin:14px 0 10px"><div class="dot"></div>Výsledky kontrol</div>
     <div class="ws-checks">${httpsRow}${urlRow}${gsbRow}${hdrRows}</div>
     ${renderRecsHTML(report.recs)}
@@ -1500,6 +1520,15 @@ function wsSkeletonHTML(hostname, scanUrl){
         <div style="display:flex;align-items:center;gap:10px">
           <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
           <span style="font-size:.86rem;color:var(--muted)">Overujem reputáciu domény…</span>
+        </div>
+      </div>
+    </div>
+    <div id="wsShodanSection">
+      <div class="ssl-panel" style="opacity:.65">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔍 Shodan – Network Intelligence</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
+          <span style="font-size:.86rem;color:var(--muted)">Vyhľadávam v Shodan databáze…</span>
         </div>
       </div>
     </div>
@@ -1639,7 +1668,7 @@ async function runWhoisCheck(hostname){
 }
 
 /* ── Build report ── */
-function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null, whoisResult=null, vtResult=null){
+function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null, whoisResult=null, vtResult=null, shodanResult=null){
   let score = 50; // základné skóre
   const recs = [];
 
@@ -1717,6 +1746,19 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     const age = whoisResult.age_days;
     if(age > 730)        score += 5;
     else if(age < 180){  score -= 15; recs.push(`Doména je stará len ${Math.round(age/30)} mesiacov – zvýšená opatrnosť.`); }
+  }
+
+  // ── Shodan – nebezpečné porty ──────────
+  if(shodanResult?.ok && shodanResult.inShodan){
+    const dangerHigh=(shodanResult.openDangerous||[]).filter(p=>p.risk==='high');
+    const dangerMed =(shodanResult.openDangerous||[]).filter(p=>p.risk==='medium');
+    if(dangerHigh.length){
+      score -= dangerHigh.length * 20;
+      recs.push(`Shodan: nebezpečné porty verejne dostupné – ${dangerHigh.map(p=>p.port+' ('+p.label+')').join(', ')}. Obmedz prístup firewallom.`);
+    }
+    if(dangerMed.length){
+      score -= dangerMed.length * 5;
+    }
   }
 
   // ── Bezpečnostné hlavičky ──────────────
@@ -1815,6 +1857,83 @@ function renderVTPanel(vt){
       <div style="font-size:.9rem;font-weight:600;color:${statusColor}">${escHtml(statusText)}</div>
     </div>
     ${bar}
+  </div>`;
+}
+
+/* ── Shodan Runner ── */
+async function runShodanCheck(hostname){
+  try{
+    const r=await fetch(`/api/shodan-check?host=${encodeURIComponent(hostname)}`);
+    if(!r.ok) return null;
+    const data=await r.json();
+    return data.ok ? data : null;
+  }catch(e){
+    console.warn('[Shodan] exception:',e.message);
+    return null;
+  }
+}
+
+/* ── Shodan Panel Render ── */
+function renderShodanPanel(sh){
+  const RISK_COLOR={high:'var(--red)',medium:'var(--yellow)',low:'var(--muted)',safe:'var(--green)',unknown:'var(--muted)'};
+
+  if(!sh){
+    return`<div class="ssl-panel" style="opacity:.7">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔍 Shodan – Network Intelligence</div>
+      <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.86rem">
+        <span style="font-size:1.4rem">⚠️</span>
+        <div><div style="font-weight:600;color:var(--text)">Shodan nedostupný</div>
+        <div style="margin-top:2px">API kľúč nie je nastavený alebo DNS lookup zlyhal.</div></div>
+      </div></div>`;
+  }
+
+  if(!sh.inShodan){
+    return`<div class="ssl-panel">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔍 Shodan – Network Intelligence</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:1.4rem">ℹ️</span>
+        <div><div style="font-weight:600;color:var(--text)">IP ${escHtml(sh.ip||'')} nie je v Shodan databáze</div>
+        <div style="font-size:.82rem;color:var(--muted);margin-top:2px">Hostiteľ pravdepodobne blokuje Shodan skener alebo nebol ešte indexovaný.</div></div>
+      </div></div>`;
+  }
+
+  const dangerous=sh.openDangerous||[];
+  const dangerHigh=dangerous.filter(p=>p.risk==='high');
+
+  // Port chips
+  const portChips=(sh.ports||[]).map(p=>{
+    const col=RISK_COLOR[p.risk]||'var(--muted)';
+    const tooltip=p.label!==String(p.port)?p.label:'';
+    return`<span title="${escHtml(tooltip)}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:.74rem;font-family:monospace;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}44">${p.port}</span>`;
+  }).join(' ');
+
+  const warningBanner=dangerHigh.length?`
+    <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514944;display:flex;align-items:flex-start;gap:10px">
+      <span style="font-size:1.1rem;flex-shrink:0">🚨</span>
+      <div style="font-size:.83rem">
+        <div style="font-weight:700;color:var(--red);margin-bottom:3px">Nebezpečné porty otvorené do internetu</div>
+        <div style="color:var(--muted)">${dangerHigh.map(p=>`<b style="color:var(--red)">${p.port}</b> (${escHtml(p.label)})`).join(', ')} — databázové servery/vzdialený prístup nesmú byť verejne dostupné.</div>
+      </div>
+    </div>`:
+    dangerous.length?`<div style="margin-top:10px;font-size:.8rem;color:var(--yellow)">⚠️ Port ${dangerous.map(p=>p.port).join(', ')} – zvýšená opatrnosť</div>`:
+    `<div style="margin-top:8px;font-size:.8rem;color:var(--green)">✅ Žiadne nebezpečné porty</div>`;
+
+  const meta=[
+    sh.webserver?`<div><span style="color:var(--muted)">Webserver:</span> <b>${escHtml(sh.webserver)}</b></div>`:'',
+    sh.os       ?`<div><span style="color:var(--muted)">OS:</span> <b>${escHtml(sh.os)}</b></div>`:'',
+    sh.org      ?`<div><span style="color:var(--muted)">Org:</span> ${escHtml(sh.org)}</div>`:'',
+    sh.ip       ?`<div><span style="color:var(--muted)">IP:</span> <code style="font-size:.8rem">${escHtml(sh.ip)}</code></div>`:'',
+  ].filter(Boolean).join('');
+
+  return`<div class="ssl-panel">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">🔍 Shodan – Network Intelligence</div>
+    ${meta?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:4px 16px;font-size:.82rem;margin-bottom:12px">${meta}</div>`:''}
+    ${sh.ports?.length?`<div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:6px">Otvorené porty (${sh.ports.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${portChips}</div>
+    </div>`:
+    `<div style="font-size:.84rem;color:var(--muted)">Žiadne otvorené porty nenájdené</div>`}
+    ${warningBanner}
   </div>`;
 }
 
