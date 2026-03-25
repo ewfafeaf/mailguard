@@ -212,6 +212,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .ssl-panel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:12px}
 .ws-scan-progress{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;transition:opacity .5s,max-height .5s .1s,padding .5s .1s,margin .5s .1s;max-height:400px;overflow:hidden}
 .ws-scan-progress.ws-sp-hidden{opacity:0;max-height:0;padding:0;margin:0}
+/* ── Hacker Terminal Overlay ── */
+#wsTerminalOverlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .35s;pointer-events:none}
+#wsTerminalOverlay.wsto-visible{opacity:1;pointer-events:all}
+.wst-window{width:min(700px,93vw);background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.8)}
+.wst-titlebar{background:#161b22;padding:10px 16px;display:flex;align-items:center;gap:0;border-bottom:1px solid #21262d}
+.wst-dots{display:flex;gap:7px;width:60px}
+.wst-dot{width:12px;height:12px;border-radius:50%}
+.wst-dot.r{background:#ff5f57}.wst-dot.y{background:#febc2e}.wst-dot.g{background:#28c840}
+.wst-title{flex:1;text-align:center;font-size:.78rem;color:#6e7681;font-family:monospace;letter-spacing:.04em}
+.wst-body{padding:18px 20px 18px;height:340px;overflow-y:auto;font-family:'Courier New',Courier,monospace;font-size:.8rem;line-height:1.7;scrollbar-width:thin;scrollbar-color:#30363d transparent}
+.wst-body::-webkit-scrollbar{width:4px}.wst-body::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
+.wst-line{display:flex;gap:7px;opacity:0;transform:translateX(-8px);transition:opacity .18s ease,transform .18s ease}
+.wst-line.wst-show{opacity:1;transform:none}
+.wst-icon.ok{color:#3fb950}.wst-icon.err{color:#f85149}.wst-icon.info{color:#8b949e}.wst-icon.done{color:#3fb950}
+.wst-text.ok{color:#3fb950}.wst-text.err{color:#f85149}.wst-text.info{color:#cdd9e5}.wst-text.muted{color:#6e7681}
+.wst-cursor{color:#3fb950;animation:wst-blink 1s steps(1) infinite;display:inline-block}
+@keyframes wst-blink{0%,100%{opacity:1}50%{opacity:0}}
 .ws-sp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .ws-sp-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .ws-sp-pct{font-size:.9rem;font-weight:700;background:linear-gradient(90deg,#3b82f6,#10b981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -1110,52 +1127,96 @@ async function webScan(){
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
 
-  // ── FÁZA 1: Zobraz iba progress bar ──────────────────────────
+  // Jednoduchý placeholder v resultEl (za overlayom nie je vidieť)
   resultEl.style.display='block';
-  resultEl.innerHTML=`<div class="hres" style="padding:24px">
-    <div style="font-size:.76rem;color:var(--muted);margin-bottom:16px;font-family:monospace">${escHtml(scanUrl)}</div>
-    ${wsProgressHTML()}
+  resultEl.innerHTML=`<div class="hres" style="padding:24px;text-align:center;color:var(--muted);min-height:120px">
+    <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:24px auto 12px"></div>
+    <div>Bezpečnostná analýza prebieha…</div>
   </div>`;
-  _wsScanStart=Date.now();
-  _wsProgressChain=Promise.resolve(); // reset fronty pre nové skenovanie
 
-  // Sync
+  // Spusti terminálový overlay
+  showTerminalOverlay();
+  termLine('[*]','Initializing MailGuard scanner v2.1...','info','muted',200);
+  termLine('[*]',`Target: ${hostname}`,'info','info',350);
+  termLine('[*]','Resolving DNS... OK','info','info',500);
+  termLine('[*]',`Connecting to ${hostname}:443...`,'info','info',450);
+
   const urlRisk=analyzeUrl(scanUrl);
-
-  // ── FÁZA 2: Async kontroly – aktualizujú iba progress bar ────
   let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null;
 
-  const sslPromise=runSSLCheck(hostname)
-    .then(r=>{ sslResult=r; wsProgressStep('ssl'); })
-    .catch(e=>console.error('[SSL]',e));
+  const sslPromise=runSSLCheck(hostname).then(r=>{
+    sslResult=r;
+    termLine('[*]','Fetching SSL certificate... OK','info','info',250);
+    if(r?.ok && r.cert){
+      termLine('[+]',`Certificate valid: ${r.cert.subject} (${r.cert.daysLeft}d remaining)`,'ok','ok',300);
+    } else {
+      termLine('[-]','SSL certificate unavailable or expired','err','err',300);
+    }
+  }).catch(e=>{ console.error('[SSL]',e); termLine('[-]','SSL check failed','err','err',200); });
 
   const gsbKey=localStorage.getItem('gsb_api_key');
-  const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null))
-    .then(r=>{ gsbResult=r; })
-    .catch(e=>console.error('[GSB]',e));
+  const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null)).then(r=>{
+    gsbResult=r;
+  }).catch(e=>console.error('[GSB]',e));
 
-  const headersPromise=runHeadersCheck(hostname)
-    .then(r=>{ obsResult=r; wsProgressStep('headers'); })
-    .catch(e=>console.error('[Headers]',e));
+  const whoisPromise=runWhoisCheck(hostname).then(r=>{
+    whoisResult=r;
+    termLine('[*]','Checking WHOIS database...','info','info',250);
+    if(r?.age_days!=null){
+      const yrs=(r.age_days/365).toFixed(1);
+      termLine('[+]',`Domain age: ${yrs} years (registered ${r.creation_date||'unknown'})`,'ok','ok',300);
+    } else {
+      termLine('[*]','WHOIS data unavailable','info','muted',200);
+    }
+  }).catch(e=>{ console.error('[WHOIS]',e); termLine('[-]','WHOIS lookup failed','err','err',200); });
 
-  const whoisPromise=runWhoisCheck(hostname)
-    .then(r=>{ whoisResult=r; wsProgressStep('whois'); })
-    .catch(e=>console.error('[WHOIS]',e));
+  const vtPromise=runVTCheck(hostname).then(r=>{
+    vtResult=r;
+    const engines=r?.total||94;
+    termLine('[*]',`Querying VirusTotal (${engines} engines)...`,'info','info',250);
+    if(r?.ok){
+      const threats=(r.malicious||0)+(r.suspicious||0);
+      if(threats===0){
+        termLine('[+]',`Clean: 0/${engines} detections`,'ok','ok',300);
+      } else {
+        termLine('[-]',`Threats found: ${threats}/${engines} detections`,'err','err',300);
+      }
+    } else {
+      termLine('[*]','VirusTotal check unavailable','info','muted',200);
+    }
+  }).catch(e=>{ console.error('[VT]',e); termLine('[-]','VirusTotal check failed','err','err',200); });
 
-  const vtPromise=runVTCheck(hostname)
-    .then(r=>{ vtResult=r; wsProgressStep('vt'); })
-    .catch(e=>console.error('[VT]',e));
+  const headersPromise=runHeadersCheck(hostname).then(r=>{
+    obsResult=r;
+    termLine('[*]','Scanning security headers...','info','info',250);
+    const hsts=r?.tests?.['strict-transport-security']?.pass;
+    const csp =r?.tests?.['content-security-policy']?.pass;
+    termLine(hsts?'[+]':'[-]',`HSTS: ${hsts?'PRESENT':'MISSING'}`,hsts?'ok':'err',hsts?'ok':'err',200);
+    termLine(csp ?'[+]':'[-]',`CSP: ${csp ?'PRESENT':'MISSING'}`,csp ?'ok':'err',csp ?'ok':'err',200);
+  }).catch(e=>{ console.error('[Headers]',e); termLine('[-]','Header scan failed','err','err',200); });
 
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
 
-  // Čakaj kým progress bar dokončí animáciu (min 5s + fade)
-  await wsProgressDone();
-
-  // ── FÁZA 3: Vyrenderuj všetky výsledky naraz ─────────────────
+  // Záverečné riadky s reálnym skóre
   let report;
   try{ report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult); }
   catch(e){ console.error('[webScan] buildWebReport threw:',e); report={score:0,recs:[],gsbChecked:false}; }
 
+  if(gsbKey){
+    const gsbOk=!gsbResult||gsbResult.length===0;
+    termLine(gsbOk?'[+]':'[-]',`Google Safe Browsing: ${gsbOk?'CLEAN':'THREAT DETECTED'}`,
+      gsbOk?'ok':'err',gsbOk?'ok':'err',350);
+  }
+  termLine('[*]','Calculating security score...','info','info',450);
+  const scoreIcon=report.score>=80?'[+]':report.score>=40?'[*]':'[-]';
+  const scoreCls =report.score>=80?'ok':report.score>=40?'info':'err';
+  termLine(scoreIcon,`Final score: ${report.score}/100`,scoreCls,scoreCls,400);
+  termLine('[✓]','Scan complete!','done','ok',350);
+
+  // Čakaj na koniec terminálovej animácie + fade
+  await closeTerminalOverlay();
+
+  // Vyrenderuj výsledky
   console.log('[webScan] FINAL score:', report.score);
   resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report);
 
@@ -1216,6 +1277,56 @@ function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
   const recsEl=document.getElementById('wsRecsSection');
   if(recsEl) recsEl.innerHTML=renderRecsHTML(report.recs);
   return report;
+}
+
+/* ══════════════════════════════════════════
+   HACKER TERMINAL OVERLAY
+══════════════════════════════════════════ */
+let _termChain=Promise.resolve();
+
+function showTerminalOverlay(){
+  // Odstráň prípadný starý overlay
+  document.getElementById('wsTerminalOverlay')?.remove();
+  const el=document.createElement('div');
+  el.id='wsTerminalOverlay';
+  el.innerHTML=`<div class="wst-window">
+    <div class="wst-titlebar">
+      <div class="wst-dots"><span class="wst-dot r"></span><span class="wst-dot y"></span><span class="wst-dot g"></span></div>
+      <span class="wst-title">mailguard-scan.sh</span>
+      <span style="width:60px"></span>
+    </div>
+    <div class="wst-body" id="wstBody"><span class="wst-cursor" id="wstCursor">█</span></div>
+  </div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('wsto-visible'));
+  _termChain=Promise.resolve();
+}
+
+function termLine(icon,text,iconCls='info',textCls='info',delay=320){
+  _termChain=_termChain.then(async()=>{
+    await new Promise(ok=>setTimeout(ok,delay));
+    const body=document.getElementById('wstBody');
+    const cursor=document.getElementById('wstCursor');
+    if(!body) return;
+    const div=document.createElement('div');
+    div.className='wst-line';
+    div.innerHTML=`<span class="wst-icon ${iconCls}">${escHtml(icon)}</span><span class="wst-text ${textCls}">${escHtml(text)}</span>`;
+    body.insertBefore(div,cursor);
+    requestAnimationFrame(()=>div.classList.add('wst-show'));
+    body.scrollTop=body.scrollHeight;
+  });
+}
+
+function closeTerminalOverlay(){
+  _termChain=_termChain.then(async()=>{
+    await new Promise(ok=>setTimeout(ok,800)); // pauza pri 100%
+    const el=document.getElementById('wsTerminalOverlay');
+    if(!el) return;
+    el.style.opacity='0';
+    await new Promise(ok=>setTimeout(ok,400));
+    el.remove();
+  });
+  return _termChain;
 }
 
 /* ══════════════════════════════════════════
