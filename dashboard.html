@@ -210,6 +210,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
 /* ── SSL PANEL STYLES ── */
 .ssl-panel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:12px}
+.ws-scan-progress{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;transition:opacity .5s,max-height .5s .1s,padding .5s .1s,margin .5s .1s;max-height:400px;overflow:hidden}
+.ws-scan-progress.ws-sp-hidden{opacity:0;max-height:0;padding:0;margin:0}
+.ws-sp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ws-sp-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.ws-sp-pct{font-size:.9rem;font-weight:700;background:linear-gradient(90deg,#3b82f6,#10b981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ws-sp-bar-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.ws-sp-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.ws-sp-steps{display:flex;flex-direction:column;gap:5px}
+.ws-sp-step{display:flex;align-items:center;gap:10px;font-size:.82rem;padding:3px 0;transition:opacity .3s}
+.ws-sp-step.pending{opacity:.35}
+.ws-sp-step.active{opacity:1}
+.ws-sp-step.done{opacity:1}
+.ws-sp-step-icon{width:18px;text-align:center;flex-shrink:0;font-size:.9rem}
+.ws-sp-step-text{flex:1;color:var(--muted)}
+.ws-sp-step.active .ws-sp-step-text{color:var(--text);font-weight:500}
+.ws-sp-step.done .ws-sp-step-text{color:var(--green)}
+.ws-sp-step-time{font-size:.7rem;color:var(--muted);font-family:monospace;min-width:32px;text-align:right}
 .ssl-grade-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:14px}
 .ssl-grade-circle{width:80px;height:80px;border-radius:50%;display:flex;flex-direction:column;
   align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;
@@ -1109,6 +1126,7 @@ async function webScan(){
           : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | ')||'Podozrivá štruktúra URL.');
 
   // ── 2. Async – všetky beží naraz, DOM sa aktualizuje hneď po každom ──
+  _wsScanStart=Date.now();
   let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null;
 
   const sslPromise=runSSLCheck(hostname).then(r=>{
@@ -1141,6 +1159,7 @@ async function webScan(){
     }else{
       console.error('[webScan] Cannot find place to insert SSL panel');
     }
+    wsProgressStep('ssl');
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[webScan][SSL promise]',e));
 
@@ -1175,6 +1194,7 @@ async function webScan(){
       if(t!=null) setWsCheck(d.id,t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc);
       else        setWsCheckSkip(d.id,d.label+' (nedostupné)',d.desc);
     }
+    wsProgressStep('headers');
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[Headers]',e));
 
@@ -1186,6 +1206,7 @@ async function webScan(){
       try{ el.innerHTML=renderWhoisPanel(r); }
       catch(e){ console.error('[webScan] renderWhoisPanel threw:',e); }
     }
+    wsProgressStep('whois');
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[WHOIS]',e));
 
@@ -1203,12 +1224,14 @@ async function webScan(){
     }else{
       console.error('[webScan] wsVTSection NOT FOUND in DOM');
     }
+    wsProgressStep('vt');
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[VT promise]',e));
 
   // ── 3. Čakaj na všetko, potom finalizeReport ──
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
   const finalReport=finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
+  wsProgressDone();
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
@@ -1269,6 +1292,70 @@ function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
   return report;
 }
 
+/* ══════════════════════════════════════════
+   PROGRESS BAR
+══════════════════════════════════════════ */
+const _WS_STEPS=[
+  {id:'ssl',     icon:'🔒', label:'Kontrolujem SSL certifikát…',        pct:22},
+  {id:'whois',   icon:'🌐', label:'Overujem WHOIS informácie…',         pct:44},
+  {id:'vt',      icon:'🛡️', label:'Skenujem VirusTotal databázu…',      pct:66},
+  {id:'headers', icon:'📡', label:'Kontrolujem bezpečnostné hlavičky…', pct:88},
+  {id:'done',    icon:'✅', label:'Dokončujem analýzu…',                pct:100},
+];
+let _wsScanStart=0;
+
+function wsProgressHTML(){
+  return`<div id="wsProgressSection" class="ws-scan-progress">
+    <div class="ws-sp-header">
+      <span class="ws-sp-title">🔍 Prebieha bezpečnostná analýza</span>
+      <span class="ws-sp-pct" id="wsProgressPct">0%</span>
+    </div>
+    <div class="ws-sp-bar-wrap"><div class="ws-sp-bar-fill" id="wsProgressFill"></div></div>
+    <div class="ws-sp-steps">
+      ${_WS_STEPS.map((s,i)=>`<div class="ws-sp-step ${i===0?'active':'pending'}" id="wsStep-${s.id}">
+        <span class="ws-sp-step-icon">${s.icon}</span>
+        <span class="ws-sp-step-text">${s.label}</span>
+        <span class="ws-sp-step-time" id="wsStepTime-${s.id}"></span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function wsProgressStep(stepId){
+  const idx=_WS_STEPS.findIndex(s=>s.id===stepId);
+  if(idx<0) return;
+  const step=_WS_STEPS[idx];
+  const elapsed=(((Date.now()-_wsScanStart)/100)|0)/10; // 1 decimal
+
+  // Bar + %
+  const fill=document.getElementById('wsProgressFill');
+  const pct=document.getElementById('wsProgressPct');
+  if(fill) fill.style.width=step.pct+'%';
+  if(pct)  pct.textContent=step.pct+'%';
+
+  // Mark current step done
+  const el=document.getElementById('wsStep-'+stepId);
+  if(el){
+    el.className='ws-sp-step done';
+    const t=document.getElementById('wsStepTime-'+stepId);
+    if(t) t.textContent=elapsed+'s';
+  }
+
+  // Activate next step
+  if(idx+1<_WS_STEPS.length){
+    const next=document.getElementById('wsStep-'+_WS_STEPS[idx+1].id);
+    if(next) next.className='ws-sp-step active';
+  }
+}
+
+function wsProgressDone(){
+  wsProgressStep('done');
+  setTimeout(()=>{
+    const el=document.getElementById('wsProgressSection');
+    if(el) el.classList.add('ws-sp-hidden');
+  }, 900);
+}
+
 /* ── Skeleton HTML – zobrazí sa hneď, každá sekcia má spinner ── */
 function wsSkeletonHTML(hostname, scanUrl){
   const spinRow=(id,label)=>`<div class="ws-check skip" id="${id}">
@@ -1277,6 +1364,7 @@ function wsSkeletonHTML(hostname, scanUrl){
   </div>`;
   return`<div class="hres" style="padding:20px">
     <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;font-family:monospace">${escHtml(scanUrl)}</div>
+    ${wsProgressHTML()}
     <div id="wsScoreSection">${renderScoreHTML(null,true)}</div>
     <div id="wsSSLSection">
       <div class="ssl-panel" style="opacity:.65">
