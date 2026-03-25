@@ -1442,144 +1442,82 @@ async function runWhoisCheck(hostname){
 
 /* ── Build report ── */
 function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=null, whoisResult=null, vtResult=null){
-  const checks=[];
-  let score=0;
-  const recs=[];
+  let score = 50; // základné skóre
+  const recs = [];
 
-  // 0. SSL / TLS – skóre (panel sa renderuje zvlášť)
-  if(sslResult){
-    const grade=sslResult.grade||'N/A';
-    if(/^A/.test(grade)) score+=20;
-    else if(grade==='B') score+=10;
-    else recs.push(`TLS grade ${grade} – skontroluj konfiguráciu certifikátu a verziu protokolu.`);
-    const dl=sslResult.cert?.daysLeft;
-    if(dl!==null && dl!==undefined && dl<30)
+  // ── HTTPS ──────────────────────────────
+  const isHttps = url.startsWith('https://');
+  if(isHttps) score += 10;
+  else { score -= 10; recs.push('Nakonfigurovať HTTPS – TLS certifikát zadarmo cez Let\'s Encrypt.'); }
+
+  // ── SSL Grade ──────────────────────────
+  if(sslResult?.ok){
+    const grade = sslResult.grade || '';
+    if(/^A/.test(grade)) score += 15;
+    else if(grade === 'B') score += 5;
+    else if(grade === 'C') score -= 5;
+    else if(grade === 'F') score -= 20;
+    const dl = sslResult.cert?.daysLeft;
+    if(dl !== null && dl !== undefined && dl < 30)
       recs.push(`SSL certifikát expiruje za ${dl} dní – obnov ho čo najskôr.`);
-    if(sslResult.cert?.expired)
-      recs.push('SSL certifikát je expirovaný – stránka zobrazuje bezpečnostné varovania!');
-  }
-
-  // 0b. WHOIS – vek domény
-  if(whoisResult?.age_days !== null && whoisResult?.age_days !== undefined){
-    const age=whoisResult.age_days;
-    if(age < 30){
-      score-=30;
-      recs.push(`Doména má len ${age} dní – extrémne nová, vysoké riziko phishingu.`);
-    } else if(age < 180){
-      score-=15;
-      recs.push(`Doména má len ${Math.round(age/30)} mesiacov – nová doména, zvýšená opatrnosť.`);
-    } else if(age > 730){
-      score+=10;
+    if(sslResult.cert?.expired){
+      score -= 20;
+      recs.push('SSL certifikát je expirovaný!');
     }
   }
 
-  // 1. HTTPS
-  const isHttps=url.startsWith('https://');
-  checks.push({
-    id:'https', pass:isHttps,
-    title: isHttps ? 'HTTPS – spojenie je šifrované' : 'HTTP – spojenie NIE je šifrované',
-    desc: isHttps
-      ? 'Stránka používa TLS/SSL šifrovanie. Dáta medzi prehliadačom a serverom sú chránené.'
-      : 'Stránka nepoužíva HTTPS. Akékoľvek odoslané dáta (heslá, formuláre) môžu byť zachytené.',
-    points:25,
-  });
-  if(isHttps) score+=25;
-  else recs.push('Nakonfigurovať HTTPS (TLS certifikát zadarmo cez Let\'s Encrypt).');
-
-  // 2. URL risk (from existing analyzeUrl)
-  const urlOk=urlRisk.score<30;
-  checks.push({
-    id:'url_risk', pass:urlOk,
-    title: urlOk ? 'URL štruktúra vyzerá bezpečne' : 'URL obsahuje podozrivé prvky',
-    desc: urlOk
-      ? 'Doména neobsahuje znaky typické pre phishing (IP adresa, skrátená URL, typosquatting…).'
-      : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | '),
-    points:20,
-  });
-  if(urlOk) score+=20;
-  else recs.push('Skontrolovať štruktúru domény – obsahuje podozrivé prvky.');
-
-  // 3. GSB
-  if(gsbResult!==null){
-    const gsbOk=!gsbResult||gsbResult.length===0;
-    checks.push({
-      id:'gsb', pass:gsbOk,
-      title: gsbOk ? 'Google Safe Browsing – žiadna hrozba' : 'Google Safe Browsing – HROZBA DETEKOVANÁ',
-      desc: gsbOk
-        ? 'URL sa nenachádza v databáze Google Safe Browsing (phishing, malware, nežiaduce SW).'
-        : 'URL je označená ako: '+(gsbResult||[]).map(m=>m.threatType).join(', '),
-      points:25,
-    });
-    if(gsbOk) score+=25;
-    else { score-=30; recs.push('URL je v databáze Google Safe Browsing – nezverejňovať, nahlásiť.'); }
-  } else {
-    checks.push({
-      id:'gsb', pass:null,
-      title:'Google Safe Browsing – bez API kľúča',
-      desc:'Nastav GSB API kľúč v Nastaveniach (admin) pre kontrolu reputácie URL.',
-      points:0,
-    });
+  // ── Google Safe Browsing ───────────────
+  if(gsbResult !== null){
+    const gsbOk = !gsbResult || gsbResult.length === 0;
+    if(gsbOk) score += 10;
+    else { score -= 30; recs.push('URL je v databáze Google Safe Browsing – nezverejňovať, nahlásiť.'); }
   }
 
-  // 4–7. Observatory header checks
-  const HDR_DEFS=[
-    {key:'strict-transport-security', label:'HSTS',
-     desc:'Prehliadač musí vždy používať HTTPS. Chráni pred downgrade útokmi a cookie hijacking.',
-     points:10},
-    {key:'content-security-policy', label:'Content-Security-Policy (CSP)',
-     desc:'Obmedzuje, odkiaľ môže stránka načítavať skripty, obrázky a iné zdroje. Chráni pred XSS.',
-     points:10},
-    {key:'x-frame-options', label:'X-Frame-Options',
-     desc:'Zabraňuje vloženiu stránky do iFrame iných domén. Ochrana pred clickjacking útokmi.',
-     points:5},
-    {key:'x-content-type-options', label:'X-Content-Type-Options',
-     desc:'Zabraňuje prehliadaču hádať MIME typ súborov. Ochrana pred MIME sniffing útokmi.',
-     points:5},
+  // ── VirusTotal ─────────────────────────
+  if(vtResult?.ok && !vtResult.unknown){
+    const threats = (vtResult.malicious || 0) + (vtResult.suspicious || 0);
+    if(threats === 0) score += 10;
+    else { score -= 30; recs.push(`VirusTotal: ${threats} antivírusov označilo doménu ako nebezpečnú.`); }
+  }
+
+  // ── Typosquatting / URL risk ───────────
+  const suspiciousUrl = urlRisk && urlRisk.score >= 30;
+  if(suspiciousUrl){
+    score -= 20;
+    const flags = (urlRisk.findings || []).filter(f => f.sev !== 'ok').map(f => f.text);
+    recs.push('Podozrivá URL štruktúra: ' + (flags.join(' | ') || 'skontroluj doménu.'));
+  }
+
+  // ── WHOIS – vek domény ─────────────────
+  if(whoisResult?.age_days != null){
+    const age = whoisResult.age_days;
+    if(age > 730)        score += 5;
+    else if(age < 180){  score -= 15; recs.push(`Doména je stará len ${Math.round(age/30)} mesiacov – zvýšená opatrnosť.`); }
+  }
+
+  // ── Bezpečnostné hlavičky ──────────────
+  const hdr = obsResult?.tests || {};
+  const hdrDefs = [
+    { key:'strict-transport-security', label:'HSTS',                pts:5,  desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.' },
+    { key:'content-security-policy',   label:'CSP',                 pts:5,  desc:'Obmedzuje zdroje skriptov. Chráni pred XSS.' },
+    { key:'x-frame-options',           label:'X-Frame-Options',     pts:3,  desc:'Zabraňuje clickjacking útokom.' },
+    { key:'x-content-type-options',    label:'X-Content-Type-Options', pts:3, desc:'Zabraňuje MIME sniffingu.' },
   ];
-
-  if(obsResult?.tests){
-    const t=obsResult.tests;
-    for(const def of HDR_DEFS){
-      const result=t[def.key];
-      const pass=result?.pass===true;
-      checks.push({
-        id:def.key, pass,
-        title:(pass?'✓ ':'✗ ')+def.label,
-        desc:def.desc,
-        points:def.points,
-        obs:true,
-      });
-      if(pass) score+=def.points;
-      else recs.push(`Nastaviť hlavičku ${def.label} na serveri.`);
-    }
-  } else {
-    for(const def of HDR_DEFS){
-      checks.push({
-        id:def.key, pass:null,
-        title:def.label+' (nedostupné)',
-        desc:def.desc+' Kontrola hlavičiek zlyhala – skús znova neskôr.',
-        points:def.points,
-        obs:true,
-      });
-    }
-    recs.push('Kontrola bezpečnostných hlavičiek zlyhala – skús skenovanie zopakovať.');
+  for(const d of hdrDefs){
+    if(hdr[d.key]?.pass === true) score += d.pts;
+    else if(obsResult?.tests)     recs.push(`Nastaviť hlavičku ${d.label} na serveri.`);
   }
 
-  // VT skóre
-  if(vtResult?.ok){
-    if(!vtResult.unknown){
-      const mal=vtResult.malicious||0, sus=vtResult.suspicious||0;
-      if(mal===0 && sus===0)         score+=10;
-      else if(mal+sus<=3)            score-=20;
-      else                           score-=50;
-      if(mal+sus>0)
-        recs.push(`VirusTotal: ${mal+sus} antivírus${mal+sus>4?'ov':mal+sus>1?'y':''} označilo doménu ako nebezpečnú.`);
-    }
-  }
+  score = Math.max(0, Math.min(100, Math.round(score)));
 
-  score=Math.max(0,Math.min(100,score));
+  console.log('[buildWebReport] breakdown → base:50'
+    +(isHttps?' +HTTPS:10':'')
+    +(sslResult?.ok?' +SSL:'+(/^A/.test(sslResult.grade||'')?15:5):'')
+    +' = final:'+score);
 
-  return {url,hostname,score,checks,recs,gsbChecked:gsbResult!==null,sslResult,whoisResult,vtResult};
+  return { url, hostname, score, recs,
+    gsbChecked: gsbResult !== null,
+    sslResult, whoisResult, vtResult };
 }
 
 /* ── VirusTotal Runner ── */

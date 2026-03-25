@@ -1,0 +1,154 @@
+% IANA WHOIS server
+% for more information on IANA, visit http://www.iana.org
+% This query returned 0 objects.
+%
+% You queried for vek but this server does not have
+% any data for vek.
+%
+% If you need further information please check the web site
+% or use -h for help
+
+% IANA WHOIS server
+% for more information on IANA, visit http://www.iana.org
+%
+% Error: Invalid query roky:
+
+% IANA WHOIS server
+% for more information on IANA, visit http://www.iana.org
+% This query returned 1 object
+
+refer:        whois.arin.net
+
+as-block:     1-1876
+organisation: Assigned by ARIN
+
+whois:        whois.arin.net
+descr:        Assigned by ARIN
+
+source:       IANA
+
+# whois.arin.net
+
+ARIN's WHOIS service provides a mechanism for finding contact and registration
+information for resources registered with ARIN. ARIN's database contains IP
+addresses, autonomous system numbers, organizations, or customers that are
+associated with these resources, and related Points of Contact [POC].
+
+ARIN's WHOIS will NOT locate any domain related information, nor any
+information relating to military networks. Please use whois.internic.net to
+locate domain information, and whois.nic.mil for military network information.
+
+Many operating systems provide a whois utility. To conduct a query from the
+command line, such as:
+    whois -h hostname <query string>
+    (e.g. whois -h whois.arin.net foo)
+
+To obtain a more specific response, you may conduct a search by using certain
+flags. Many of these flags can be combined to tailor the desired output.
+Flags must be separated from each other and from the search term by a space.
+Your results will vary depending on the refinements you apply in your search.
+Listed below are the flags currently available; you may only use one flag from
+each flag-type in a query, i.e. one record type, one attribute, etc.
+
+
+Query-by-record-type:
+---------------------
+To limit your query to a specific record type, include one of the following
+flags:
+      n       Network address space
+      r       CIDRized network space
+      d       Delegations
+      a       Autonomous systems
+      p       Points-of-contact
+      o       Organizations
+      c       End-user customers
+      e       Points-of-contact, Organizations, End-user customers
+      z       All of the above
+
+
+Query-by-attribute:
+-------------------
+To limit your query to a specific record attribute, include one of the
+following flags:
+      @<domain name>     Searches for matches by domain-portion of an
+                         email address
+      ! <handle>         Searches for matches by handle or id
+      / <name>           Searches for matches by name
+      . <name>           Searches for matches by name
+                         (same as above, but some WHOIS clients have problems with)
+
+Searches that retrieve a single record will display the full record. Searches
+that retrieve more than one record will be displayed in list output.
+
+
+Display flags:
+--------------
+To modify the way that the query results display, include one of the
+following flags:
+      +       FULL output shows detailed display for EACH match
+      -       LIST output shows summary only, even if single match
+              returned
+
+The + flag cannot be used with the sub-query features described below.
+
+
+Record hierarchy:
+-----------------
+Records in the ARIN WHOIS database have hierarchical relationships with other
+records. To display those related records, use the following flags:
+
+      <       Displays the record related up the hierarchy. For a network,
+              display the supernet, or parent network in detailed format.
+      >       Displays the record related down the hierarchy. For a network,
+              display the subdelegations, or subnets, below the network, in
+              list format. For an organization or customer, display the
+              resources registered to that organization or customer, in
+              list format.
+      =       Display only an exact match in the hierarchy.
+
+
+Wild card queries:
+------------------
+WHOIS supports wild card queries. This feature is only supported as a trailing
+character option. To take advantage of this append the query with an asterisk
+[*]. This can also be used in combination with any flags defined above.
+
+
+Other helpful hints:
+--------------------
+To guarantee matching only a single record, look it up by its handle using a
+handle-only search.  In the record summary line, the handle is shown in
+parenthesis after the name.
+
+When using a handle to conduct a search for POC information, be sure to add
+the -ARIN extension.
+
+Queries that return more than 256
+results will stop displaying data after the limit has been reached for each
+record type. You may want to narrow your search criteria or add flags to your
+query to limit the results.    
+
+To search on an individual's name, you may enter the last name, or to further
+restrict results, use the last name and first name, separated by a comma. For
+example: Smith, John.
+
+
+Contact us:
+-----------
+For operational problems with WHOIS please contact noc@arin.net with the
+appropriate details.
+
+To correct information within your area of responsibility, submit a template
+to hostmaster@arin.net. Information on how to fill out the appropriate template
+can be found at: http://www.arin.net/resources/guide/request/documentation/
+
+To notify ARIN of invalid POC information, contact hostmaster@arin.net with
+the relevant information.
+
+
+Terms of Service:
+-----------------
+ARIN WHOIS data and services are subject to the Terms of Use available at:
+https://www.arin.net/resources/registry/whois/tou/
+
+
