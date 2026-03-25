@@ -1109,7 +1109,7 @@ async function webScan(){
           : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | ')||'Podozrivá štruktúra URL.');
 
   // ── 2. Async – všetky beží naraz, DOM sa aktualizuje hneď po každom ──
-  let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null;
+  let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null;
 
   const sslPromise=runSSLCheck(hostname).then(r=>{
     sslResult=r;
@@ -1141,7 +1141,7 @@ async function webScan(){
     }else{
       console.error('[webScan] Cannot find place to insert SSL panel');
     }
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[webScan][SSL promise]',e));
 
   const gsbKey=localStorage.getItem('gsb_api_key');
@@ -1158,7 +1158,7 @@ async function webScan(){
       setWsCheckSkip('wsChkGsb','Google Safe Browsing – bez API kľúča',
         'Nastav GSB API kľúč v Nastaveniach pre kontrolu reputácie URL.');
     }
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[GSB]',e));
 
   const headersPromise=runHeadersCheck(hostname).then(r=>{
@@ -1175,7 +1175,7 @@ async function webScan(){
       if(t!=null) setWsCheck(d.id,t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc);
       else        setWsCheckSkip(d.id,d.label+' (nedostupné)',d.desc);
     }
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult);
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[Headers]',e));
 
   const whoisPromise=runWhoisCheck(hostname).then(r=>{
@@ -1189,10 +1189,21 @@ async function webScan(){
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
   }).catch(e=>console.error('[WHOIS]',e));
 
-  // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
-  await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise]);
+  const vtPromise=runVTCheck(hostname).then(r=>{
+    vtResult=r;
+    console.log('[webScan] VT done:', r ? `malicious=${r.malicious} suspicious=${r.suspicious} total=${r.total}` : 'null');
+    const el=document.getElementById('wsVTSection');
+    if(el){
+      try{ el.innerHTML=renderVTPanel(r); }
+      catch(e){ console.error('[webScan] renderVTPanel threw:',e); }
+    }
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
+  }).catch(e=>console.error('[VT]',e));
 
-  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
+  // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
+  await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
+
+  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   const scoreEl=document.getElementById('wsScoreSection');
   if(scoreEl) scoreEl.innerHTML=renderScoreHTML(report);
   const recsEl=document.getElementById('wsRecsSection');
@@ -1229,8 +1240,8 @@ function setWsCheckSkip(id,title,desc){
 }
 
 /* ── Priebežná aktualizácia skóre po každom výsledku ── */
-function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult){
-  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
+function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult){
+  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   const el=document.getElementById('wsScoreSection');
   if(el) el.innerHTML=renderScoreHTML(report);
 }
@@ -1259,6 +1270,15 @@ function wsSkeletonHTML(hostname, scanUrl){
         <div style="display:flex;align-items:center;gap:10px">
           <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
           <span style="font-size:.86rem;color:var(--muted)">Vyhľadávam WHOIS záznamy…</span>
+        </div>
+      </div>
+    </div>
+    <div id="wsVTSection">
+      <div class="ssl-panel" style="opacity:.65">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🛡️ VirusTotal – Reputácia domény</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div>
+          <span style="font-size:.86rem;color:var(--muted)">Overujem reputáciu domény…</span>
         </div>
       </div>
     </div>
@@ -1494,9 +1514,82 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     recs.push('Kontrola bezpečnostných hlavičiek zlyhala – skús skenovanie zopakovať.');
   }
 
+  // VT skóre
+  if(vtResult?.ok){
+    if(!vtResult.unknown){
+      const mal=vtResult.malicious||0, sus=vtResult.suspicious||0;
+      if(mal===0 && sus===0)         score+=10;
+      else if(mal+sus<=3)            score-=20;
+      else                           score-=50;
+      if(mal+sus>0)
+        recs.push(`VirusTotal: ${mal+sus} antivírus${mal+sus>4?'ov':mal+sus>1?'y':''} označilo doménu ako nebezpečnú.`);
+    }
+  }
+
   score=Math.max(0,Math.min(100,score));
 
-  return {url,hostname,score,checks,recs,gsbChecked:gsbResult!==null,sslResult,whoisResult};
+  return {url,hostname,score,checks,recs,gsbChecked:gsbResult!==null,sslResult,whoisResult,vtResult};
+}
+
+/* ── VirusTotal Runner ── */
+async function runVTCheck(hostname){
+  try{
+    const r=await fetch(`/api/virustotal-check?host=${encodeURIComponent(hostname)}`);
+    if(!r.ok) return null;
+    const data=await r.json();
+    return data.ok ? data : null;
+  }catch(e){
+    console.warn('[runVTCheck]',e.message);
+    return null;
+  }
+}
+
+/* ── VirusTotal Panel Render ── */
+function renderVTPanel(vt){
+  if(!vt){
+    return`<div class="ssl-panel" style="opacity:.7">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🛡️ VirusTotal – Reputácia domény</div>
+      <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.86rem">
+        <span style="font-size:1.4rem">⚠️</span>
+        <div><div style="font-weight:600;color:var(--text)">VirusTotal nedostupný</div>
+        <div style="margin-top:2px">Kontrola reputácie zlyhala – skús znova neskôr.</div></div>
+      </div></div>`;
+  }
+
+  const mal=vt.malicious||0, sus=vt.suspicious||0, total=vt.total||0;
+  const threats=mal+sus;
+  const isClean=threats===0;
+  const statusColor=isClean?'var(--green)':threats<=3?'var(--yellow)':'var(--red)';
+  const statusIcon=isClean?'✅':threats<=3?'⚠️':'🚨';
+  const statusText=vt.unknown
+    ? 'Doména ešte nebola analyzovaná'
+    : isClean
+      ? `Čistá – žiadne detekcie (${total} antivírusov skontrolovaných)`
+      : `${threats}/${total} antivírusov označilo ako nebezpečné`;
+
+  const bar=total>0?`
+    <div style="margin-top:10px">
+      <div style="display:flex;gap:4px;height:8px;border-radius:4px;overflow:hidden;background:var(--border)">
+        ${mal>0   ?`<div style="flex:${mal};background:var(--red);min-width:4px" title="Malicious: ${mal}"></div>`:''}
+        ${sus>0   ?`<div style="flex:${sus};background:var(--yellow);min-width:4px" title="Suspicious: ${sus}"></div>`:''}
+        ${(total-threats)>0?`<div style="flex:${total-threats};background:var(--green)"></div>`:''}
+      </div>
+      <div style="display:flex;gap:12px;margin-top:6px;font-size:.73rem;color:var(--muted)">
+        ${mal>0?`<span style="color:var(--red)">● Malicious: ${mal}</span>`:''}
+        ${sus>0?`<span style="color:var(--yellow)">● Suspicious: ${sus}</span>`:''}
+        <span style="color:var(--green)">● Harmless: ${vt.harmless||0}</span>
+      </div>
+    </div>`:
+    vt.reputation!==null?`<div style="margin-top:8px;font-size:.78rem;color:var(--muted)">Reputácia: ${vt.reputation}</div>`:'';
+
+  return`<div class="ssl-panel">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🛡️ VirusTotal – Reputácia domény</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.5rem">${statusIcon}</span>
+      <div style="font-size:.9rem;font-weight:600;color:${statusColor}">${escHtml(statusText)}</div>
+    </div>
+    ${bar}
+  </div>`;
 }
 
 /* ── SSL Panel Render ── */
