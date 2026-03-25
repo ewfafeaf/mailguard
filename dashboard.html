@@ -1117,6 +1117,7 @@ async function webScan(){
     ${wsProgressHTML()}
   </div>`;
   _wsScanStart=Date.now();
+  _wsProgressChain=Promise.resolve(); // reset fronty pre nové skenovanie
 
   // Sync
   const urlRisk=analyzeUrl(scanUrl);
@@ -1147,9 +1148,8 @@ async function webScan(){
 
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
 
-  // Progress na 100 % + krátka pauza aby používateľ videl dokončenie
-  wsProgressStep('done');
-  await new Promise(ok=>setTimeout(ok,700));
+  // Čakaj kým progress bar dokončí animáciu (min 5s + fade)
+  await wsProgressDone();
 
   // ── FÁZA 3: Vyrenderuj všetky výsledky naraz ─────────────────
   let report;
@@ -1222,13 +1222,14 @@ function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
    PROGRESS BAR
 ══════════════════════════════════════════ */
 const _WS_STEPS=[
-  {id:'ssl',     icon:'🔒', label:'Kontrolujem SSL certifikát…',        pct:22},
-  {id:'whois',   icon:'🌐', label:'Overujem WHOIS informácie…',         pct:44},
-  {id:'vt',      icon:'🛡️', label:'Skenujem VirusTotal databázu…',      pct:66},
-  {id:'headers', icon:'📡', label:'Kontrolujem bezpečnostné hlavičky…', pct:88},
-  {id:'done',    icon:'✅', label:'Dokončujem analýzu…',                pct:100},
+  {id:'ssl',     icon:'🔒', label:'Kontrolujem SSL certifikát…',        pct:22, minMs:1200},
+  {id:'whois',   icon:'🌐', label:'Overujem WHOIS informácie…',         pct:44, minMs:2400},
+  {id:'vt',      icon:'🛡️', label:'Skenujem VirusTotal databázu…',      pct:66, minMs:3400},
+  {id:'headers', icon:'📡', label:'Kontrolujem bezpečnostné hlavičky…', pct:88, minMs:4200},
+  {id:'done',    icon:'✅', label:'Dokončujem analýzu…',                pct:100,minMs:5000},
 ];
 let _wsScanStart=0;
+let _wsProgressChain=Promise.resolve(); // sériová fronta krokov
 
 function wsProgressHTML(){
   return`<div id="wsProgressSection" class="ws-scan-progress">
@@ -1247,39 +1248,53 @@ function wsProgressHTML(){
   </div>`;
 }
 
-function wsProgressStep(stepId){
+/* Vykreslí jeden krok okamžite (bez čakania) */
+function _wsProgressRender(stepId){
   const idx=_WS_STEPS.findIndex(s=>s.id===stepId);
   if(idx<0) return;
   const step=_WS_STEPS[idx];
-  const elapsed=(((Date.now()-_wsScanStart)/100)|0)/10; // 1 decimal
+  const elapsed=(((Date.now()-_wsScanStart)/100)|0)/10;
 
-  // Bar + %
   const fill=document.getElementById('wsProgressFill');
-  const pct=document.getElementById('wsProgressPct');
+  const pct =document.getElementById('wsProgressPct');
   if(fill) fill.style.width=step.pct+'%';
   if(pct)  pct.textContent=step.pct+'%';
 
-  // Mark current step done
   const el=document.getElementById('wsStep-'+stepId);
   if(el){
     el.className='ws-sp-step done';
     const t=document.getElementById('wsStepTime-'+stepId);
     if(t) t.textContent=elapsed+'s';
   }
-
-  // Activate next step
   if(idx+1<_WS_STEPS.length){
     const next=document.getElementById('wsStep-'+_WS_STEPS[idx+1].id);
     if(next) next.className='ws-sp-step active';
   }
 }
 
+/* Zaradí krok do sériovej fronty + zaručí minimálny čas od štartu */
+function wsProgressStep(stepId){
+  const step=_WS_STEPS.find(s=>s.id===stepId);
+  if(!step) return;
+  _wsProgressChain=_wsProgressChain.then(async()=>{
+    const wait=step.minMs-(Date.now()-_wsScanStart);
+    if(wait>0) await new Promise(ok=>setTimeout(ok,wait));
+    _wsProgressRender(stepId);
+  });
+}
+
+/* Čaká kým fronta dobehne, vykreslí "done", odfadeuje progress bar; vracia Promise */
 function wsProgressDone(){
-  wsProgressStep('done');
-  setTimeout(()=>{
+  _wsProgressChain=_wsProgressChain.then(async()=>{
+    const wait=5000-(Date.now()-_wsScanStart); // celkový minimálny čas 5s
+    if(wait>0) await new Promise(ok=>setTimeout(ok,wait));
+    _wsProgressRender('done');
+    await new Promise(ok=>setTimeout(ok,900)); // zastav na 100% aby to bolo vidno
     const el=document.getElementById('wsProgressSection');
     if(el) el.classList.add('ws-sp-hidden');
-  }, 900);
+    await new Promise(ok=>setTimeout(ok,500)); // počkaj na CSS fade
+  });
+  return _wsProgressChain;
 }
 
 /* ── Finálny render výsledkov (volaný po dokončení všetkých kontrol) ── */
