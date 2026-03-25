@@ -1109,134 +1109,60 @@ async function webScan(){
 
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Skenujem…';
+
+  // ── FÁZA 1: Zobraz iba progress bar ──────────────────────────
   resultEl.style.display='block';
-  resultEl.innerHTML=wsSkeletonHTML(hostname, scanUrl);
-
-  // ── 1. Sync – okamžité výsledky ──
-  const urlRisk=analyzeUrl(scanUrl);
-  const isHttps=scanUrl.startsWith('https://');
-  setWsCheck('wsChkHttps', isHttps,
-    isHttps ? 'HTTPS – spojenie je šifrované' : 'HTTP – spojenie NIE je šifrované',
-    isHttps ? 'Stránka používa TLS/SSL šifrovanie. Dáta sú chránené.'
-            : 'Stránka nepoužíva HTTPS. Odoslané dáta môžu byť zachytené.');
-  const urlOk=urlRisk.score<30;
-  setWsCheck('wsChkUrl', urlOk,
-    urlOk ? 'URL štruktúra vyzerá bezpečne' : 'URL obsahuje podozrivé prvky',
-    urlOk ? 'Doména neobsahuje znaky typické pre phishing.'
-          : urlRisk.findings.filter(f=>f.sev!=='ok').map(f=>f.text).join(' | ')||'Podozrivá štruktúra URL.');
-
-  // ── 2. Async – všetky beží naraz, DOM sa aktualizuje hneď po každom ──
+  resultEl.innerHTML=`<div class="hres" style="padding:24px">
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:16px;font-family:monospace">${escHtml(scanUrl)}</div>
+    ${wsProgressHTML()}
+  </div>`;
   _wsScanStart=Date.now();
+
+  // Sync
+  const urlRisk=analyzeUrl(scanUrl);
+
+  // ── FÁZA 2: Async kontroly – aktualizujú iba progress bar ────
   let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null;
 
-  const sslPromise=runSSLCheck(hostname).then(r=>{
-    sslResult=r;
-    console.log('[webScan] SSL done, sslResult:', r ? `grade=${r.grade}` : 'null');
-
-    // Nájdi wsSSLSection — vždy existuje vďaka wsSkeletonHTML
-    let el=document.getElementById('wsSSLSection');
-    if(!el){
-      // Záloha: vlož pred sekciu "Výsledky kontrol"
-      console.warn('[webScan] wsSSLSection not found – inserting dynamically');
-      const checksTitle=document.querySelector('#wsResult .dash-section-title');
-      if(checksTitle){
-        const wrapper=document.createElement('div');
-        wrapper.id='wsSSLSection';
-        checksTitle.parentNode.insertBefore(wrapper, checksTitle);
-        el=wrapper;
-      }
-    }
-
-    if(el){
-      try{
-        const html=renderSSLPanel(r);
-        el.innerHTML=html;
-        console.log('[webScan] SSL panel rendered, grade:', r?.grade||'(null)', 'html length:', html.length);
-      }catch(renderErr){
-        console.error('[webScan] renderSSLPanel threw:', renderErr);
-        el.innerHTML=`<div class="ssl-panel" style="color:var(--red);padding:14px">⚠️ SSL panel error: ${renderErr.message}</div>`;
-      }
-    }else{
-      console.error('[webScan] Cannot find place to insert SSL panel');
-    }
-    wsProgressStep('ssl');
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }).catch(e=>console.error('[webScan][SSL promise]',e));
+  const sslPromise=runSSLCheck(hostname)
+    .then(r=>{ sslResult=r; wsProgressStep('ssl'); })
+    .catch(e=>console.error('[SSL]',e));
 
   const gsbKey=localStorage.getItem('gsb_api_key');
-  const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null)).then(r=>{
-    gsbResult=r;
-    console.log('[webScan] GSB done:', r);
-    if(r!==null){
-      const ok=!r||r.length===0;
-      setWsCheck('wsChkGsb',ok,
-        ok?'Google Safe Browsing – žiadna hrozba':'Google Safe Browsing – HROZBA DETEKOVANÁ',
-        ok?'URL nie je v databáze Google Safe Browsing (phishing/malware).'
-          :'Hrozba: '+(r||[]).map(m=>m.threatType).join(', '));
-    } else {
-      setWsCheckSkip('wsChkGsb','Google Safe Browsing – bez API kľúča',
-        'Nastav GSB API kľúč v Nastaveniach pre kontrolu reputácie URL.');
-    }
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }).catch(e=>console.error('[GSB]',e));
+  const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null))
+    .then(r=>{ gsbResult=r; })
+    .catch(e=>console.error('[GSB]',e));
 
-  const headersPromise=runHeadersCheck(hostname).then(r=>{
-    obsResult=r;
-    console.log('[webScan] Headers done, present:', r ? Object.keys(r.tests).filter(k=>r.tests[k].pass) : 'null');
-    const HDR=[
-      {id:'wsChkHsts',  key:'strict-transport-security',label:'HSTS',               desc:'Vynucuje HTTPS pri každom načítaní. Chráni pred downgrade útokmi.'},
-      {id:'wsChkCsp',   key:'content-security-policy',  label:'Content-Security-Policy',desc:'Obmedzuje zdroje skriptov. Chráni pred XSS útokmi.'},
-      {id:'wsChkXframe',key:'x-frame-options',           label:'X-Frame-Options',    desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.'},
-      {id:'wsChkXcont', key:'x-content-type-options',    label:'X-Content-Type-Options',desc:'Zabraňuje MIME sniffingu. Ochrana pred injekciou obsahu.'},
-    ];
-    for(const d of HDR){
-      const t=r?.tests?.[d.key];
-      if(t!=null) setWsCheck(d.id,t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc);
-      else        setWsCheckSkip(d.id,d.label+' (nedostupné)',d.desc);
-    }
-    wsProgressStep('headers');
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }).catch(e=>console.error('[Headers]',e));
+  const headersPromise=runHeadersCheck(hostname)
+    .then(r=>{ obsResult=r; wsProgressStep('headers'); })
+    .catch(e=>console.error('[Headers]',e));
 
-  const whoisPromise=runWhoisCheck(hostname).then(r=>{
-    whoisResult=r;
-    console.log('[webScan] WHOIS done:', r ? `age=${r.age_days}d registrar=${r.registrar}` : 'null');
-    const el=document.getElementById('wsWhoisSection');
-    if(el){
-      try{ el.innerHTML=renderWhoisPanel(r); }
-      catch(e){ console.error('[webScan] renderWhoisPanel threw:',e); }
-    }
-    wsProgressStep('whois');
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }).catch(e=>console.error('[WHOIS]',e));
+  const whoisPromise=runWhoisCheck(hostname)
+    .then(r=>{ whoisResult=r; wsProgressStep('whois'); })
+    .catch(e=>console.error('[WHOIS]',e));
 
-  const vtPromise=runVTCheck(hostname).then(r=>{
-    vtResult=r;
-    console.log('[webScan] VT done:', r ? `malicious=${r.malicious} suspicious=${r.suspicious} total=${r.total}` : 'null (API failed)');
-    const el=document.getElementById('wsVTSection');
-    console.log('[webScan] wsVTSection found:', !!el);
-    if(el){
-      try{
-        const html=renderVTPanel(r);
-        el.innerHTML=html;
-        console.log('[webScan] VT panel rendered, length:', html.length);
-      }catch(e){ console.error('[webScan] renderVTPanel threw:',e); }
-    }else{
-      console.error('[webScan] wsVTSection NOT FOUND in DOM');
-    }
-    wsProgressStep('vt');
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }).catch(e=>console.error('[VT promise]',e));
+  const vtPromise=runVTCheck(hostname)
+    .then(r=>{ vtResult=r; wsProgressStep('vt'); })
+    .catch(e=>console.error('[VT]',e));
 
-  // ── 3. Čakaj na všetko, potom finalizeReport ──
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
-  const finalReport=finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  wsProgressDone();
+
+  // Progress na 100 % + krátka pauza aby používateľ videl dokončenie
+  wsProgressStep('done');
+  await new Promise(ok=>setTimeout(ok,700));
+
+  // ── FÁZA 3: Vyrenderuj všetky výsledky naraz ─────────────────
+  let report;
+  try{ report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult); }
+  catch(e){ console.error('[webScan] buildWebReport threw:',e); report={score:0,recs:[],gsbChecked:false}; }
+
+  console.log('[webScan] FINAL score:', report.score);
+  resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report);
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
 
-  await saveWebAnalysis(scanUrl, finalReport?.score ?? 0);
+  await saveWebAnalysis(scanUrl, report.score??0);
   loadStats();
   loadDailyUsage();
 }
@@ -1354,6 +1280,67 @@ function wsProgressDone(){
     const el=document.getElementById('wsProgressSection');
     if(el) el.classList.add('ws-sp-hidden');
   }, 900);
+}
+
+/* ── Finálny render výsledkov (volaný po dokončení všetkých kontrol) ── */
+function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report){
+  const isHttps=scanUrl.startsWith('https://');
+  const urlOk=!urlRisk||urlRisk.score<30;
+
+  // Helper: riadok kontroly
+  const cr=(pass,title,desc)=>`<div class="ws-check ${pass===null?'skip':pass?'pass':'fail'}">
+    <div class="ws-check-icon">${pass===null?'⏭️':pass?'✅':'❌'}</div>
+    <div class="ws-check-body">
+      <div class="ws-check-title">${escHtml(title)}</div>
+      <div class="ws-check-desc">${escHtml(desc)}</div>
+    </div></div>`;
+
+  // HTTPS
+  const httpsRow=cr(isHttps,
+    isHttps?'HTTPS – spojenie je šifrované':'HTTP – spojenie NIE je šifrované',
+    isHttps?'Stránka používa TLS/SSL šifrovanie. Dáta sú chránené.':'Stránka nepoužíva HTTPS. Odoslané dáta môžu byť zachytené.');
+
+  // URL
+  const urlDesc=urlOk?'Doména neobsahuje znaky typické pre phishing.'
+    :(urlRisk?.findings||[]).filter(f=>f.sev!=='ok').map(f=>f.text).join(' | ')||'Podozrivá štruktúra URL.';
+  const urlRow=cr(urlOk,urlOk?'URL štruktúra vyzerá bezpečne':'URL obsahuje podozrivé prvky',urlDesc);
+
+  // GSB
+  let gsbRow;
+  if(gsbResult!==null){
+    const ok=!gsbResult||gsbResult.length===0;
+    gsbRow=cr(ok,
+      ok?'Google Safe Browsing – žiadna hrozba':'Google Safe Browsing – HROZBA DETEKOVANÁ',
+      ok?'URL nie je v databáze Google Safe Browsing (phishing, malware).'
+        :'Hrozba: '+(gsbResult||[]).map(m=>m.threatType).join(', '));
+  }else{
+    gsbRow=cr(null,'Google Safe Browsing – bez API kľúča','Nastav GSB API kľúč v Nastaveniach pre kontrolu reputácie URL.');
+  }
+
+  // Hlavičky
+  const hdr=obsResult?.tests||{};
+  const hdrDefs=[
+    {key:'strict-transport-security',label:'HSTS',              desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.'},
+    {key:'content-security-policy',  label:'Content-Security-Policy',desc:'Obmedzuje zdroje skriptov. Chráni pred XSS.'},
+    {key:'x-frame-options',          label:'X-Frame-Options',   desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.'},
+    {key:'x-content-type-options',   label:'X-Content-Type-Options',desc:'Zabraňuje MIME sniffingu.'},
+  ];
+  const hdrRows=hdrDefs.map(d=>{
+    const t=hdr[d.key];
+    return t!=null?cr(t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc)
+                  :cr(null,d.label+' (nedostupné)',d.desc);
+  }).join('');
+
+  return`<div class="hres" style="padding:20px">
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;font-family:monospace">${escHtml(scanUrl)}</div>
+    ${renderFinalScore(report)}
+    ${renderSSLPanel(sslResult)}
+    ${renderWhoisPanel(whoisResult)}
+    ${renderVTPanel(vtResult)}
+    <div class="dash-section-title" style="margin:14px 0 10px"><div class="dot"></div>Výsledky kontrol</div>
+    <div class="ws-checks">${httpsRow}${urlRow}${gsbRow}${hdrRows}</div>
+    ${renderRecsHTML(report.recs)}
+  </div>`;
 }
 
 /* ── Skeleton HTML – zobrazí sa hneď, každá sekcia má spinner ── */
