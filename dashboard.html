@@ -1209,9 +1209,16 @@ async function webScan(){
   // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
 
-  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
+  let report;
+  try{
+    report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
+  }catch(e){
+    console.error('[webScan] buildWebReport final threw:', e);
+    report={score:0,recs:[],gsbChecked:false};
+  }
+  console.log('[webScan] FINAL score:', report.score, 'recs:', report.recs.length);
   const scoreEl=document.getElementById('wsScoreSection');
-  if(scoreEl) scoreEl.innerHTML=renderScoreHTML(report);
+  if(scoreEl) scoreEl.innerHTML=renderScoreHTML(report, false); // false = finálny verdikt
   const recsEl=document.getElementById('wsRecsSection');
   if(recsEl) recsEl.innerHTML=renderRecsHTML(report.recs);
 
@@ -1247,9 +1254,13 @@ function setWsCheckSkip(id,title,desc){
 
 /* ── Priebežná aktualizácia skóre po každom výsledku ── */
 function wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult){
-  const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  const el=document.getElementById('wsScoreSection');
-  if(el) el.innerHTML=renderScoreHTML(report);
+  try{
+    const report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
+    const el=document.getElementById('wsScoreSection');
+    if(el) el.innerHTML=renderScoreHTML(report, true); // true = priebežné, ešte beží
+  }catch(e){
+    console.error('[wsRefreshScore] buildWebReport threw:', e);
+  }
 }
 
 /* ── Skeleton HTML – zobrazí sa hneď, každá sekcia má spinner ── */
@@ -1303,8 +1314,9 @@ function wsSkeletonHTML(hostname, scanUrl){
 }
 
 /* ── Score kruh ── */
-function renderScoreHTML(r, loading=false){
-  if(loading||!r){
+function renderScoreHTML(r, partial=false){
+  // Skeleton: žiadne dáta ešte
+  if(!r){
     return`<div class="ws-score-wrap" style="opacity:.45;margin-bottom:16px">
       <div class="ws-circle" style="border-color:var(--border);color:var(--muted)">
         <span class="ws-circle-num">—</span><span class="ws-circle-lbl">/ 100</span>
@@ -1318,17 +1330,22 @@ function renderScoreHTML(r, loading=false){
   }
   const level=r.score>=80?'safe':r.score>=55?'low':r.score>=35?'medium':'high';
   const col={safe:'var(--green)',low:'var(--yellow)',medium:'var(--orange)',high:'var(--red)'}[level];
-  const verdict={safe:'Stránka je dobre zabezpečená',low:'Dobré zabezpečenie, menšie nedostatky',
-    medium:'Stredné riziko – odporúčame opravy',high:'Slabé zabezpečenie – potrebná okamžitá akcia'}[level];
+  const verdicts={safe:'Stránka je dobre zabezpečená',low:'Dobré zabezpečenie, menšie nedostatky',
+    medium:'Stredné riziko – odporúčame opravy',high:'Slabé zabezpečenie – potrebná okamžitá akcia'};
+  const verdictText = partial ? `<span style="display:inline-flex;align-items:center;gap:6px">
+    <span class="spinner" style="width:10px;height:10px;border-width:2px;flex-shrink:0;border-color:${col}40;border-top-color:${col}"></span>
+    Skenujeme… (${r.score}/100)
+  </span>` : verdicts[level];
   const progressFill=r.score>=80?'var(--green)':r.score>=55?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--orange),var(--red))';
-  return`<div class="ws-score-wrap" style="margin-bottom:16px">
+  const opacity = partial ? 'opacity:.75;' : '';
+  return`<div class="ws-score-wrap" style="${opacity}margin-bottom:16px">
     <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
       <span class="ws-circle-num">${r.score}</span><span class="ws-circle-lbl">/ 100</span>
     </div>
     <div class="ws-score-info">
-      <div class="ws-verdict" style="color:${col}">${verdict}</div>
-      <div class="ws-desc">Bezpečnostné skóre: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
-      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${r.score}%"></div></div>
+      <div class="ws-verdict" style="color:${col}">${verdictText}</div>
+      <div class="ws-desc">${partial?'Priebežné skóre':'Bezpečnostné skóre'}: <strong>${r.score}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
+      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${r.score}%;transition:width .4s ease"></div></div>
     </div>
   </div>`;
 }
