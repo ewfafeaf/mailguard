@@ -1186,19 +1186,25 @@ async function webScan(){
       try{ el.innerHTML=renderWhoisPanel(r); }
       catch(e){ console.error('[webScan] renderWhoisPanel threw:',e); }
     }
-    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult);
+    wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
   }).catch(e=>console.error('[WHOIS]',e));
 
   const vtPromise=runVTCheck(hostname).then(r=>{
     vtResult=r;
-    console.log('[webScan] VT done:', r ? `malicious=${r.malicious} suspicious=${r.suspicious} total=${r.total}` : 'null');
+    console.log('[webScan] VT done:', r ? `malicious=${r.malicious} suspicious=${r.suspicious} total=${r.total}` : 'null (API failed)');
     const el=document.getElementById('wsVTSection');
+    console.log('[webScan] wsVTSection found:', !!el);
     if(el){
-      try{ el.innerHTML=renderVTPanel(r); }
-      catch(e){ console.error('[webScan] renderVTPanel threw:',e); }
+      try{
+        const html=renderVTPanel(r);
+        el.innerHTML=html;
+        console.log('[webScan] VT panel rendered, length:', html.length);
+      }catch(e){ console.error('[webScan] renderVTPanel threw:',e); }
+    }else{
+      console.error('[webScan] wsVTSection NOT FOUND in DOM');
     }
     wsRefreshScore(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult);
-  }).catch(e=>console.error('[VT]',e));
+  }).catch(e=>console.error('[VT promise]',e));
 
   // ── 3. Čakaj na všetko, potom finálne skóre + odporúčania ──
   await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise]);
@@ -1534,12 +1540,18 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
 /* ── VirusTotal Runner ── */
 async function runVTCheck(hostname){
   try{
+    console.log('[VT] calling /api/virustotal-check?host='+hostname);
     const r=await fetch(`/api/virustotal-check?host=${encodeURIComponent(hostname)}`);
-    if(!r.ok) return null;
+    console.log('[VT] HTTP status:', r.status);
+    if(!r.ok){
+      console.warn('[VT] non-ok HTTP, returning null');
+      return null;
+    }
     const data=await r.json();
+    console.log('[VT] result:', data);
     return data.ok ? data : null;
   }catch(e){
-    console.warn('[runVTCheck]',e.message);
+    console.warn('[VT] exception:', e.message);
     return null;
   }
 }
