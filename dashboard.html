@@ -1534,7 +1534,14 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     else if(obsResult?.tests)     recs.push(`Nastaviť hlavičku ${d.label} na serveri.`);
   }
 
-  score = Math.max(0, Math.min(100, Math.round(score)));
+  // ── Stropy pre phishing indikátory (override akéhokoľvek skóre) ──
+  const isRiskyTLD = riskyTLDs.includes(tldStr);
+  const finalCap = (hasTyposquat && isRiskyTLD) ? 20
+                 : hasTyposquat                  ? 35
+                 : isRiskyTLD                    ? 30
+                 : 100;
+
+  score = Math.max(0, Math.min(finalCap, Math.round(score)));
 
   console.log('[buildWebReport] breakdown → base:50'
     +(isHttps?' +HTTPS:10':'')
