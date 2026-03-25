@@ -2143,8 +2143,23 @@ function analyzeUrl(url){
   const suspTLD=['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.club','.online','.site','.icu','.buzz'];
   const tld=host.slice(host.lastIndexOf('.'));
   if(suspTLD.includes(tld)){findings.push({icon:'⚠️',text:`Podozrivá doména: "${tld}"`,sev:'high'});score+=25;}
-  const brands=[{name:'google',variants:/g[o0][o0]gle|g00gle/},{name:'microsoft',variants:/micros[o0]ft|microsott/},{name:'paypal',variants:/payp[a4]l|paypai/},{name:'facebook',variants:/faceb[o0]{2}k|facbook/},{name:'apple',variants:/app[l1]e-id|appleaccount/},{name:'amazon',variants:/amaz[o0]n|arnazon/}];
-  for(const b of brands){if(b.variants.test(host)){findings.push({icon:'🚨',text:`Možná imitácia "${b.name}" (typosquatting).`,sev:'high'});score+=30;break;}}
+  const brands=[
+    {name:'google',    legitimate:/^(www\.)?google\.(com|sk|cz|de|co\.\w+)$/,    variants:/g[o0][o0]gle|g00gle/},
+    {name:'microsoft', legitimate:/^(www\.)?microsoft\.com$/,                     variants:/micros[o0]ft|microsott/},
+    {name:'paypal',    legitimate:/^(www\.)?paypal\.com$/,                        variants:/payp[a4]l|paypai/},
+    {name:'facebook',  legitimate:/^(www\.)?facebook\.com$/,                      variants:/faceb[o0]{2}k|facbook/},
+    {name:'apple',     legitimate:/^(www\.)?apple\.com$/,                         variants:/app[l1]e-id|appleaccount/},
+    {name:'amazon',    legitimate:/^(www\.)?amazon\.(com|co\.\w+|de|fr|es|it)$/, variants:/amaz[o0]n|arnazon/},
+    {name:'instagram', legitimate:/^(www\.)?instagram\.com$/,                     variants:/1nstagram|instaqram|instagr[a4]m/},
+    {name:'netflix',   legitimate:/^(www\.)?netflix\.com$/,                       variants:/netfl[i1]x|netfIix/},
+  ];
+  for(const b of brands){
+    if(!b.legitimate.test(host) && b.variants.test(host)){
+      findings.push({icon:'🚨',text:`Možná imitácia "${b.name}" (typosquatting).`,sev:'high'});
+      score+=30;
+      break;
+    }
+  }
   if(rawUrl.includes('@')){findings.push({icon:'🚨',text:'URL obsahuje "@" – možné presmerovanie.',sev:'high'});score+=25;}
   const shorteners=['bit.ly','tinyurl.com','t.co','ow.ly'];
   if(shorteners.some(s=>host===s)){findings.push({icon:'⚠️',text:'Skrátená URL – skutočný cieľ je skrytý.',sev:'medium'});score+=15;}
