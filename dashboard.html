@@ -327,6 +327,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   font-size:1.15rem;font-weight:800;flex-shrink:0;border:3px solid}
 .pdf-url-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem;word-break:break-all}
 .pdf-url-item:last-child{border-bottom:none}
+/* ── Drop Zone ── */
+.drop-zone{border:2px dashed var(--border);border-radius:14px;padding:44px 20px;text-align:center;
+  cursor:pointer;transition:border-color .2s,background .2s;background:var(--surface2)}
+.drop-zone:hover,.drop-zone.dz-over{border-color:var(--accent);background:rgba(79,142,247,.06)}
+.drop-zone-icon{font-size:2.4rem;margin-bottom:12px}
+.drop-zone-title{font-size:1rem;font-weight:700;margin-bottom:6px}
+.drop-zone-sub{font-size:.82rem;color:var(--muted)}
 
 /* ── RESULT ── */
 .result-wrap{margin-top:20px;display:none}
@@ -536,6 +543,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <a class="sidebar-item" id="navWebskener" onclick="showSection('webskener')">
       <span class="icon">🌐</span><span>Web skener</span>
     </a>
+    <a class="sidebar-item" id="navFiles" onclick="showSection('files')">
+      <span class="icon">📄</span><span>Analýza súborov</span>
+    </a>
     <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
       <span class="icon">💎</span><span>Plány</span>
     </a>
@@ -594,11 +604,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
             placeholder="Vlož URL adresu alebo text emailu…"
             onkeydown="if(event.key==='Enter')dashAnalyze()"/>
           <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
-          <button class="file-upload-btn" onclick="document.getElementById('pdfFileInput').click()" title="Nahrať PDF na analýzu">
-            📄 Nahrať súbor
-          </button>
-          <input type="file" id="pdfFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx"
-            style="display:none" onchange="analyzeFile(this)"/>
         </div>
         <div class="result-wrap" id="resultWrap">
           <div id="dashResult"></div>
@@ -735,6 +740,32 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     </div>
 
     <!-- Section: Plány -->
+    <!-- Section: Files -->
+    <div id="sectionFiles" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov</div>
+      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
+        Nahraj PDF dokument a MailGuard skontroluje všetky URL, JavaScript a vložené súbory.
+        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+      </div>
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="fileDropZone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
+        <div class="drop-zone-icon">📄</div>
+        <div class="drop-zone-title">Presuň súbor sem alebo klikni</div>
+        <div class="drop-zone-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB</div>
+        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx"
+          style="display:none" onchange="analyzeFileFromInput(this)"/>
+      </div>
+
+      <!-- Result -->
+      <div id="fileResultWrap" style="display:none;margin-top:16px">
+        <div id="fileResult"></div>
+        <div class="save-indicator" id="fileSaveIndicator">✓ Analýza uložená do histórie</div>
+      </div>
+    </div>
+
     <div id="sectionPlans" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--accent2)"></div>Plány & Ceny</div>
       <div id="plansGrid" class="plans-grid"></div>
@@ -958,23 +989,24 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','historia','nastavenia','podpora','webskener','plans'].forEach(id=>{
+  ['nova','historia','nastavenia','podpora','webskener','files','plans'].forEach(id=>{
     const key=id.charAt(0).toUpperCase()+id.slice(1);
     const el=document.getElementById('section'+key);
     if(el) el.style.display=id===s?'block':'none';
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navPlans'].forEach(id=>{
+  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',plans:'navPlans'};
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideStats=['nastavenia','podpora','webskener','plans'].includes(s);
+  const hideStats=['nastavenia','podpora','webskener','files','plans'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
+  if(s==='files' && !checkPlan('pro')) showUpgradeModal('files');
 }
 
 /* ══════════════════════════════════════════
@@ -2482,10 +2514,24 @@ async function dashAnalyze(){
 /* ══════════════════════════════════════════
    PDF / FILE ANALYSIS
 ══════════════════════════════════════════ */
-async function analyzeFile(input){
+// Drag & drop handlers
+function dzOver(e){ e.preventDefault(); document.getElementById('fileDropZone').classList.add('dz-over'); }
+function dzLeave(e){ document.getElementById('fileDropZone').classList.remove('dz-over'); }
+function dzDrop(e){
+  e.preventDefault();
+  dzLeave(e);
+  const file=e.dataTransfer.files[0];
+  if(file) analyzeFile(file);
+}
+function analyzeFileFromInput(input){
   const file=input.files[0];
-  input.value=''; // reset pre opakované nahratie
+  input.value='';
+  if(file) analyzeFile(file);
+}
+
+async function analyzeFile(file){
   if(!file) return;
+  if(!checkPlan('pro')){ showUpgradeModal('files'); return; }
 
   const MAX=10*1024*1024;
   if(file.size>MAX){
@@ -2493,9 +2539,9 @@ async function analyzeFile(input){
     return;
   }
 
-  const wrap=document.getElementById('resultWrap');
-  const resultEl=document.getElementById('dashResult');
-  const saveInd=document.getElementById('saveIndicator');
+  const wrap=document.getElementById('fileResultWrap');
+  const resultEl=document.getElementById('fileResult');
+  const saveInd=document.getElementById('fileSaveIndicator');
   wrap.style.display='block';
   saveInd.style.display='none';
   resultEl.innerHTML=`<div class="hres" style="padding:28px;text-align:center;color:var(--muted)">
