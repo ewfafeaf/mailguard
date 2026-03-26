@@ -2592,9 +2592,10 @@ function renderPDFResult(d){
   const scoreLabel=d.score>=80?'Bezpečný':d.score>=50?'Podozrivý':'Nebezpečný';
 
   const flags=[
-    d.hasJS        &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>🚨</span><div><b style="color:var(--red)">JavaScript detekovaný</b><br><span style="color:var(--muted)">PDF obsahuje JS – môže spustiť škodlivý kód pri otvorení.</span></div></div>`,
-    d.hasAutoOpen  &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>⚠️</span><div><b style="color:var(--red)">Auto-open akcia</b><br><span style="color:var(--muted)">PDF sa automaticky pokúsi spustiť kód po otvorení.</span></div></div>`,
-    d.hasEmbedded  &&`<div style="padding:8px 12px;border-radius:8px;background:#ffbd2e22;border:1px solid #ffbd2e66;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📎</span><div><b style="color:var(--yellow)">Vložené súbory</b><br><span style="color:var(--muted)">PDF obsahuje embedded súbory – skontroluj ich pôvod.</span></div></div>`,
+    d.hasJS        &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>🚨</span><div><b style="color:var(--red)">JavaScript detekovaný</b><br><span style="color:var(--muted)">${escHtml(d.docType||'Súbor')} obsahuje JS – môže spustiť škodlivý kód pri otvorení.</span></div></div>`,
+    d.hasAutoOpen  &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>⚠️</span><div><b style="color:var(--red)">Auto-open akcia</b><br><span style="color:var(--muted)">Dokument sa automaticky pokúsi spustiť kód po otvorení.</span></div></div>`,
+    d.hasMacros    &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>🚨</span><div><b style="color:var(--red)">Makrá (VBA) detekované</b><br><span style="color:var(--muted)">Dokument obsahuje spustiteľné makrá – nespúšťaj ich z neznámych zdrojov.</span></div></div>`,
+    (!d.hasMacros && d.hasEmbedded) &&`<div style="padding:8px 12px;border-radius:8px;background:#ffbd2e22;border:1px solid #ffbd2e66;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📎</span><div><b style="color:var(--yellow)">Vložené súbory</b><br><span style="color:var(--muted)">Dokument obsahuje embedded súbory – skontroluj ich pôvod.</span></div></div>`,
     d.hasForms     &&`<div style="padding:8px 12px;border-radius:8px;background:#8b8b8b22;border:1px solid #8b8b8b44;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📝</span><div><b>Interaktívny formulár</b><br><span style="color:var(--muted)">PDF obsahuje AcroForm – buď opatrný pri vypĺňaní osobných údajov.</span></div></div>`,
   ].filter(Boolean).join('');
 
@@ -2623,7 +2624,7 @@ function renderPDFResult(d){
       <div>
         <div style="font-size:1rem;font-weight:700">${escHtml(d.filename||'Súbor')}</div>
         <div style="font-size:.82rem;color:${scoreColor};font-weight:600">${scoreLabel}</div>
-        <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${d.pages||0} strán · ${d.urlCount||0} URL nájdených</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${d.docType==='XLSX'?(d.pages||0)+' listov':d.pages!=null?(d.pages||0)+' strán':''} ${d.pages!=null?'·':''} ${d.urlCount||0} URL nájdených</div>
       </div>
     </div>
 
