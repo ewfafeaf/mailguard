@@ -2588,59 +2588,104 @@ async function analyzeFile(file){
 }
 
 function renderPDFResult(d){
-  const scoreColor=d.score>=80?'var(--green)':d.score>=50?'var(--yellow)':'var(--red)';
-  const scoreLabel=d.score>=80?'Bezpečný':d.score>=50?'Podozrivý':'Nebezpečný';
+  const scoreColor = d.score>=80 ? 'var(--green)' : d.score>=50 ? 'var(--yellow)' : 'var(--red)';
+  const scoreLabel = d.score>=80 ? 'Bezpečný' : d.score>=50 ? 'Podozrivý' : 'Nebezpečný';
+  const dtype      = d.docType || 'PDF';
 
-  const flags=[
-    d.hasJS        &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>🚨</span><div><b style="color:var(--red)">JavaScript detekovaný</b><br><span style="color:var(--muted)">${escHtml(d.docType||'Súbor')} obsahuje JS – môže spustiť škodlivý kód pri otvorení.</span></div></div>`,
-    d.hasAutoOpen  &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>⚠️</span><div><b style="color:var(--red)">Auto-open akcia</b><br><span style="color:var(--muted)">Dokument sa automaticky pokúsi spustiť kód po otvorení.</span></div></div>`,
-    d.hasMacros    &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>🚨</span><div><b style="color:var(--red)">Makrá (VBA) detekované</b><br><span style="color:var(--muted)">Dokument obsahuje spustiteľné makrá – nespúšťaj ich z neznámych zdrojov.</span></div></div>`,
-    (!d.hasMacros && d.hasEmbedded) &&`<div style="padding:8px 12px;border-radius:8px;background:#ffbd2e22;border:1px solid #ffbd2e66;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📎</span><div><b style="color:var(--yellow)">Vložené súbory</b><br><span style="color:var(--muted)">Dokument obsahuje embedded súbory – skontroluj ich pôvod.</span></div></div>`,
-    d.hasForms     &&`<div style="padding:8px 12px;border-radius:8px;background:#8b8b8b22;border:1px solid #8b8b8b44;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📝</span><div><b>Interaktívny formulár</b><br><span style="color:var(--muted)">PDF obsahuje AcroForm – buď opatrný pri vypĺňaní osobných údajov.</span></div></div>`,
-  ].filter(Boolean).join('');
+  // ── Meta info (strany/listy + URL) ──────────────────────────────
+  const pageInfo = dtype==='XLSX'
+    ? `${d.pages??0} ${d.pages===1?'list':'listy/listov'}`
+    : d.pages!=null
+      ? `${d.pages} ${d.pages===1?'strana':'strán'}`
+      : null;
+  const metaLine = [pageInfo, `${d.urlCount??0} URL nájdených`].filter(Boolean).join(' · ');
 
-  // URL zoznam
-  const suspUrls=new Set((d.suspiciousUrls||[]).map(u=>u.url));
-  const urlRows=(d.urls||[]).slice(0,30).map(u=>{
-    const bad=suspUrls.has(u);
-    return`<div class="pdf-url-item">
-      <span style="flex-shrink:0;color:${bad?'var(--red)':'var(--green)'};">${bad?'🚨':'✅'}</span>
-      <a href="${escHtml(u)}" target="_blank" rel="noopener noreferrer" style="color:${bad?'var(--red)':'inherit'};text-decoration:${bad?'underline':'none'};word-break:break-all">${escHtml(u)}</a>
-      ${bad?`<span style="flex-shrink:0;font-size:.72rem;color:var(--red);font-weight:600">GSB</span>`:''}
+  // ── Bezpečnostné varovania ───────────────────────────────────────
+  const flag = (icon, title, desc, danger=true) =>
+    `<div style="padding:9px 12px;border-radius:8px;background:${danger?'#f8514922':'#ffbd2e22'};border:1px solid ${danger?'#f8514966':'#ffbd2e66'};font-size:.83rem;display:flex;gap:8px;align-items:flex-start">
+      <span style="flex-shrink:0">${icon}</span>
+      <div><b style="color:${danger?'var(--red)':'var(--yellow)'}">${title}</b><br>
+      <span style="color:var(--muted)">${desc}</span></div>
+    </div>`;
+
+  const flags = [
+    d.hasJS       && flag('🚨','JavaScript detekovaný',
+      `${dtype} obsahuje JS – môže spustiť škodlivý kód pri otvorení.`),
+    d.hasAutoOpen && flag('⚠️','Auto-open akcia',
+      'Dokument sa automaticky pokúsi spustiť kód po otvorení.'),
+    d.hasMacros   && flag('🚨','Makrá (VBA) detekované',
+      'Dokument obsahuje spustiteľné makrá – nespúšťaj ich z neznámych zdrojov.'),
+    (!d.hasMacros && d.hasEmbedded) && flag('📎','Vložené súbory',
+      'Dokument obsahuje embedded súbory – skontroluj ich pôvod.', false),
+    d.hasForms    && flag('📝','Interaktívny formulár',
+      'Dokument obsahuje formulár – buď opatrný pri vypĺňaní osobných údajov.', false),
+  ].filter(Boolean);
+
+  // ── URL zoznam ───────────────────────────────────────────────────
+  const suspSet = new Set((d.suspiciousUrls||[]).map(u=>u.url));
+  const shownUrls = (d.urls||[]).slice(0, 30);
+
+  const urlRows = shownUrls.map(u => {
+    const bad = suspSet.has(u);
+    const threatLabel = bad
+      ? (d.suspiciousUrls.find(x=>x.url===u)?.threat||'THREAT').replace(/_/g,' ')
+      : null;
+    return `<div class="pdf-url-item">
+      <span style="flex-shrink:0;margin-top:1px">${bad?'🚨':'✅'}</span>
+      <div style="flex:1;min-width:0">
+        <a href="${escHtml(u)}" target="_blank" rel="noopener noreferrer"
+          style="color:${bad?'var(--red)':'var(--text)'};word-break:break-all;font-size:.8rem">${escHtml(u)}</a>
+        ${bad?`<div style="font-size:.72rem;color:var(--red);font-weight:600;margin-top:1px">⛔ ${escHtml(threatLabel)}</div>`:''}
+      </div>
     </div>`;
   }).join('');
 
-  const moreUrls=d.urlCount>30?`<div style="font-size:.78rem;color:var(--muted);padding:6px 0">… a ďalších ${d.urlCount-30} URL</div>`:'';
+  const moreNote = d.urlCount > 30
+    ? `<div style="font-size:.78rem;color:var(--muted);padding:7px 0;border-top:1px solid var(--border)">… a ďalších ${d.urlCount-30} URL (zobrazené prvé 30)</div>`
+    : '';
 
-  const recsHTML=d.recs?.length?`<div style="margin-top:14px">
-    ${d.recs.map(r=>`<div style="font-size:.82rem;color:var(--muted);padding:4px 0;display:flex;gap:6px"><span>▸</span>${escHtml(r)}</div>`).join('')}
-  </div>`:'';
+  const urlSection = d.urlCount > 0
+    ? `<div style="margin-top:14px">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
+          🔗 URL v dokumente (${Math.min(d.urlCount,30)} z ${d.urlCount})
+        </div>
+        ${d.suspiciousUrls?.length
+          ? `<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.84rem;font-weight:700;color:var(--red);margin-bottom:10px">
+              🚨 ${d.suspiciousUrls.length} nebezpečných URL (Google Safe Browsing)
+             </div>`
+          : `<div style="padding:8px 12px;border-radius:8px;background:#3fb95022;border:1px solid #3fb95044;font-size:.84rem;color:var(--green);margin-bottom:10px">
+              ✅ Všetky URL prešli kontrolou Google Safe Browsing
+             </div>`}
+        <div>${urlRows}${moreNote}</div>
+      </div>`
+    : `<div style="margin-top:14px;padding:14px 16px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <span style="font-size:1.3rem">✅</span>
+        <div>
+          <div style="font-weight:600">Žiadne URL neboli nájdené</div>
+          <div style="font-size:.82rem;color:var(--muted);margin-top:2px">Dokument neobsahuje žiadne externé odkazy – nízke riziko.</div>
+        </div>
+      </div>`;
 
-  return`<div class="hres" style="padding:20px">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-      <div class="pdf-score-ring" style="color:${scoreColor};border-color:${scoreColor}">
-        ${d.score}
-      </div>
+  const recsHTML = d.recs?.length
+    ? `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        ${d.recs.map(r=>`<div style="font-size:.82rem;color:var(--muted);padding:3px 0;display:flex;gap:7px"><span style="flex-shrink:0">▸</span><span>${escHtml(r)}</span></div>`).join('')}
+      </div>`
+    : '';
+
+  return `<div class="hres" style="padding:20px">
+    <!-- Header: skóre + info -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:${flags.length?'14px':'10px'}">
+      <div class="pdf-score-ring" style="color:${scoreColor};border-color:${scoreColor}">${d.score}</div>
       <div>
         <div style="font-size:1rem;font-weight:700">${escHtml(d.filename||'Súbor')}</div>
-        <div style="font-size:.82rem;color:${scoreColor};font-weight:600">${scoreLabel}</div>
-        <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${d.docType==='XLSX'?(d.pages||0)+' listov':d.pages!=null?(d.pages||0)+' strán':''} ${d.pages!=null?'·':''} ${d.urlCount||0} URL nájdených</div>
+        <div style="font-size:.84rem;color:${scoreColor};font-weight:600;margin-top:1px">${scoreLabel}</div>
+        <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${escHtml(dtype)} · ${escHtml(metaLine)}</div>
       </div>
     </div>
 
-    ${flags?`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">${flags}</div>`:''}
+    ${flags.length ? `<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">${flags.join('')}</div>` : ''}
 
-    ${d.suspiciousUrls?.length?`<div style="padding:10px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.85rem;font-weight:700;color:var(--red);margin-bottom:12px">
-      🚨 ${d.suspiciousUrls.length} nebezpečných URL (Google Safe Browsing)
-    </div>`:''}
-
-    ${d.urlCount>0?`<div>
-      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
-        🔗 URL v dokumente (${Math.min(d.urlCount,30)}/${d.urlCount})
-      </div>
-      <div>${urlRows}${moreUrls}</div>
-    </div>`:'<div style="font-size:.85rem;color:var(--muted)">Žiadne URL neboli nájdené v dokumente.</div>'}
-
+    ${urlSection}
     ${recsHTML}
   </div>`;
 }
