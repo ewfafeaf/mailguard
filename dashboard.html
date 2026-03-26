@@ -318,6 +318,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .analysis-btn:active{transform:scale(.97)}
 .analysis-btn:disabled{opacity:.5;cursor:not-allowed}
 
+/* ── FILE UPLOAD ── */
+.file-upload-btn{height:50px;padding:0 18px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:10px;
+  font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .2s,background .2s;
+  color:var(--muted);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.file-upload-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,.06)}
+.pdf-score-ring{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.15rem;font-weight:800;flex-shrink:0;border:3px solid}
+.pdf-url-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem;word-break:break-all}
+.pdf-url-item:last-child{border-bottom:none}
+
 /* ── RESULT ── */
 .result-wrap{margin-top:20px;display:none}
 .hres{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -584,6 +594,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
             placeholder="Vlož URL adresu alebo text emailu…"
             onkeydown="if(event.key==='Enter')dashAnalyze()"/>
           <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
+          <button class="file-upload-btn" onclick="document.getElementById('pdfFileInput').click()" title="Nahrať PDF na analýzu">
+            📄 Nahrať súbor
+          </button>
+          <input type="file" id="pdfFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx"
+            style="display:none" onchange="analyzeFile(this)"/>
         </div>
         <div class="result-wrap" id="resultWrap">
           <div id="dashResult"></div>
@@ -2462,6 +2477,142 @@ async function dashAnalyze(){
   await saveAnalysis(val,gsbMatches);
   saveInd.style.display='block';
   loadStats();
+}
+
+/* ══════════════════════════════════════════
+   PDF / FILE ANALYSIS
+══════════════════════════════════════════ */
+async function analyzeFile(input){
+  const file=input.files[0];
+  input.value=''; // reset pre opakované nahratie
+  if(!file) return;
+
+  const MAX=10*1024*1024;
+  if(file.size>MAX){
+    alert('Súbor je príliš veľký. Maximum je 10 MB.');
+    return;
+  }
+
+  const wrap=document.getElementById('resultWrap');
+  const resultEl=document.getElementById('dashResult');
+  const saveInd=document.getElementById('saveIndicator');
+  wrap.style.display='block';
+  saveInd.style.display='none';
+  resultEl.innerHTML=`<div class="hres" style="padding:28px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:22px;height:22px;border-width:2.5px;margin:0 auto 14px"></div>
+    <div style="font-weight:600;margin-bottom:4px">Analyzujem súbor…</div>
+    <div style="font-size:.82rem">Extrahujem URL a kontrolujem bezpečnosť</div>
+  </div>`;
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // Prečítaj súbor ako base64
+  const b64=await new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>res(e.target.result.split(',')[1]);
+    reader.onerror=rej;
+    reader.readAsDataURL(file);
+  });
+
+  const gsbKey=localStorage.getItem('gsb_api_key')||'';
+
+  try{
+    const resp=await fetch('/api/analyze-file',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ filename:file.name, mimetype:file.type, data:b64, gsbKey }),
+    });
+    const data=await resp.json();
+
+    if(!data.ok){
+      resultEl.innerHTML=`<div class="hres" style="padding:24px">
+        <div style="font-size:1.4rem;margin-bottom:8px">⚠️</div>
+        <div style="font-weight:700;margin-bottom:6px">Chyba analýzy</div>
+        <div style="font-size:.85rem;color:var(--muted)">${escHtml(data.error||'Neznáma chyba')}</div>
+      </div>`;
+      return;
+    }
+
+    resultEl.innerHTML=renderPDFResult(data);
+    await savePDFAnalysis(file.name, data);
+    saveInd.style.display='block';
+    loadStats();
+  }catch(e){
+    resultEl.innerHTML=`<div class="hres" style="padding:24px;color:var(--muted)">Chyba: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderPDFResult(d){
+  const scoreColor=d.score>=80?'var(--green)':d.score>=50?'var(--yellow)':'var(--red)';
+  const scoreLabel=d.score>=80?'Bezpečný':d.score>=50?'Podozrivý':'Nebezpečný';
+
+  const flags=[
+    d.hasJS        &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>🚨</span><div><b style="color:var(--red)">JavaScript detekovaný</b><br><span style="color:var(--muted)">PDF obsahuje JS – môže spustiť škodlivý kód pri otvorení.</span></div></div>`,
+    d.hasAutoOpen  &&`<div style="padding:8px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>⚠️</span><div><b style="color:var(--red)">Auto-open akcia</b><br><span style="color:var(--muted)">PDF sa automaticky pokúsi spustiť kód po otvorení.</span></div></div>`,
+    d.hasEmbedded  &&`<div style="padding:8px 12px;border-radius:8px;background:#ffbd2e22;border:1px solid #ffbd2e66;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📎</span><div><b style="color:var(--yellow)">Vložené súbory</b><br><span style="color:var(--muted)">PDF obsahuje embedded súbory – skontroluj ich pôvod.</span></div></div>`,
+    d.hasForms     &&`<div style="padding:8px 12px;border-radius:8px;background:#8b8b8b22;border:1px solid #8b8b8b44;font-size:.83rem;display:flex;gap:8px;align-items:flex-start"><span>📝</span><div><b>Interaktívny formulár</b><br><span style="color:var(--muted)">PDF obsahuje AcroForm – buď opatrný pri vypĺňaní osobných údajov.</span></div></div>`,
+  ].filter(Boolean).join('');
+
+  // URL zoznam
+  const suspUrls=new Set((d.suspiciousUrls||[]).map(u=>u.url));
+  const urlRows=(d.urls||[]).slice(0,30).map(u=>{
+    const bad=suspUrls.has(u);
+    return`<div class="pdf-url-item">
+      <span style="flex-shrink:0;color:${bad?'var(--red)':'var(--green)'};">${bad?'🚨':'✅'}</span>
+      <a href="${escHtml(u)}" target="_blank" rel="noopener noreferrer" style="color:${bad?'var(--red)':'inherit'};text-decoration:${bad?'underline':'none'};word-break:break-all">${escHtml(u)}</a>
+      ${bad?`<span style="flex-shrink:0;font-size:.72rem;color:var(--red);font-weight:600">GSB</span>`:''}
+    </div>`;
+  }).join('');
+
+  const moreUrls=d.urlCount>30?`<div style="font-size:.78rem;color:var(--muted);padding:6px 0">… a ďalších ${d.urlCount-30} URL</div>`:'';
+
+  const recsHTML=d.recs?.length?`<div style="margin-top:14px">
+    ${d.recs.map(r=>`<div style="font-size:.82rem;color:var(--muted);padding:4px 0;display:flex;gap:6px"><span>▸</span>${escHtml(r)}</div>`).join('')}
+  </div>`:'';
+
+  return`<div class="hres" style="padding:20px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div class="pdf-score-ring" style="color:${scoreColor};border-color:${scoreColor}">
+        ${d.score}
+      </div>
+      <div>
+        <div style="font-size:1rem;font-weight:700">${escHtml(d.filename||'Súbor')}</div>
+        <div style="font-size:.82rem;color:${scoreColor};font-weight:600">${scoreLabel}</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${d.pages||0} strán · ${d.urlCount||0} URL nájdených</div>
+      </div>
+    </div>
+
+    ${flags?`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">${flags}</div>`:''}
+
+    ${d.suspiciousUrls?.length?`<div style="padding:10px 12px;border-radius:8px;background:#f8514922;border:1px solid #f8514966;font-size:.85rem;font-weight:700;color:var(--red);margin-bottom:12px">
+      🚨 ${d.suspiciousUrls.length} nebezpečných URL (Google Safe Browsing)
+    </div>`:''}
+
+    ${d.urlCount>0?`<div>
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
+        🔗 URL v dokumente (${Math.min(d.urlCount,30)}/${d.urlCount})
+      </div>
+      <div>${urlRows}${moreUrls}</div>
+    </div>`:'<div style="font-size:.85rem;color:var(--muted)">Žiadne URL neboli nájdené v dokumente.</div>'}
+
+    ${recsHTML}
+  </div>`;
+}
+
+async function savePDFAnalysis(filename, data){
+  const{data:{user}}=await _sb.auth.getUser();
+  if(!user) return;
+  await _sb.from('analyses').insert({
+    user_id:   user.id,
+    input:     filename,
+    type:      'pdf',
+    score:     data.score,
+    result:    JSON.stringify({
+      pages: data.pages, urlCount: data.urlCount,
+      hasJS: data.hasJS, hasEmbedded: data.hasEmbedded,
+      suspiciousCount: data.suspiciousUrls?.length||0,
+    }),
+    created_at: new Date().toISOString(),
+  });
 }
 
 async function saveAnalysis(val,gsbMatches=null){

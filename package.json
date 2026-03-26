@@ -2,6 +2,7 @@
   "name": "mailguard",
   "version": "1.0.0",
   "dependencies": {
-    "stripe": "^14.0.0"
+    "stripe": "^14.0.0",
+    "pdf-parse": "^1.1.1"
   }
 }
