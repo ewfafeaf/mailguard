@@ -4,7 +4,7 @@
   "dependencies": {
     "stripe": "^14.0.0",
     "pdf-parse": "^1.1.1",
-    "mammoth": "^1.8.0",
+    "adm-zip": "^0.5.10",
     "xlsx": "^0.18.5"
   }
 }

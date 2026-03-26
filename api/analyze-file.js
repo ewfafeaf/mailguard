@@ -2,7 +2,7 @@
 // POST { filename, mimetype, data (base64), gsbKey? }
 
 const pdfParse = require('pdf-parse');
-const mammoth  = require('mammoth');
+const AdmZip   = require('adm-zip');
 const XLSX     = require('xlsx');
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -27,9 +27,8 @@ module.exports = async function handler(req, res) {
   const ext = filename.split('.').pop().toLowerCase();
 
   const isPDF  = mimetype === 'application/pdf' || ext === 'pdf';
-  const isDOCX = ['docx','doc'].includes(ext) ||
-    mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    mimetype === 'application/msword';
+  const isDOCX = ['docx'].includes(ext) ||
+    mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const isXLSX = ['xlsx','xls'].includes(ext) ||
     mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     mimetype === 'application/vnd.ms-excel';
@@ -80,35 +79,47 @@ async function analyzePDF(buf, gsbKey) {
 }
 
 /* ═══════════════════════════════════════
-   DOCX/DOC Analysis  (mammoth)
+   DOCX Analysis  (ZIP + XML parsing)
 ═══════════════════════════════════════ */
 async function analyzeDOCX(buf, gsbKey) {
-  // Extrahuj plain text
-  const { value: text } = await mammoth.extractRawText({ buffer: buf });
+  let zip;
+  try {
+    zip = new AdmZip(buf);
+  } catch (e) {
+    throw new Error('Nepodarilo sa otvoriť DOCX súbor (neplatný ZIP): ' + e.message);
+  }
 
-  // Extrahuj HTML pre hyperlinky (<a href="...">)
-  const { value: html } = await mammoth.convertToHtml({ buffer: buf });
-  const hrefUrls = [...(html.matchAll(/href="([^"]+)"/g) || [])].map(m => m[1])
+  // ── 1. Hyperlinky z relationships súboru ─────────────────────────
+  // word/_rels/document.xml.rels obsahuje <Relationship Target="https://..." TargetMode="External"/>
+  const relsXml = zip.getEntry('word/_rels/document.xml.rels')?.getData()?.toString('utf8') || '';
+  const hyperlinkUrls = [...relsXml.matchAll(/Target="([^"]+)"/g)]
+    .map(m => m[1])
     .filter(u => /^https?:\/\//i.test(u));
 
-  const textUrls = extractUrls(text);
-  const allUrls  = dedup([...hrefUrls, ...textUrls]).slice(0, 100);
+  // ── 2. Text z document.xml (URL vzory v texte) ────────────────────
+  const docXml = zip.getEntry('word/document.xml')?.getData()?.toString('utf8') || '';
+  // Odstráň XML tagy, nechaj len text
+  const plainText = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const textUrls  = extractUrls(plainText);
 
-  // DOCX môže obsahovať makrá (detekcia cez raw bytes – OOXML balík)
-  // .doc (legacy binary) - kontrola OLE header
-  const rawStr  = buf.toString('latin1');
-  const hasMacros = /vbaProject\.bin/i.test(rawStr) || // DOCX s VBA
-    (buf[0] === 0xD0 && buf[1] === 0xCF); // legacy .doc OLE compound
+  // ── 3. Počet strán z docProps/app.xml ─────────────────────────────
+  const appXml    = zip.getEntry('docProps/app.xml')?.getData()?.toString('utf8') || '';
+  const pagesMatch = appXml.match(/<Pages>(\d+)<\/Pages>/i);
+  const pages     = pagesMatch ? parseInt(pagesMatch[1], 10) : null;
+
+  // ── 4. Makrá (VBA project) ────────────────────────────────────────
+  const hasMacros = !!zip.getEntry('word/vbaProject.bin');
+
+  const allUrls = dedup([...hyperlinkUrls, ...textUrls]).slice(0, 100);
 
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
   const { score, recs } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
-    hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX',
-    hasMacros,
+    hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX', hasMacros,
   });
 
-  console.log(`[DOCX] urls=${allUrls.length} macros=${hasMacros} score=${score}`);
-  return { ok:true, docType:'DOCX', pages: null, urlCount:allUrls.length,
+  console.log(`[DOCX] pages=${pages} hyperlinks=${hyperlinkUrls.length} textUrls=${textUrls.length} macros=${hasMacros} score=${score}`);
+  return { ok:true, docType:'DOCX', pages, urlCount:allUrls.length,
     urls:allUrls.slice(0,50), suspiciousUrls, hasJS:false, hasEmbedded:hasMacros,
     hasForms:false, hasAutoOpen:false, hasMacros, score, recs };
 }
