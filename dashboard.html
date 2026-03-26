@@ -556,6 +556,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <a class="sidebar-item" id="navFiles" onclick="showSection('files')">
       <span class="icon">📄</span><span>Analýza súborov</span>
     </a>
+    <a class="sidebar-item" id="navHeaders" onclick="showSection('headers')">
+      <span class="icon">🔍</span><span>Analýza hlavičiek</span>
+    </a>
     <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
       <span class="icon">💎</span><span>Plány</span>
     </a>
@@ -609,29 +612,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <div id="sectionNova" class="dash-section">
       <div class="dash-section-title"><div class="dot"></div>Nová analýza</div>
       <div class="analysis-card">
-        <!-- Záložky -->
-        <div class="atab-row">
-          <button class="atab active" id="atabText"   onclick="switchAnalysisTab('text')">✉️ Text emailu / URL</button>
-          <button class="atab"        id="atabHeaders" onclick="switchAnalysisTab('headers')">🔍 Hlavičky emailu</button>
-        </div>
-
-        <!-- Tab: Text / URL -->
-        <div id="atPaneText">
-          <div class="analysis-input-row">
-            <input type="text" class="analysis-input" id="dashInput"
-              placeholder="Vlož URL adresu alebo text emailu…"
-              onkeydown="if(event.key==='Enter')dashAnalyze()"/>
-            <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
-          </div>
-        </div>
-
-        <!-- Tab: Email headers -->
-        <div id="atPaneHeaders" style="display:none">
-          <textarea class="hdr-textarea" id="hdrInput"
-            placeholder="Vlož sem raw email hlavičky (From:, Received:, DKIM-Signature:, …)"></textarea>
-          <div style="margin-top:10px;display:flex;justify-content:flex-end">
-            <button class="analysis-btn" id="hdrBtn" onclick="analyzeEmailHeaders()">🔍 Analyzovať hlavičky</button>
-          </div>
+        <div class="analysis-input-row">
+          <input type="text" class="analysis-input" id="dashInput"
+            placeholder="Vlož URL adresu alebo text emailu…"
+            onkeydown="if(event.key==='Enter')dashAnalyze()"/>
+          <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
         </div>
 
         <div class="result-wrap" id="resultWrap">
@@ -792,6 +777,27 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       <div id="fileResultWrap" style="display:none;margin-top:16px">
         <div id="fileResult"></div>
         <div class="save-indicator" id="fileSaveIndicator">✓ Analýza uložená do histórie</div>
+      </div>
+    </div>
+
+    <!-- Section: Headers -->
+    <div id="sectionHeaders" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Analýza emailových hlavičiek</div>
+      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
+        Vlož raw hlavičky emailu a MailGuard skontroluje SPF, DKIM, DMARC a odhalí možný email spoofing.
+        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+      </div>
+
+      <div class="analysis-card">
+        <textarea class="hdr-textarea" id="hdrInput"
+          placeholder="Vlož sem raw email hlavičky&#10;&#10;Príklad:&#10;From: support@example.com&#10;Reply-To: attacker@evil.com&#10;Received: from mail.example.com...&#10;DKIM-Signature: v=1; a=rsa-sha256; d=example.com;&#10;Authentication-Results: mx.google.com; spf=pass; dkim=fail"></textarea>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end">
+          <button class="analysis-btn" id="hdrBtn" onclick="analyzeEmailHeaders()">🔍 Analyzovať hlavičky</button>
+        </div>
+        <div id="hdrResultWrap" style="display:none;margin-top:16px">
+          <div id="hdrResult"></div>
+          <div class="save-indicator" id="hdrSaveIndicator">✓ Analýza uložená do histórie</div>
+        </div>
       </div>
     </div>
 
@@ -1018,24 +1024,25 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','historia','nastavenia','podpora','webskener','files','plans'].forEach(id=>{
+  ['nova','historia','nastavenia','podpora','webskener','files','headers','plans'].forEach(id=>{
     const key=id.charAt(0).toUpperCase()+id.slice(1);
     const el=document.getElementById('section'+key);
     if(el) el.style.display=id===s?'block':'none';
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navPlans'].forEach(id=>{
+  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',plans:'navPlans'};
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideStats=['nastavenia','podpora','webskener','files','plans'].includes(s);
+  const hideStats=['nastavenia','podpora','webskener','files','headers','plans'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
-  if(s==='files' && !checkPlan('pro')) showUpgradeModal('files');
+  if(s==='files'   && !checkPlan('pro')) showUpgradeModal('files');
+  if(s==='headers' && !checkPlan('pro')) showUpgradeModal('headers');
 }
 
 /* ══════════════════════════════════════════
@@ -2753,13 +2760,14 @@ function switchAnalysisTab(tab){
    EMAIL HEADER ANALYSIS
 ══════════════════════════════════════════ */
 async function analyzeEmailHeaders(){
+  if(!checkPlan('pro')){ showUpgradeModal('headers'); return; }
   const raw=document.getElementById('hdrInput').value.trim();
   if(!raw){ alert('Vlož email hlavičky pred analýzou.'); return; }
 
   const btn=document.getElementById('hdrBtn');
-  const wrap=document.getElementById('resultWrap');
-  const resultEl=document.getElementById('dashResult');
-  const saveInd=document.getElementById('saveIndicator');
+  const wrap=document.getElementById('hdrResultWrap');
+  const resultEl=document.getElementById('hdrResult');
+  const saveInd=document.getElementById('hdrSaveIndicator');
 
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Analyzujem…';
@@ -2789,7 +2797,7 @@ async function analyzeEmailHeaders(){
     }
 
     resultEl.innerHTML=renderHeadersResult(data);
-    // Ulož do histórie
+    wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
     const {data:{user}}=await _sb.auth.getUser();
     if(user){
       await _sb.from('analyses').insert({
