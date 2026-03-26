@@ -307,6 +307,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 /* ── NEW ANALYSIS CARD ── */
 .analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
 .analysis-input-row{display:flex;gap:10px;margin-bottom:0}
+/* ── Analysis Tabs ── */
+.atab-row{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0}
+.atab{padding:8px 16px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:.85rem;
+  color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.atab:hover{color:var(--text)}
+.atab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.hdr-textarea{width:100%;min-height:180px;max-height:360px;padding:12px 14px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:10px;font-family:'Courier New',Courier,monospace;font-size:.78rem;
+  color:var(--text);line-height:1.6;resize:vertical;outline:none;transition:border-color .2s;box-sizing:border-box}
+.hdr-textarea:focus{border-color:var(--accent)}
 .analysis-input{flex:1;height:50px;padding:12px 16px;background:#fff;border:1px solid #e4e4e7;border-radius:10px;
   font-size:.95rem;color:#111;font-family:inherit;outline:none;caret-color:#111;transition:box-shadow .2s}
 .analysis-input::placeholder{color:#a1a1aa}
@@ -599,12 +609,31 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <div id="sectionNova" class="dash-section">
       <div class="dash-section-title"><div class="dot"></div>Nová analýza</div>
       <div class="analysis-card">
-        <div class="analysis-input-row">
-          <input type="text" class="analysis-input" id="dashInput"
-            placeholder="Vlož URL adresu alebo text emailu…"
-            onkeydown="if(event.key==='Enter')dashAnalyze()"/>
-          <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
+        <!-- Záložky -->
+        <div class="atab-row">
+          <button class="atab active" id="atabText"   onclick="switchAnalysisTab('text')">✉️ Text emailu / URL</button>
+          <button class="atab"        id="atabHeaders" onclick="switchAnalysisTab('headers')">🔍 Hlavičky emailu</button>
         </div>
+
+        <!-- Tab: Text / URL -->
+        <div id="atPaneText">
+          <div class="analysis-input-row">
+            <input type="text" class="analysis-input" id="dashInput"
+              placeholder="Vlož URL adresu alebo text emailu…"
+              onkeydown="if(event.key==='Enter')dashAnalyze()"/>
+            <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
+          </div>
+        </div>
+
+        <!-- Tab: Email headers -->
+        <div id="atPaneHeaders" style="display:none">
+          <textarea class="hdr-textarea" id="hdrInput"
+            placeholder="Vlož sem raw email hlavičky (From:, Received:, DKIM-Signature:, …)"></textarea>
+          <div style="margin-top:10px;display:flex;justify-content:flex-end">
+            <button class="analysis-btn" id="hdrBtn" onclick="analyzeEmailHeaders()">🔍 Analyzovať hlavičky</button>
+          </div>
+        </div>
+
         <div class="result-wrap" id="resultWrap">
           <div id="dashResult"></div>
           <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
@@ -2705,6 +2734,168 @@ async function savePDFAnalysis(filename, data){
     }),
     created_at: new Date().toISOString(),
   });
+}
+
+/* ══════════════════════════════════════════
+   ANALYSIS TABS
+══════════════════════════════════════════ */
+function switchAnalysisTab(tab){
+  document.getElementById('atabText').classList.toggle('active',    tab==='text');
+  document.getElementById('atabHeaders').classList.toggle('active', tab==='headers');
+  document.getElementById('atPaneText').style.display    = tab==='text'    ? 'block' : 'none';
+  document.getElementById('atPaneHeaders').style.display = tab==='headers' ? 'block' : 'none';
+  // Vyčisti výsledky pri prepnutí
+  document.getElementById('resultWrap').style.display='none';
+  document.getElementById('saveIndicator').style.display='none';
+}
+
+/* ══════════════════════════════════════════
+   EMAIL HEADER ANALYSIS
+══════════════════════════════════════════ */
+async function analyzeEmailHeaders(){
+  const raw=document.getElementById('hdrInput').value.trim();
+  if(!raw){ alert('Vlož email hlavičky pred analýzou.'); return; }
+
+  const btn=document.getElementById('hdrBtn');
+  const wrap=document.getElementById('resultWrap');
+  const resultEl=document.getElementById('dashResult');
+  const saveInd=document.getElementById('saveIndicator');
+
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Analyzujem…';
+  wrap.style.display='block';
+  saveInd.style.display='none';
+  resultEl.innerHTML=`<div class="hres" style="padding:24px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 12px"></div>
+    <div>Parsovanie email hlavičiek…</div>
+  </div>`;
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  try{
+    const resp=await fetch('/api/analyze-headers',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({headers:raw}),
+    });
+    const data=await resp.json();
+
+    if(!data.ok){
+      resultEl.innerHTML=`<div class="hres" style="padding:24px">
+        <div style="font-size:1.4rem;margin-bottom:8px">⚠️</div>
+        <div style="font-weight:700;margin-bottom:6px">Chyba analýzy</div>
+        <div style="font-size:.85rem;color:var(--muted)">${escHtml(data.error||'Neznáma chyba')}</div>
+      </div>`;
+      return;
+    }
+
+    resultEl.innerHTML=renderHeadersResult(data);
+    // Ulož do histórie
+    const {data:{user}}=await _sb.auth.getUser();
+    if(user){
+      await _sb.from('analyses').insert({
+        user_id: user.id,
+        input: data.from||'email headers',
+        type: 'headers',
+        score: data.score,
+        result: JSON.stringify({spf:data.spf,dkim:data.dkim,dmarc:data.dmarc,spoofing:data.spoofingDetected}),
+        created_at: new Date().toISOString(),
+      });
+      saveInd.style.display='block';
+      loadStats();
+    }
+  }catch(e){
+    resultEl.innerHTML=`<div class="hres" style="padding:24px;color:var(--muted)">Chyba: ${escHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled=false;
+    btn.textContent='🔍 Analyzovať hlavičky';
+  }
+}
+
+function renderHeadersResult(d){
+  const scoreColor=d.score>=70?'var(--green)':d.score>=40?'var(--yellow)':'var(--red)';
+  const scoreLabel=d.score>=70?'Dôveryhodný':d.score>=40?'Podozrivý':'Vysoké riziko';
+
+  // Helper: riadok výsledku
+  const row=(pass,label,detail='',skip=false)=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:1rem;flex-shrink:0;margin-top:1px">${skip?'⏭️':pass?'✅':'❌'}</span>
+      <div style="flex:1">
+        <div style="font-size:.86rem;font-weight:600;color:${skip?'var(--muted)':pass?'var(--text)':'var(--red)'}">${label}</div>
+        ${detail?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">${detail}</div>`:''}
+      </div>
+    </div>`;
+
+  // Auth výsledky
+  const spfLabel  = d.spf  ? d.spf.toUpperCase()  : 'N/A';
+  const dkimLabel = d.dkim ? d.dkim.toUpperCase()  : 'N/A';
+  const dmarcLabel= d.dmarc? d.dmarc.toUpperCase() : 'N/A';
+
+  const spfPass  = d.spf==='pass';
+  const dkimPass = d.dkim==='pass' || d.dkim==='present';
+  const dmarcPass= d.dmarc==='pass';
+
+  const authRows=[
+    row(spfPass,  `SPF: ${spfLabel}`,
+      spfPass ?'Doména povolila tohto odosielateľa.':'Odosielateľ nie je autorizovaný SPF záznamom.',
+      !d.spf),
+    row(dkimPass, `DKIM: ${dkimLabel}`,
+      dkimPass?'Podpis emailu je platný – správa nebola modifikovaná.':'DKIM podpis chýba alebo je neplatný.',
+      !d.dkim),
+    row(dmarcPass,`DMARC: ${dmarcLabel}`,
+      dmarcPass?'Email prešiel DMARC politikou.':'DMARC kontrola zlyhala alebo chýba.',
+      !d.dmarc),
+    row(d.fromReplyMatch,  'From = Reply-To',
+      d.fromReplyMatch?'Odpoveď pôjde na rovnakú doménu.':
+        `Reply-To smeruje na inú doménu: ${escHtml(d.replyTo||'')}`,
+      !d.replyTo),
+    row(d.fromReturnMatch, 'Return-Path zhoda',
+      d.fromReturnMatch?'Return-Path sa zhoduje s odosielateľom.':
+        `Return-Path ukazuje na inú doménu: ${escHtml(d.returnPath||'')}`,
+      !d.returnPath),
+  ].join('');
+
+  // Spoofing banner
+  const spoofingBanner=d.spoofingDetected?`
+    <div style="padding:12px 14px;border-radius:10px;background:#f8514922;border:1px solid #f8514966;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--red);margin-bottom:6px;font-size:.9rem">⚠️ Možný email spoofing detekovaný</div>
+      ${d.spoofingFlags.map(f=>`<div style="font-size:.8rem;color:var(--muted);padding:2px 0">▸ ${escHtml(f)}</div>`).join('')}
+    </div>`
+    :`<div style="padding:10px 14px;border-radius:10px;background:#3fb95022;border:1px solid #3fb95044;margin-bottom:14px;font-size:.84rem;color:var(--green);font-weight:600">
+        ✅ Žiadne spoofing indikátory neboli nájdené
+      </div>`;
+
+  // Meta hlavičky
+  const metaItems=[
+    d.from    && `<div><span style="color:var(--muted)">From:</span> ${escHtml(d.from)}</div>`,
+    d.replyTo && `<div><span style="color:var(--muted)">Reply-To:</span> ${escHtml(d.replyTo)}</div>`,
+    d.returnPath && `<div><span style="color:var(--muted)">Return-Path:</span> ${escHtml(d.returnPath)}</div>`,
+    d.subject && `<div><span style="color:var(--muted)">Subject:</span> ${escHtml(d.subject)}</div>`,
+    d.date    && `<div><span style="color:var(--muted)">Date:</span> ${escHtml(d.date)}</div>`,
+    d.receivedHops && `<div><span style="color:var(--muted)">Received hops:</span> ${d.receivedHops}</div>`,
+  ].filter(Boolean).join('');
+
+  return`<div class="hres" style="padding:20px">
+    <!-- Score header -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div class="pdf-score-ring" style="color:${scoreColor};border-color:${scoreColor}">${d.score}</div>
+      <div>
+        <div style="font-size:1rem;font-weight:700">Analýza email hlavičiek</div>
+        <div style="font-size:.84rem;color:${scoreColor};font-weight:600;margin-top:1px">${scoreLabel}</div>
+        ${d.fromDomain?`<div style="font-size:.77rem;color:var(--muted);margin-top:3px">Odosielateľ: ${escHtml(d.fromDomain)}</div>`:''}
+      </div>
+    </div>
+
+    ${spoofingBanner}
+
+    <!-- Meta -->
+    ${metaItems?`<div style="font-size:.8rem;margin-bottom:12px;display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:var(--surface2);border-radius:8px">${metaItems}</div>`:''}
+
+    <!-- Auth checks -->
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">
+      Bezpečnostné kontroly
+    </div>
+    <div>${authRows}</div>
+  </div>`;
 }
 
 async function saveAnalysis(val,gsbMatches=null){
