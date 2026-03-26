@@ -559,6 +559,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <a class="sidebar-item" id="navHeaders" onclick="showSection('headers')">
       <span class="icon">🔍</span><span>Analýza hlavičiek</span>
     </a>
+    <a class="sidebar-item" id="navQr" onclick="showSection('qrscanner')">
+      <span class="icon">📷</span><span>QR Skener</span>
+    </a>
     <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
       <span class="icon">💎</span><span>Plány</span>
     </a>
@@ -801,6 +804,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       </div>
     </div>
 
+    <!-- Section: QR Scanner -->
+    <div id="sectionQrscanner" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:#a371f7"></div>QR kód analýza</div>
+      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
+        Nahraj obrázok s QR kódom a MailGuard skontroluje URL ktorú obsahuje — GSB, VirusTotal a URL analýza.
+        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+      </div>
+
+      <div class="drop-zone" id="qrDropZone"
+        onclick="document.getElementById('qrFileInput').click()"
+        ondragover="dzOver2(event)" ondragleave="dzLeave2(event)" ondrop="dzDrop2(event)">
+        <div class="drop-zone-icon">📷</div>
+        <div class="drop-zone-title">Presuň obrázok sem alebo klikni</div>
+        <div class="drop-zone-sub">PNG, JPG, WEBP, GIF · max 5 MB</div>
+        <input type="file" id="qrFileInput" accept="image/png,image/jpeg,image/webp,image/gif"
+          style="display:none" onchange="qrScanFromInput(this)"/>
+      </div>
+
+      <div id="qrResultWrap" style="display:none;margin-top:16px">
+        <div id="qrResult"></div>
+        <div class="save-indicator" id="qrSaveIndicator">✓ Analýza uložená do histórie</div>
+      </div>
+    </div>
+
     <div id="sectionPlans" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--accent2)"></div>Plány & Ceny</div>
       <div id="plansGrid" class="plans-grid"></div>
@@ -1024,25 +1051,26 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','historia','nastavenia','podpora','webskener','files','headers','plans'].forEach(id=>{
-    const key=id.charAt(0).toUpperCase()+id.slice(1);
+  ['nova','historia','nastavenia','podpora','webskener','files','headers','qrscanner','plans'].forEach(id=>{
+    const key=id==='qrscanner'?'Qrscanner':id.charAt(0).toUpperCase()+id.slice(1);
     const el=document.getElementById('section'+key);
     if(el) el.style.display=id===s?'block':'none';
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navPlans'].forEach(id=>{
+  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navQr','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',plans:'navPlans'};
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',qrscanner:'navQr',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideStats=['nastavenia','podpora','webskener','files','headers','plans'].includes(s);
+  const hideStats=['nastavenia','podpora','webskener','files','headers','qrscanner','plans'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
-  if(s==='files'   && !checkPlan('pro')) showUpgradeModal('files');
-  if(s==='headers' && !checkPlan('pro')) showUpgradeModal('headers');
+  if(s==='files'      && !checkPlan('pro')) showUpgradeModal('files');
+  if(s==='headers'    && !checkPlan('pro')) showUpgradeModal('headers');
+  if(s==='qrscanner'  && !checkPlan('pro')) showUpgradeModal('qrscanner');
 }
 
 /* ══════════════════════════════════════════
@@ -2903,6 +2931,184 @@ function renderHeadersResult(d){
       Bezpečnostné kontroly
     </div>
     <div>${authRows}</div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════
+   QR SCANNER
+══════════════════════════════════════════ */
+function dzOver2(e){ e.preventDefault(); document.getElementById('qrDropZone').classList.add('dz-over'); }
+function dzLeave2(e){ document.getElementById('qrDropZone').classList.remove('dz-over'); }
+function dzDrop2(e){
+  e.preventDefault(); dzLeave2(e);
+  const file=e.dataTransfer.files[0];
+  if(file) qrScan(file);
+}
+function qrScanFromInput(input){
+  const file=input.files[0]; input.value='';
+  if(file) qrScan(file);
+}
+
+async function qrScan(file){
+  if(!checkPlan('pro')){ showUpgradeModal('qrscanner'); return; }
+  if(file.size > 5*1024*1024){ alert('Obrázok je príliš veľký. Maximum je 5 MB.'); return; }
+
+  const wrap=document.getElementById('qrResultWrap');
+  const resultEl=document.getElementById('qrResult');
+  const saveInd=document.getElementById('qrSaveIndicator');
+  wrap.style.display='block';
+  saveInd.style.display='none';
+  resultEl.innerHTML=`<div class="hres" style="padding:28px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:22px;height:22px;border-width:2.5px;margin:0 auto 14px"></div>
+    <div style="font-weight:600;margin-bottom:4px">Skenujem QR kód…</div>
+    <div style="font-size:.82rem">Dekódujem obrázok a kontrolujem URL</div>
+  </div>`;
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  const b64=await new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>res(e.target.result.split(',')[1]);
+    reader.onerror=rej;
+    reader.readAsDataURL(file);
+  });
+
+  const gsbKey=localStorage.getItem('gsb_api_key')||'';
+
+  try{
+    const resp=await fetch('/api/qr-scan',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:b64, gsbKey}),
+    });
+    const data=await resp.json();
+
+    if(!data.ok){
+      resultEl.innerHTML=`<div class="hres" style="padding:24px;text-align:center">
+        <div style="font-size:2rem;margin-bottom:10px">❌</div>
+        <div style="font-weight:700;margin-bottom:6px">QR kód sa nenašiel</div>
+        <div style="font-size:.85rem;color:var(--muted)">${escHtml(data.error||'Neznáma chyba')}</div>
+      </div>`;
+      return;
+    }
+
+    // Ak je URL, spusti VT kontrolu paralelne
+    let vtResult=null;
+    if(data.isUrl){
+      try{
+        const hostname=new URL(data.decoded).hostname;
+        vtResult=await runVTCheck(hostname);
+      }catch(e){ console.warn('[QR] VT check failed:', e.message); }
+    }
+
+    resultEl.innerHTML=renderQRResult(data, vtResult, file.name);
+
+    // Ulož do Supabase
+    const {data:{user}}=await _sb.auth.getUser();
+    if(user){
+      await _sb.from('analyses').insert({
+        user_id: user.id,
+        input: data.decoded?.slice(0,200)||'qr code',
+        type: 'qr',
+        score: qrScore(data, vtResult),
+        result: JSON.stringify({
+          decoded: data.decoded?.slice(0,200),
+          contentType: data.contentType,
+          gsbThreats: data.gsbThreats?.length||0,
+          vtThreats: (vtResult?.malicious||0)+(vtResult?.suspicious||0),
+        }),
+        created_at: new Date().toISOString(),
+      });
+      saveInd.style.display='block';
+      loadStats();
+    }
+  }catch(e){
+    resultEl.innerHTML=`<div class="hres" style="padding:24px;color:var(--muted)">Chyba: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function qrScore(data, vtResult){
+  if(!data.isUrl) return 100;
+  let score=100;
+  if(data.gsbThreats?.length)   score-=50;
+  if((vtResult?.malicious||0)>0) score-=40;
+  if((vtResult?.suspicious||0)>0) score-=20;
+  if(data.urlRisk?.score>50)    score-=30;
+  else if(data.urlRisk?.score>25) score-=15;
+  return Math.max(0,score);
+}
+
+function renderQRResult(data, vtResult, filename){
+  const score=qrScore(data,vtResult);
+  const scoreColor=score>=70?'var(--green)':score>=40?'var(--yellow)':'var(--red)';
+  const scoreLabel=score>=70?'Bezpečný':score>=40?'Podozrivý':'Nebezpečný';
+
+  // Ikona podľa typu obsahu
+  const typeIcon={url:'🔗',wifi:'📶',vcard:'👤',text:'📝'}[data.contentType]||'📝';
+  const typeLabel={url:'URL',wifi:'Wi-Fi sieť',vcard:'Kontakt (vCard)',text:'Text'}[data.contentType]||'Text';
+
+  // Decoded box
+  const decodedBox=`<div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)">
+    <div style="font-size:.73rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">${typeIcon} Dekódovaný obsah (${typeLabel})</div>
+    <div style="font-size:.84rem;word-break:break-all;font-family:monospace">${escHtml(data.decoded)}</div>
+  </div>`;
+
+  // GSB výsledok
+  const gsbBad=data.gsbThreats?.length>0;
+  const gsbRow=data.gsbChecked
+    ?`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span>${gsbBad?'❌':'✅'}</span>
+        <div>
+          <div style="font-size:.86rem;font-weight:600;color:${gsbBad?'var(--red)':'var(--text)'}">
+            Google Safe Browsing: ${gsbBad?'HROZBA DETEKOVANÁ':'Čistá'}
+          </div>
+          ${gsbBad?`<div style="font-size:.77rem;color:var(--red);margin-top:2px">${data.gsbThreats.map(t=>escHtml(t.threat)).join(', ')}</div>`:''}
+        </div>
+      </div>`
+    :'';
+
+  // VT výsledok
+  let vtRow='';
+  if(vtResult){
+    const threats=(vtResult.malicious||0)+(vtResult.suspicious||0);
+    const vtBad=threats>0;
+    vtRow=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span>${vtBad?'❌':'✅'}</span>
+      <div>
+        <div style="font-size:.86rem;font-weight:600;color:${vtBad?'var(--red)':'var(--text)'}">
+          VirusTotal: ${vtBad?threats+'/'+vtResult.total+' detections':'Čistá ('+vtResult.total+' engines)'}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // URL risk findings
+  let urlRiskRows='';
+  if(data.urlRisk?.findings?.length){
+    urlRiskRows=data.urlRisk.findings.map(f=>`
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span>${f.sev==='high'?'❌':f.sev==='medium'?'⚠️':'ℹ️'}</span>
+        <div style="font-size:.85rem">${escHtml(f.text)}</div>
+      </div>`).join('');
+  }
+
+  const checksSection=data.isUrl&&(gsbRow||vtRow||urlRiskRows)?`
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Bezpečnostné kontroly</div>
+    <div style="margin-bottom:12px">${gsbRow}${vtRow}${urlRiskRows}</div>`:
+    !data.isUrl?`<div style="padding:10px 14px;border-radius:8px;background:var(--surface2);font-size:.84rem;color:var(--muted)">
+      ℹ️ QR kód neobsahuje URL – nie je potrebná bezpečnostná kontrola.
+    </div>`:'';
+
+  return`<div class="hres" style="padding:20px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div class="pdf-score-ring" style="color:${scoreColor};border-color:${scoreColor}">${score}</div>
+      <div>
+        <div style="font-size:1rem;font-weight:700">${escHtml(filename||'QR kód')}</div>
+        <div style="font-size:.84rem;color:${scoreColor};font-weight:600;margin-top:1px">${scoreLabel}</div>
+        <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${typeLabel}</div>
+      </div>
+    </div>
+    ${decodedBox}
+    ${checksSection}
   </div>`;
 }
 
