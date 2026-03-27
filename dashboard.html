@@ -817,7 +817,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         ondragover="dzOver2(event)" ondragleave="dzLeave2(event)" ondrop="dzDrop2(event)">
         <div class="drop-zone-icon">📷</div>
         <div class="drop-zone-title">Presuň obrázok sem alebo klikni</div>
-        <div class="drop-zone-sub">PNG, JPG, WEBP, GIF · max 20 MB</div>
+        <div class="drop-zone-sub">PNG, JPG, WEBP, GIF · max 2 MB</div>
         <input type="file" id="qrFileInput" accept="image/png,image/jpeg,image/webp,image/gif"
           style="display:none" onchange="qrScanFromInput(this)"/>
       </div>
@@ -2949,9 +2949,38 @@ function qrScanFromInput(input){
   if(file) qrScan(file);
 }
 
+async function qrResizeImage(file){
+  // Načítaj obrázok do Image elementu
+  const dataUrl=await new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>res(e.target.result);
+    reader.onerror=rej;
+    reader.readAsDataURL(file);
+  });
+  const img=await new Promise((res,rej)=>{
+    const i=new Image();
+    i.onload=()=>res(i);
+    i.onerror=rej;
+    i.src=dataUrl;
+  });
+  // Vypočítaj nové rozmery max 800x800
+  const MAX=800;
+  let {width:w,height:h}=img;
+  if(w>MAX||h>MAX){
+    if(w>h){ h=Math.round(h*MAX/w); w=MAX; }
+    else    { w=Math.round(w*MAX/h); h=MAX; }
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  canvas.getContext('2d').drawImage(img,0,0,w,h);
+  // Vráť base64 bez data: prefix
+  const out=canvas.toDataURL('image/jpeg',0.7);
+  return out.split(',')[1];
+}
+
 async function qrScan(file){
   if(!checkPlan('pro')){ showUpgradeModal('qrscanner'); return; }
-  if(file.size > 20*1024*1024){ alert('Obrázok je príliš veľký. Maximum je 20 MB.'); return; }
+  if(file.size > 2*1024*1024){ alert('Obrázok je príliš veľký. Maximum je 2 MB.'); return; }
 
   const wrap=document.getElementById('qrResultWrap');
   const resultEl=document.getElementById('qrResult');
@@ -2961,16 +2990,11 @@ async function qrScan(file){
   resultEl.innerHTML=`<div class="hres" style="padding:28px;text-align:center;color:var(--muted)">
     <div class="spinner" style="width:22px;height:22px;border-width:2.5px;margin:0 auto 14px"></div>
     <div style="font-weight:600;margin-bottom:4px">Skenujem QR kód…</div>
-    <div style="font-size:.82rem">Dekódujem obrázok a kontrolujem URL</div>
+    <div style="font-size:.82rem">Zmenšujem obrázok a dekódujem QR kód</div>
   </div>`;
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 
-  const b64=await new Promise((res,rej)=>{
-    const reader=new FileReader();
-    reader.onload=e=>res(e.target.result.split(',')[1]);
-    reader.onerror=rej;
-    reader.readAsDataURL(file);
-  });
+  const b64=await qrResizeImage(file);
 
   const gsbKey=localStorage.getItem('gsb_api_key')||'';
 

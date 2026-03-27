@@ -4,7 +4,15 @@
 const jsQR = require('jsqr');
 const Jimp = require('jimp');
 
-const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_SIZE = 4 * 1024 * 1024; // 4 MB (base64 obrázka po resize)
+
+module.exports.config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4mb',
+    },
+  },
+};
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,7 +27,7 @@ module.exports = async function handler(req, res) {
 
   const buf = Buffer.from(b64, 'base64');
   if (buf.length > MAX_SIZE) {
-    return res.status(400).json({ error: 'Obrázok je príliš veľký (max 5 MB)' });
+    return res.status(400).json({ error: 'Obrázok je príliš veľký (max 4 MB)' });
   }
 
   try {
