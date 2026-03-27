@@ -2980,7 +2980,19 @@ async function qrScan(file){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({image:b64, gsbKey}),
     });
-    const data=await resp.json();
+    if(!resp.ok){
+      const text=await resp.text();
+      console.error('[QR] Server error HTTP',resp.status,text.slice(0,500));
+      throw new Error(`Server vrátil HTTP ${resp.status}. Skontroluj konzolu pre detaily.`);
+    }
+    let data;
+    try{
+      data=await resp.json();
+    }catch(jsonErr){
+      const text=await resp.clone().text().catch(()=>'(nedá sa prečítať)');
+      console.error('[QR] JSON parse error. Server response:', text.slice(0,500));
+      throw new Error('Server nevrátil platný JSON. Skontroluj konzolu (F12) pre detaily.');
+    }
 
     if(!data.ok){
       resultEl.innerHTML=`<div class="hres" style="padding:24px;text-align:center">
