@@ -2963,8 +2963,8 @@ async function qrResizeImage(file){
     i.onerror=rej;
     i.src=dataUrl;
   });
-  // Vypočítaj nové rozmery max 800x800
-  const MAX=800;
+  // Vypočítaj nové rozmery max 500x500
+  const MAX=500;
   let {width:w,height:h}=img;
   if(w>MAX||h>MAX){
     if(w>h){ h=Math.round(h*MAX/w); w=MAX; }
@@ -2974,7 +2974,7 @@ async function qrResizeImage(file){
   canvas.width=w; canvas.height=h;
   canvas.getContext('2d').drawImage(img,0,0,w,h);
   // Vráť base64 bez data: prefix
-  const out=canvas.toDataURL('image/jpeg',0.7);
+  const out=canvas.toDataURL('image/jpeg',0.5);
   return out.split(',')[1];
 }
 

@@ -4,12 +4,12 @@
 const jsQR = require('jsqr');
 const Jimp = require('jimp');
 
-const MAX_SIZE = 4 * 1024 * 1024; // 4 MB (base64 obrázka po resize)
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
-module.exports.config = {
+export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '4mb',
+      sizeLimit: '10mb',
     },
   },
 };
