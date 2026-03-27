@@ -559,7 +559,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <a class="sidebar-item" id="navHeaders" onclick="showSection('headers')">
       <span class="icon">🔍</span><span>Analýza hlavičiek</span>
     </a>
-<a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
+    <a class="sidebar-item" id="navTeam" onclick="showSection('team')" style="display:none">
+      <span class="icon">👥</span><span>Správa tímu</span>
+    </a>
+    <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
       <span class="icon">💎</span><span>Plány</span>
     </a>
     <div class="sidebar-divider"></div>
@@ -802,6 +805,48 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     </div>
 
 
+    <!-- Section: Team -->
+    <div id="sectionTeam" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:#3b82f6"></div>Správa tímu</div>
+      <div style="font-size:.86rem;color:var(--muted);margin-bottom:20px;line-height:1.55">
+        Pridaj členov tímu a spravuj ich prístup k MailGuard. Pozvánka bude odoslaná emailom.
+        <span id="teamPlanNote" style="color:var(--accent);font-weight:600"></span>
+      </div>
+
+      <!-- Pridať člena -->
+      <div class="hres" style="padding:18px;margin-bottom:18px">
+        <div style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px">Pozvať nového člena</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Email</div>
+            <input id="teamInviteEmail" type="email" placeholder="meno@skola.sk"
+              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.86rem;box-sizing:border-box"/>
+          </div>
+          <div style="min-width:130px">
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Rola</div>
+            <select id="teamInviteRole"
+              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.86rem">
+              <option value="member">Člen</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="analysis-btn" id="teamInviteBtn" onclick="teamInvite()" style="white-space:nowrap;padding:8px 18px">
+            ➕ Pozvať
+          </button>
+        </div>
+        <div id="teamInviteMsg" style="margin-top:10px;font-size:.83rem;display:none"></div>
+      </div>
+
+      <!-- Zoznam členov -->
+      <div class="hres" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Členovia tímu</div>
+          <div id="teamCount" style="font-size:.79rem;color:var(--muted)"></div>
+        </div>
+        <div id="teamList" style="min-height:60px"></div>
+      </div>
+    </div>
+
     <div id="sectionPlans" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--accent2)"></div>Plány & Ceny</div>
       <div id="plansGrid" class="plans-grid"></div>
@@ -885,6 +930,13 @@ async function loadProfile(){
   const {data}=await _sb.from('profiles').select('plan').eq('id',_currentUser.id).single();
   _currentPlan=data?.plan||'free';
   document.getElementById('sidebarPlan').textContent=PLAN_LABELS[_currentPlan]||'Free Plan';
+  // Zobraz sidebar položku tímu len pre school/business
+  const navTeam=document.getElementById('navTeam');
+  if(navTeam) navTeam.style.display=checkPlanSilent('school')?'flex':'none';
+}
+
+function checkPlanSilent(required){
+  return PLAN_RANK[_currentPlan]>=PLAN_RANK[required];
 }
 
 /* ── PLAN CHECK ── */
@@ -1025,22 +1077,23 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','historia','nastavenia','podpora','webskener','files','headers','plans'].forEach(id=>{
+  ['nova','historia','nastavenia','podpora','webskener','files','headers','team','plans'].forEach(id=>{
     const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
     if(el) el.style.display=id===s?'block':'none';
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navPlans'].forEach(id=>{
+  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',plans:'navPlans'};
+  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideStats=['nastavenia','podpora','webskener','files','headers','plans'].includes(s);
+  const hideStats=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
+  if(s==='team')   { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeam(); }
   if(s==='files'   && !checkPlan('pro')) showUpgradeModal('files');
   if(s==='headers' && !checkPlan('pro')) showUpgradeModal('headers');
 }
@@ -2904,6 +2957,127 @@ function renderHeadersResult(d){
     </div>
     <div>${authRows}</div>
   </div>`;
+}
+
+/* ══════════════════════════════════════════
+   TEAM MANAGEMENT
+══════════════════════════════════════════ */
+const TEAM_LIMIT = { school: 50, business: 100 };
+
+async function loadTeam(){
+  const listEl  = document.getElementById('teamList');
+  const countEl = document.getElementById('teamCount');
+  const noteEl  = document.getElementById('teamPlanNote');
+  const limit   = TEAM_LIMIT[_currentPlan] || 50;
+  noteEl.textContent = `Max ${limit} členov (${PLAN_LABELS[_currentPlan]}).`;
+
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 auto 10px"></div>Načítavam…</div>`;
+
+  const {data,error}=await _sb.from('team_members')
+    .select('id,member_email,role,created_at')
+    .eq('owner_id',_currentUser.id)
+    .order('created_at',{ascending:true});
+
+  if(error){
+    listEl.innerHTML=`<div style="padding:20px;color:var(--red);font-size:.85rem">Chyba: ${escHtml(error.message)}</div>`;
+    return;
+  }
+
+  countEl.textContent=`${data.length} / ${limit}`;
+
+  if(!data.length){
+    listEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-size:.85rem">
+      Zatiaľ žiadni členovia. Pozvite prvého kolegu vyššie.
+    </div>`;
+    return;
+  }
+
+  const rows=data.map(m=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">
+          ${m.role==='admin'?'🛡️':'👤'}
+        </div>
+        <div>
+          <div style="font-size:.88rem;font-weight:600">${escHtml(m.member_email)}</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-top:2px">
+            ${m.role==='admin'?'<span style="color:var(--accent);font-weight:600">Admin</span>':'Člen'}
+            · Pridaný ${new Date(m.created_at).toLocaleDateString('sk-SK')}
+          </div>
+        </div>
+      </div>
+      <button onclick="teamRemove('${m.id}','${escHtml(m.member_email)}')"
+        style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:.79rem;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        Odstrániť
+      </button>
+    </div>`).join('');
+
+  listEl.innerHTML=rows;
+}
+
+async function teamInvite(){
+  const emailEl = document.getElementById('teamInviteEmail');
+  const roleEl  = document.getElementById('teamInviteRole');
+  const msgEl   = document.getElementById('teamInviteMsg');
+  const btn     = document.getElementById('teamInviteBtn');
+  const email   = emailEl.value.trim().toLowerCase();
+  const role    = roleEl.value;
+  const limit   = TEAM_LIMIT[_currentPlan] || 50;
+
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    _teamMsg(msgEl,'Zadaj platný email.','var(--red)'); return;
+  }
+
+  // Skontroluj limit
+  const {count}=await _sb.from('team_members').select('id',{count:'exact',head:true}).eq('owner_id',_currentUser.id);
+  if(count>=limit){
+    _teamMsg(msgEl,`Dosiahli ste limit ${limit} členov pre váš plán.`,'var(--red)'); return;
+  }
+
+  // Skontroluj duplicitu
+  const {data:exists}=await _sb.from('team_members').select('id')
+    .eq('owner_id',_currentUser.id).eq('member_email',email).maybeSingle();
+  if(exists){
+    _teamMsg(msgEl,'Tento člen je už v tíme.','var(--yellow)'); return;
+  }
+
+  btn.disabled=true; btn.textContent='Pozývam…';
+
+  const {error}=await _sb.from('team_members').insert({
+    owner_id:     _currentUser.id,
+    member_email: email,
+    role,
+  });
+
+  btn.disabled=false; btn.textContent='➕ Pozvať';
+
+  if(error){
+    _teamMsg(msgEl,'Chyba: '+error.message,'var(--red)'); return;
+  }
+
+  _teamMsg(msgEl,`✅ ${email} bol(a) pridaný/á do tímu. Pozvánka odoslaná emailom.`,'var(--green)');
+  emailEl.value='';
+  loadTeam();
+}
+
+async function teamRemove(id, email){
+  if(!confirm(`Odstrániť ${email} z tímu?`)) return;
+
+  const {error}=await _sb.from('team_members').delete().eq('id',id).eq('owner_id',_currentUser.id);
+  if(error){ showToast('Chyba pri odstraňovaní: '+error.message,''); return; }
+
+  showToast(`${email} bol(a) odstránený/á z tímu.`,'success');
+  loadTeam();
+}
+
+function _teamMsg(el, text, color){
+  el.style.display='block';
+  el.style.color=color;
+  el.textContent=text;
+  setTimeout(()=>{ el.style.display='none'; },5000);
 }
 
 async function saveAnalysis(val,gsbMatches=null){
