@@ -817,7 +817,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         ondragover="dzOver2(event)" ondragleave="dzLeave2(event)" ondrop="dzDrop2(event)">
         <div class="drop-zone-icon">📷</div>
         <div class="drop-zone-title">Presuň obrázok sem alebo klikni</div>
-        <div class="drop-zone-sub">PNG, JPG, WEBP, GIF · max 5 MB</div>
+        <div class="drop-zone-sub">PNG, JPG, WEBP, GIF · max 20 MB</div>
         <input type="file" id="qrFileInput" accept="image/png,image/jpeg,image/webp,image/gif"
           style="display:none" onchange="qrScanFromInput(this)"/>
       </div>
@@ -2951,7 +2951,7 @@ function qrScanFromInput(input){
 
 async function qrScan(file){
   if(!checkPlan('pro')){ showUpgradeModal('qrscanner'); return; }
-  if(file.size > 5*1024*1024){ alert('Obrázok je príliš veľký. Maximum je 5 MB.'); return; }
+  if(file.size > 20*1024*1024){ alert('Obrázok je príliš veľký. Maximum je 20 MB.'); return; }
 
   const wrap=document.getElementById('qrResultWrap');
   const resultEl=document.getElementById('qrResult');
