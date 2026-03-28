@@ -2872,7 +2872,10 @@ async function analyzeEmailHeaders(){
   }
 }
 
+let _lastHeaderResult = null;
+
 function renderHeadersResult(d){
+  _lastHeaderResult = d;
   const scoreColor=d.score>=70?'var(--green)':d.score>=40?'var(--yellow)':'var(--red)';
   const scoreLabel=d.score>=70?'Dôveryhodný':d.score>=40?'Podozrivý':'Vysoké riziko';
 
@@ -2956,7 +2959,203 @@ function renderHeadersResult(d){
       Bezpečnostné kontroly
     </div>
     <div>${authRows}</div>
+
+    <!-- Police report button -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <button onclick="generatePoliceReport()"
+        style="display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+        📄 Generovať report pre políciu
+      </button>
+    </div>
   </div>`;
+}
+
+/* ══════════════════════════════════════════
+   POLICE REPORT (PDF)
+══════════════════════════════════════════ */
+function generatePoliceReport(){
+  const d=_lastHeaderResult;
+  if(!d){ alert('Najprv spusti analýzu hlavičiek.'); return; }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, margin=18;
+  let y=margin;
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+
+  // ── Farby ──
+  const C={
+    dark:   [15,  15,  20],
+    accent: [99,  102, 241],
+    red:    [239, 68,  68],
+    green:  [34,  197, 94],
+    yellow: [234, 179, 8],
+    muted:  [100, 116, 139],
+    border: [226, 232, 240],
+    bg:     [248, 250, 252],
+  };
+
+  // ── Helpers ──
+  const setFont=(size,style='normal',color=C.dark)=>{
+    doc.setFontSize(size);
+    doc.setFont('helvetica',style);
+    doc.setTextColor(...color);
+  };
+  const line=(x1,y1,x2,y2,color=C.border,w=0.3)=>{
+    doc.setDrawColor(...color); doc.setLineWidth(w);
+    doc.line(x1,y1,x2,y2);
+  };
+  const rect=(x,rx,rw,rh,fillColor,radius=2)=>{
+    doc.setFillColor(...fillColor);
+    doc.roundedRect(x,rx,rw,rh,radius,radius,'F');
+  };
+  const checkY=(need=10)=>{
+    if(y+need>285){ doc.addPage(); y=margin; }
+  };
+
+  // ══ 1. HLAVIČKA ══════════════════════════════════════════════════
+  // Modrý pruh
+  rect(0,0,W,34,C.accent,0);
+
+  setFont(20,'bold',[255,255,255]);
+  doc.text('MAILGUARD',margin,13);
+
+  setFont(9,'normal',[200,210,255]);
+  doc.text('BEZPECNOSTNY REPORT PRE POLICIU',margin,20);
+
+  setFont(8,'normal',[180,190,240]);
+  doc.text(`Vygenerované: ${dateStr} o ${timeStr}`,margin,27);
+
+  // Skóre badge vpravo
+  const score=d.score;
+  const scoreColor=score>=70?C.green:score>=40?C.yellow:C.red;
+  const scoreLabel=score>=70?'LEGITÍMNY':score>=40?'PODOZRIVY':'HROZBA';
+  rect(W-50,4,40,26,scoreColor,3);
+  setFont(22,'bold',[255,255,255]);
+  doc.text(String(score),W-30,17,{align:'center'});
+  setFont(7,'bold',[255,255,255]);
+  doc.text(scoreLabel,W-30,23,{align:'center'});
+  setFont(7,'normal',[255,255,255]);
+  doc.text('skóre / 100',W-30,27,{align:'center'});
+
+  y=44;
+
+  // ══ 2. ZÁKLADNÉ INFORMÁCIE ═══════════════════════════════════════
+  const sectionHeader=(title)=>{
+    checkY(12);
+    rect(margin,y,W-2*margin,7,C.accent,2);
+    setFont(9,'bold',[255,255,255]);
+    doc.text(title,margin+3,y+5);
+    y+=11;
+  };
+
+  const dataRow=(label,value,valueColor=C.dark)=>{
+    checkY(8);
+    setFont(8,'bold',C.muted);
+    doc.text(label+':',margin+2,y);
+    setFont(8,'normal',valueColor);
+    const lines=doc.splitTextToSize(value||'—',W-margin-60);
+    doc.text(lines,70,y);
+    y+=Math.max(6,lines.length*5);
+    line(margin,y-1,W-margin,y-1,C.border,0.2);
+  };
+
+  sectionHeader('1. ZAKLADNE INFORMACIE');
+  dataRow('Od (From)',           d.from||'—');
+  dataRow('Predmet (Subject)',   d.subject||'—');
+  dataRow('Dátum emailu',        d.date||'—');
+  dataRow('Reply-To',            d.replyTo||'—');
+  dataRow('Return-Path',         d.returnPath||'—');
+  dataRow('Pocet hopov',         d.receivedHops!=null?String(d.receivedHops):'—');
+  y+=4;
+
+  // ══ 3. TECHNICKÁ ANALÝZA ═════════════════════════════════════════
+  sectionHeader('2. TECHNICKA ANALYZA');
+
+  const authVal=(v)=>{
+    if(!v) return ['—', C.muted];
+    const u=v.toUpperCase();
+    if(v==='pass')    return [u, C.green];
+    if(v==='fail')    return [u, C.red];
+    if(v==='softfail')return [u, C.yellow];
+    if(v==='present') return [u, C.muted];
+    return [u, C.muted];
+  };
+
+  const [spfTxt,  spfCol]  = authVal(d.spf);
+  const [dkimTxt, dkimCol] = authVal(d.dkim);
+  const [dmarcTxt,dmarcCol]= authVal(d.dmarc);
+
+  dataRow('SPF výsledok',       spfTxt,  spfCol);
+  dataRow('DKIM výsledok',      dkimTxt, dkimCol);
+  dataRow('DMARC výsledok',     dmarcTxt,dmarcCol);
+  dataRow('From = Reply-To',    d.fromReplyMatch  ?'ÁNO – zhoda':'NIE – rozdielne domény', d.fromReplyMatch?C.green:C.red);
+  dataRow('Return-Path zhoda',  d.fromReturnMatch ?'ÁNO – zhoda':'NIE – rozdielne domény', d.fromReturnMatch?C.green:C.red);
+  dataRow('Spoofing detekovaný',d.spoofingDetected?'ÁNO':'NIE',  d.spoofingDetected?C.red:C.green);
+  y+=2;
+
+  // Spoofing flags
+  if(d.spoofingDetected && d.spoofingFlags?.length){
+    checkY(8);
+    setFont(8,'bold',C.red);
+    doc.text('Detekované indikátory podvodu:',margin+2,y);
+    y+=5;
+    for(const flag of d.spoofingFlags){
+      checkY(6);
+      setFont(7,'normal',C.dark);
+      const lines=doc.splitTextToSize('  • '+flag, W-2*margin-6);
+      doc.text(lines,margin+4,y);
+      y+=lines.length*4.5;
+    }
+  }
+  y+=4;
+
+  // ══ 4. ZÁVER ═════════════════════════════════════════════════════
+  sectionHeader('3. ZÁVER A ODPORÚCANIE');
+  checkY(24);
+
+  let verdictText, verdictColor, verdictDetail;
+  if(score>=70){
+    verdictText='Email je pravdepodobne legitimny.';
+    verdictColor=C.green;
+    verdictDetail='Technická analýza nenaznačuje prítomnosť podvodu. Odporúčame zachovať obozretnosť a v prípade pochybností kontaktovať odosielateľa overenými kanálmi.';
+  } else if(score>=40){
+    verdictText='Email je podozrivy – odporucame preveriť.';
+    verdictColor=C.yellow;
+    verdictDetail='Email vykazuje niektoré neštandardné vlastnosti. Odporúčame nereagovať na žiadosti v emaili a konzultovať situáciu s IT oddelením alebo políciou.';
+  } else {
+    verdictText='Email vykazuje znaky podvodu alebo hrozby – okamzite kontaktujte políciu.';
+    verdictColor=C.red;
+    verdictDetail='Technická analýza odhalila viacero indikátorov podozrivého alebo škodlivého emailu. Odporúčame bezodkladne kontaktovať políciu SR (č. 158) alebo CERT/CC Slovensko.';
+  }
+
+  rect(margin,y,W-2*margin,20,verdictColor.map(c=>Math.min(255,c+170)),3);
+  setFont(10,'bold',verdictColor);
+  const vLines=doc.splitTextToSize(verdictText,W-2*margin-10);
+  doc.text(vLines,margin+5,y+6);
+  y+=vLines.length*5+4;
+  setFont(8,'normal',C.dark);
+  const dLines=doc.splitTextToSize(verdictDetail,W-2*margin-10);
+  doc.text(dLines,margin+5,y);
+  y+=dLines.length*5+8;
+
+  // ══ 5. PÄTIČKA ═══════════════════════════════════════════════════
+  // Pevná pozícia na konci stránky
+  const pageCount=doc.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    line(margin,282,W-margin,282,C.border,0.3);
+    setFont(7,'normal',C.muted);
+    doc.text('Tento report bol vygenerovaný automaticky systémom MailGuard. Nie je právnym dokumentom.',margin,287);
+    doc.text(`Strana ${p} / ${pageCount}`,W-margin,287,{align:'right'});
+  }
+
+  doc.save('mailguard-report.pdf');
 }
 
 /* ══════════════════════════════════════════
