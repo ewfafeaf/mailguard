@@ -2803,6 +2803,7 @@ async function savePDFAnalysis(filename, data){
   console.log('PDF insert payload:', JSON.stringify(insertObj));
   const {error}=await _sb.from('analyses').insert(insertObj);
   console.log('PDF insert error:', error);
+  if(!error){ loadStats(); loadHistory(); }
 }
 
 /* ══════════════════════════════════════════
@@ -2874,6 +2875,7 @@ async function analyzeEmailHeaders(){
       });
       saveInd.style.display='block';
       loadStats();
+      loadHistory();
     }
   }catch(e){
     resultEl.innerHTML=`<div class="hres" style="padding:24px;color:var(--muted)">Chyba: ${escHtml(e.message)}</div>`;
