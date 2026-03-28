@@ -2977,7 +2977,7 @@ function renderHeadersResult(d){
 ══════════════════════════════════════════ */
 function generatePoliceReport(){
   const d=_lastHeaderResult;
-  if(!d){ alert('Najprv spusti analýzu hlavičiek.'); return; }
+  if(!d){ alert('Najprv spusti analyzu hlaviciek.'); return; }
 
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -2988,171 +2988,171 @@ function generatePoliceReport(){
   const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
   const timeStr=now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
 
-  // ── Farby ──
+  // ── Farby (tmavy profesionalny styl) ──
   const C={
-    dark:   [15,  15,  20],
-    accent: [99,  102, 241],
-    red:    [239, 68,  68],
-    green:  [34,  197, 94],
-    yellow: [234, 179, 8],
-    muted:  [100, 116, 139],
-    border: [226, 232, 240],
-    bg:     [248, 250, 252],
+    pageBg:   [15,  17,  23],   // #0f1117
+    header1:  [79,  142, 247],  // #4f8ef7
+    header2:  [124, 95,  247],  // #7c5ff7
+    text:     [232, 234, 240],  // #e8eaf0
+    muted:    [130, 140, 165],
+    accent:   [79,  142, 247],  // #4f8ef7 nadpisy
+    rowBg:    [26,  29,  39],   // #1a1d27
+    border:   [46,  51,  80],   // #2e3350
+    red:      [239, 68,  68],
+    green:    [52,  211, 153],
+    yellow:   [251, 191, 36],
   };
 
   // ── Helpers ──
-  const setFont=(size,style='normal',color=C.dark)=>{
-    doc.setFontSize(size);
-    doc.setFont('helvetica',style);
-    doc.setTextColor(...color);
+  const setFont=(size,style='normal',color=C.text)=>{
+    doc.setFontSize(size); doc.setFont('helvetica',style); doc.setTextColor(...color);
   };
-  const line=(x1,y1,x2,y2,color=C.border,w=0.3)=>{
-    doc.setDrawColor(...color); doc.setLineWidth(w);
-    doc.line(x1,y1,x2,y2);
+  const hline=(x1,y1,x2,y2,color=C.border,w=0.3)=>{
+    doc.setDrawColor(...color); doc.setLineWidth(w); doc.line(x1,y1,x2,y2);
   };
-  const rect=(x,rx,rw,rh,fillColor,radius=2)=>{
-    doc.setFillColor(...fillColor);
-    doc.roundedRect(x,rx,rw,rh,radius,radius,'F');
+  const fillRect=(x,ry,rw,rh,fill,radius=0)=>{
+    doc.setFillColor(...fill);
+    radius>0 ? doc.roundedRect(x,ry,rw,rh,radius,radius,'F') : doc.rect(x,ry,rw,rh,'F');
   };
   const checkY=(need=10)=>{
-    if(y+need>285){ doc.addPage(); y=margin; }
+    if(y+need>282){ doc.addPage(); fillRect(0,0,W,297,C.pageBg); y=margin; }
   };
 
-  // ══ 1. HLAVIČKA ══════════════════════════════════════════════════
-  // Modrý pruh
-  rect(0,0,W,34,C.accent,0);
+  // ══ POZADIE ══════════════════════════════════════════════════════
+  fillRect(0,0,W,297,C.pageBg);
 
-  setFont(20,'bold',[255,255,255]);
-  doc.text('MAILGUARD',margin,13);
+  // ══ HLAVICKA – gradient simulovany dvoma obdlznikmi ══════════════
+  fillRect(0,0,W/2,38,C.header1);
+  fillRect(W/2,0,W/2,38,C.header2);
 
-  setFont(9,'normal',[200,210,255]);
-  doc.text('BEZPECNOSTNY REPORT PRE POLICIU',margin,20);
+  // Logo a nazov
+  setFont(21,'bold',[255,255,255]);
+  doc.text('MAILGUARD',margin,14);
 
-  setFont(8,'normal',[180,190,240]);
-  doc.text(`Vygenerované: ${dateStr} o ${timeStr}`,margin,27);
+  setFont(8,'bold',[210,220,255]);
+  doc.text('BEZPECNOSTNY REPORT PRE POLICIU',margin,21);
 
-  // Skóre badge vpravo
+  setFont(7,'normal',[180,195,240]);
+  doc.text('Vygenerovane: '+dateStr+' o '+timeStr,margin,28);
+
+  // Score badge
   const score=d.score;
   const scoreColor=score>=70?C.green:score>=40?C.yellow:C.red;
-  const scoreLabel=score>=70?'LEGITÍMNY':score>=40?'PODOZRIVY':'HROZBA';
-  rect(W-50,4,40,26,scoreColor,3);
-  setFont(22,'bold',[255,255,255]);
-  doc.text(String(score),W-30,17,{align:'center'});
-  setFont(7,'bold',[255,255,255]);
-  doc.text(scoreLabel,W-30,23,{align:'center'});
-  setFont(7,'normal',[255,255,255]);
-  doc.text('skóre / 100',W-30,27,{align:'center'});
+  const scoreLabel=score>=70?'LEGITIMNY':score>=40?'PODOZRIVY':'HROZBA';
+  fillRect(W-52,5,42,28,scoreColor,3);
+  setFont(23,'bold',[15,17,23]);
+  doc.text(String(score),W-31,19,{align:'center'});
+  setFont(7,'bold',[15,17,23]);
+  doc.text(scoreLabel,W-31,25,{align:'center'});
+  setFont(6,'normal',[15,17,23]);
+  doc.text('skore / 100',W-31,29,{align:'center'});
 
-  y=44;
+  y=46;
 
-  // ══ 2. ZÁKLADNÉ INFORMÁCIE ═══════════════════════════════════════
+  // ══ HELPERS PRE SEKCIE ════════════════════════════════════════════
   const sectionHeader=(title)=>{
-    checkY(12);
-    rect(margin,y,W-2*margin,7,C.accent,2);
-    setFont(9,'bold',[255,255,255]);
-    doc.text(title,margin+3,y+5);
-    y+=11;
+    checkY(13);
+    fillRect(margin,y,W-2*margin,8,C.rowBg,2);
+    hline(margin,y,margin+3,y+8,C.accent,2);
+    setFont(9,'bold',C.accent);
+    doc.text(title,margin+5,y+5.5);
+    y+=12;
   };
 
-  const dataRow=(label,value,valueColor=C.dark)=>{
-    checkY(8);
-    setFont(8,'bold',C.muted);
-    doc.text(label+':',margin+2,y);
+  const dataRow=(label,value,valueColor=C.text)=>{
+    checkY(9);
+    fillRect(margin,y,W-2*margin,8,C.rowBg);
+    hline(margin,y,W-margin,y,C.border,0.2);
+    setFont(7,'bold',C.muted);
+    doc.text(label,margin+3,y+5.2);
     setFont(8,'normal',valueColor);
-    const lines=doc.splitTextToSize(value||'—',W-margin-60);
-    doc.text(lines,70,y);
-    y+=Math.max(6,lines.length*5);
-    line(margin,y-1,W-margin,y-1,C.border,0.2);
+    const lines=doc.splitTextToSize(value||'—',W-margin-68);
+    doc.text(lines,74,y+5.2);
+    y+=Math.max(8,lines.length*5+3);
   };
 
+  // ══ 1. ZAKLADNE INFORMACIE ════════════════════════════════════════
   sectionHeader('1. ZAKLADNE INFORMACIE');
-  dataRow('Od (From)',           d.from||'—');
-  dataRow('Predmet (Subject)',   d.subject||'—');
-  dataRow('Dátum emailu',        d.date||'—');
-  dataRow('Reply-To',            d.replyTo||'—');
-  dataRow('Return-Path',         d.returnPath||'—');
-  dataRow('Pocet hopov',         d.receivedHops!=null?String(d.receivedHops):'—');
-  y+=4;
+  dataRow('Od (From):',         d.from||'—');
+  dataRow('Predmet (Subject):', d.subject||'—');
+  dataRow('Datum emailu:',      d.date||'—');
+  dataRow('Reply-To:',          d.replyTo||'—');
+  dataRow('Return-Path:',       d.returnPath||'—');
+  dataRow('Pocet hopov:',       d.receivedHops!=null?String(d.receivedHops):'—');
+  y+=5;
 
-  // ══ 3. TECHNICKÁ ANALÝZA ═════════════════════════════════════════
+  // ══ 2. TECHNICKA ANALYZA ══════════════════════════════════════════
   sectionHeader('2. TECHNICKA ANALYZA');
 
   const authVal=(v)=>{
     if(!v) return ['—', C.muted];
-    const u=v.toUpperCase();
-    if(v==='pass')    return [u, C.green];
-    if(v==='fail')    return [u, C.red];
-    if(v==='softfail')return [u, C.yellow];
-    if(v==='present') return [u, C.muted];
-    return [u, C.muted];
+    if(v==='pass')     return [v.toUpperCase(), C.green];
+    if(v==='fail')     return [v.toUpperCase(), C.red];
+    if(v==='softfail') return [v.toUpperCase(), C.yellow];
+    if(v==='present')  return [v.toUpperCase(), C.muted];
+    return [v.toUpperCase(), C.muted];
   };
 
   const [spfTxt,  spfCol]  = authVal(d.spf);
   const [dkimTxt, dkimCol] = authVal(d.dkim);
   const [dmarcTxt,dmarcCol]= authVal(d.dmarc);
 
-  dataRow('SPF výsledok',       spfTxt,  spfCol);
-  dataRow('DKIM výsledok',      dkimTxt, dkimCol);
-  dataRow('DMARC výsledok',     dmarcTxt,dmarcCol);
-  dataRow('From = Reply-To',    d.fromReplyMatch  ?'ÁNO – zhoda':'NIE – rozdielne domény', d.fromReplyMatch?C.green:C.red);
-  dataRow('Return-Path zhoda',  d.fromReturnMatch ?'ÁNO – zhoda':'NIE – rozdielne domény', d.fromReturnMatch?C.green:C.red);
-  dataRow('Spoofing detekovaný',d.spoofingDetected?'ÁNO':'NIE',  d.spoofingDetected?C.red:C.green);
-  y+=2;
+  dataRow('SPF vysledok:',       spfTxt,   spfCol);
+  dataRow('DKIM vysledok:',      dkimTxt,  dkimCol);
+  dataRow('DMARC vysledok:',     dmarcTxt, dmarcCol);
+  dataRow('Return-Path zhoda:',  d.fromReturnMatch?'ANO – zhoda':'NIE – rozdielne domeny', d.fromReturnMatch?C.green:C.red);
+  dataRow('Spoofing detekovaný:', d.spoofingDetected?'ANO':'NIE', d.spoofingDetected?C.red:C.green);
+  y+=3;
 
-  // Spoofing flags
+  // Spoofing flagy
   if(d.spoofingDetected && d.spoofingFlags?.length){
-    checkY(8);
+    checkY(10);
     setFont(8,'bold',C.red);
     doc.text('Detekované indikátory podvodu:',margin+2,y);
     y+=5;
     for(const flag of d.spoofingFlags){
-      checkY(6);
-      setFont(7,'normal',C.dark);
-      const lines=doc.splitTextToSize('  • '+flag, W-2*margin-6);
-      doc.text(lines,margin+4,y);
-      y+=lines.length*4.5;
+      checkY(7);
+      fillRect(margin,y-1,W-2*margin,7,[35,20,20]);
+      setFont(7,'normal',C.text);
+      const lines=doc.splitTextToSize('• '+flag, W-2*margin-8);
+      doc.text(lines,margin+4,y+4);
+      y+=lines.length*5+2;
     }
   }
-  y+=4;
+  y+=5;
 
-  // ══ 4. ZÁVER ═════════════════════════════════════════════════════
-  sectionHeader('3. ZÁVER A ODPORÚCANIE');
-  checkY(24);
+  // ══ 3. ZAVER ══════════════════════════════════════════════════════
+  sectionHeader('3. ZÁVER A ODPORÚČANIE');
+  checkY(28);
 
-  let verdictText, verdictColor, verdictDetail;
+  let verdictText, verdictBg;
   if(score>=70){
-    verdictText='Email je pravdepodobne legitimny.';
-    verdictColor=C.green;
-    verdictDetail='Technická analýza nenaznačuje prítomnosť podvodu. Odporúčame zachovať obozretnosť a v prípade pochybností kontaktovať odosielateľa overenými kanálmi.';
+    verdictText='Email je pravdepodobne legitímny. Technická analýza nenachádza príznaky podvodu.';
+    verdictBg=[20,45,30];
   } else if(score>=40){
-    verdictText='Email je podozrivy – odporucame preveriť.';
-    verdictColor=C.yellow;
-    verdictDetail='Email vykazuje niektoré neštandardné vlastnosti. Odporúčame nereagovať na žiadosti v emaili a konzultovať situáciu s IT oddelením alebo políciou.';
+    verdictText='Email je podozrivý – odporúčame preveriť u odosielateľa overenými kanálmi.';
+    verdictBg=[45,38,15];
   } else {
-    verdictText='Email vykazuje znaky podvodu alebo hrozby – okamzite kontaktujte políciu.';
-    verdictColor=C.red;
-    verdictDetail='Technická analýza odhalila viacero indikátorov podozrivého alebo škodlivého emailu. Odporúčame bezodkladne kontaktovať políciu SR (č. 158) alebo CERT/CC Slovensko.';
+    verdictText='Email vykazuje znaky podvodu alebo hrozby – okamžite kontaktujte políciu SR.';
+    verdictBg=[45,15,15];
   }
 
-  rect(margin,y,W-2*margin,20,verdictColor.map(c=>Math.min(255,c+170)),3);
-  setFont(10,'bold',verdictColor);
-  const vLines=doc.splitTextToSize(verdictText,W-2*margin-10);
-  doc.text(vLines,margin+5,y+6);
-  y+=vLines.length*5+4;
-  setFont(8,'normal',C.dark);
-  const dLines=doc.splitTextToSize(verdictDetail,W-2*margin-10);
-  doc.text(dLines,margin+5,y);
-  y+=dLines.length*5+8;
+  const vLines=doc.splitTextToSize(verdictText, W-2*margin-10);
+  const vH=Math.max(16, vLines.length*6+8);
+  fillRect(margin,y,W-2*margin,vH,verdictBg,3);
+  hline(margin,y,margin,y+vH,scoreColor,3);
+  setFont(10,'bold',scoreColor);
+  doc.text(vLines,margin+6,y+7);
+  y+=vH+8;
 
-  // ══ 5. PÄTIČKA ═══════════════════════════════════════════════════
-  // Pevná pozícia na konci stránky
+  // ══ PATICKA ═══════════════════════════════════════════════════════
   const pageCount=doc.getNumberOfPages();
   for(let p=1;p<=pageCount;p++){
     doc.setPage(p);
-    line(margin,282,W-margin,282,C.border,0.3);
-    setFont(7,'normal',C.muted);
-    doc.text('Tento report bol vygenerovaný automaticky systémom MailGuard. Nie je právnym dokumentom.',margin,287);
-    doc.text(`Strana ${p} / ${pageCount}`,W-margin,287,{align:'right'});
+    fillRect(0,284,W,13,C.rowBg);
+    setFont(6,'normal',C.muted);
+    doc.text('Tento report bol vygenerovaný automaticky systémom MailGuard. Nie je právnym dokumentom.',margin,290);
+    doc.text('Strana '+p+' / '+pageCount,W-margin,290,{align:'right'});
   }
 
   doc.save('mailguard-report.pdf');
