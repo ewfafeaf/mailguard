@@ -2876,6 +2876,7 @@ async function analyzeEmailHeaders(){
 let _lastHeaderResult = null;
 
 function renderHeadersResult(d){
+  console.log('META:', JSON.stringify(d));
   _lastHeaderResult = d;
   const scoreColor=d.score>=70?'var(--green)':d.score>=40?'var(--yellow)':'var(--red)';
   const scoreLabel=d.score>=70?'Dôveryhodný':d.score>=40?'Podozrivý':'Vysoké riziko';
@@ -2979,7 +2980,7 @@ function renderHeadersResult(d){
 function generatePoliceReport(){
   const d=_lastHeaderResult;
   if(!d){ alert('Najprv spusti analyzu hlaviciek.'); return; }
-  console.log('lastHeaderResult meta:', _lastHeaderResult?.meta);
+  console.log('_lastHeaderResult:', JSON.stringify(_lastHeaderResult));
 
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
