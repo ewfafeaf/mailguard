@@ -2267,7 +2267,8 @@ async function saveWebAnalysis(url, score){
 async function loadStats(){
   const{data,error}=await _sb
     .from('analyses')
-    .select('score,verdict');
+    .select('score,verdict')
+    .eq('user_id',_currentUser.id);
   if(error){
     document.getElementById('statTotal').textContent='—';
     return;
@@ -2285,6 +2286,7 @@ async function loadHistory(){
   const{data,error}=await _sb
     .from('analyses')
     .select('*')
+    .eq('user_id',_currentUser.id)
     .order('created_at',{ascending:false})
     .limit(20);
   console.log('history data:', data, 'error:', error);
