@@ -2850,6 +2850,7 @@ async function analyzeEmailHeaders(){
     }
 
     resultEl.innerHTML=renderHeadersResult(data);
+    if(_lastHeaderResult) _lastHeaderResult._rawHeaders=raw;
     wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
     const {data:{user}}=await _sb.auth.getUser();
     if(user){
@@ -3121,8 +3122,90 @@ function generatePoliceReport(){
   }
   y+=5;
 
-  // ══ 3. ZAVER ══════════════════════════════════════════════════════
-  sectionHeader('3. ZÁVER A ODPORÚČANIE');
+  // ══ 3. SIETOVA STOPA ═════════════════════════════════════════════
+  sectionHeader('3. SIETOVA STOPA (Received chain)');
+
+  // Parsuj Received headery z raw vstupu
+  const parseReceivedChain=(rawHdrs)=>{
+    if(!rawHdrs) return [];
+    // Unfold
+    const unfolded=rawHdrs.replace(/\r\n/g,'\n').replace(/\n([ \t]+)/g,' ');
+    const hops=[];
+    for(const line of unfolded.split('\n')){
+      if(!/^received\s*:/i.test(line)) continue;
+      const val=line.slice(line.indexOf(':')+1).trim();
+      // IP adresa v hranatych zatvorkach
+      const ipMatch=val.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/);
+      // Hostname za "from "
+      const hostMatch=val.match(/from\s+([^\s([\]]+)/i);
+      // Datum na konci (za poslednym bodkociarkou)
+      const dateMatch=val.match(/;\s*(.+)$/);
+      hops.push({
+        ip:   ipMatch  ? ipMatch[1]   : null,
+        host: hostMatch? hostMatch[1] : null,
+        time: dateMatch? dateMatch[1].trim().slice(0,40) : null,
+        raw:  val,
+      });
+    }
+    // Received headery su v opacnom poradi — prvy zaznam je posledny hop
+    return hops.reverse(); // chronologicky: odosielatel → prijimatel
+  };
+
+  const hops=parseReceivedChain(d._rawHeaders);
+  const originIp=hops.length ? (hops[0].ip||hops[0].host||'—') : '—';
+
+  // Originalna IP odosielatela
+  checkY(10);
+  fillRect(margin,y,W-2*margin,8,[30,20,45]);
+  hline(margin,y,margin,y+8,C.yellow,3);
+  setFont(7,'bold',C.yellow);
+  doc.text('Originálna IP odosielateľa (posledný Received: from):',margin+5,y+3.5);
+  setFont(9,'bold',C.text);
+  doc.text(originIp,margin+5,y+7.5);
+  y+=12;
+
+  if(!hops.length){
+    checkY(10);
+    fillRect(margin,y,W-2*margin,9,C.rowBg,2);
+    setFont(8,'normal',C.muted);
+    doc.text('Dáta nie sú dostupné (Received: hlavičky chýbajú).',margin+4,y+6);
+    y+=13;
+  } else {
+    // Hlavicka tabulky
+    checkY(10);
+    fillRect(margin,y,W-2*margin,8,[35,40,65]);
+    setFont(7,'bold',C.accent);
+    doc.text('#',    margin+3,  y+5.5);
+    doc.text('IP / Hostname',  margin+12, y+5.5);
+    doc.text('Čas prijatia',   margin+100,y+5.5);
+    y+=8;
+
+    hops.forEach((hop,i)=>{
+      checkY(9);
+      fillRect(margin,y,W-2*margin,8,i%2===0?C.rowBg:[20,23,35]);
+      hline(margin,y,W-margin,y,C.border,0.15);
+
+      setFont(7,'bold',C.muted);
+      doc.text(String(i+1),margin+3,y+5.5);
+
+      setFont(7,'normal',hop.ip?C.text:C.muted);
+      const serverStr=hop.ip
+        ? (hop.host&&hop.host!==hop.ip ? hop.ip+' ('+hop.host+')' : hop.ip)
+        : (hop.host||'—');
+      const serverLines=doc.splitTextToSize(serverStr,82);
+      doc.text(serverLines,margin+12,y+5.5);
+
+      setFont(6,'normal',C.muted);
+      const timeLines=doc.splitTextToSize(hop.time||'—',W-margin-115);
+      doc.text(timeLines,margin+100,y+5.5);
+
+      y+=Math.max(8,serverLines.length*4.5+3);
+    });
+  }
+  y+=5;
+
+  // ══ 4. ZAVER ══════════════════════════════════════════════════════
+  sectionHeader('4. ZÁVER A ODPORÚČANIE');
   checkY(28);
 
   let verdictText, verdictBg;
