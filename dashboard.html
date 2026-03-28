@@ -3514,6 +3514,15 @@ async function teamInvite(){
     console.warn('[Team] Edge Function chyba:', efErr.message);
   }
 
+  // Ak je pozvaný už registrovaný, hneď ulož jeho user_id
+  try{
+    const {data:profile}=await _sb.from('profiles').select('id').eq('email',email).single();
+    if(profile?.id){
+      await _sb.from('team_members').update({member_user_id:profile.id})
+        .eq('owner_id',_currentUser.id).eq('member_email',email);
+    }
+  }catch(e){ console.warn('[Team] member_user_id lookup failed:', e.message); }
+
   _teamMsg(msgEl,`✅ ${email} bol(a) pridaný/á do tímu. Pozvánka odoslaná emailom.`,'var(--green)');
   emailEl.value='';
   loadTeam();
