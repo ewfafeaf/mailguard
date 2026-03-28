@@ -848,6 +848,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         </div>
         <div id="teamList" style="min-height:60px"></div>
       </div>
+
+      <!-- Tímová aktivita -->
+      <div class="hres" style="padding:0;overflow:hidden;margin-top:18px">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+          <div style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Tímová aktivita</div>
+        </div>
+        <div id="teamActivity" style="min-height:48px"></div>
+      </div>
+
+      <!-- Modal: história člena -->
+      <div id="teamHistoryModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(700px,95vw);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+          <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div id="teamHistoryModalTitle" style="font-weight:700;font-size:.95rem"></div>
+            <button onclick="document.getElementById('teamHistoryModal').style.display='none'"
+              style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1">×</button>
+          </div>
+          <div id="teamHistoryModalBody" style="overflow-y:auto;padding:0"></div>
+        </div>
+      </div>
     </div>
 
     <div id="sectionPlans" class="dash-section" style="display:none">
@@ -3321,6 +3341,119 @@ async function loadTeam(){
     </div>`).join('');
 
   listEl.innerHTML=rows;
+  loadTeamActivity(data);
+}
+
+/* ── TEAM ACTIVITY ── */
+async function loadTeamActivity(members){
+  const actEl=document.getElementById('teamActivity');
+  if(!members||!members.length){
+    actEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Žiadni členovia.</div>`;
+    return;
+  }
+
+  actEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam aktivitu…</div>`;
+
+  // Pre každého člena: zisti user_id z profiles, potom načítaj štatistiky
+  const rows=await Promise.all(members.map(async m=>{
+    // Zisti user_id podľa emailu
+    const {data:profile}=await _sb.from('profiles').select('id').eq('email',m.member_email).maybeSingle();
+    if(!profile) return {email:m.member_email,total:0,threats:0,userId:null};
+
+    const {data:analyses}=await _sb.from('analyses')
+      .select('id,verdict')
+      .eq('user_id',profile.id);
+
+    const total=analyses?.length||0;
+    const threats=analyses?.filter(a=>a.verdict==='high'||a.verdict==='medium').length||0;
+    return {email:m.member_email,total,threats,userId:profile.id};
+  }));
+
+  const typeMap={url:'URL',email:'Email',web:'Web',pdf:'Súbor',headers:'Hlavičky'};
+  const verdictLabel={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
+
+  const html=rows.map(r=>`
+    <div style="padding:12px 18px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:.87rem;font-weight:600">${escHtml(r.email)}</div>
+          <div style="display:flex;gap:8px">
+            <span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)">
+              ${r.total} analýz
+            </span>
+            <span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:${r.threats>0?'rgba(239,68,68,.12)':'var(--surface2)'};color:${r.threats>0?'var(--red)':'var(--muted)'};border:1px solid ${r.threats>0?'rgba(239,68,68,.25)':'var(--border)'}"
+              title="Analýzy s verdiktom medium alebo high">
+              ${r.threats} hrozieb
+            </span>
+          </div>
+        </div>
+        ${r.userId
+          ? `<button onclick="teamShowHistory('${r.userId}','${escHtml(r.email)}')"
+              style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:.79rem;transition:all .15s"
+              onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+              Zobraziť históriu
+            </button>`
+          : `<span style="font-size:.76rem;color:var(--muted)">Účet nenájdený</span>`
+        }
+      </div>
+    </div>`).join('');
+
+  actEl.innerHTML=html||`<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Žiadna aktivita.</div>`;
+}
+
+async function teamShowHistory(userId, email){
+  const modal=document.getElementById('teamHistoryModal');
+  const title=document.getElementById('teamHistoryModalTitle');
+  const body =document.getElementById('teamHistoryModalBody');
+
+  title.textContent=`História: ${email}`;
+  body.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 auto 10px"></div>Načítavam…</div>`;
+  modal.style.display='flex';
+
+  const {data,error}=await _sb.from('analyses')
+    .select('*')
+    .eq('user_id',userId)
+    .order('created_at',{ascending:false})
+    .limit(10);
+
+  if(error||!data?.length){
+    body.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-size:.85rem">
+      ${error?'Chyba: '+escHtml(error.message):'Žiadne analýzy.'}</div>`;
+    return;
+  }
+
+  const typeMap={url:'URL',email:'Email',web:'Web',pdf:'Súbor',headers:'Hlavičky'};
+  const typeClsMap={url:'url',email:'email',web:'web',pdf:'pdf',headers:'headers'};
+  const verdictLabel={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
+
+  const rows=data.map(r=>{
+    const d=new Date(r.created_at);
+    const dateStr=d.toLocaleDateString('sk-SK')+' '+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+    const typeLabel=typeMap[r.type]||r.type;
+    const typeCls=typeClsMap[r.type]||'email';
+    const level=r.verdict||'safe';
+    return`<tr>
+      <td style="padding:9px 14px;font-size:.78rem;color:var(--muted);white-space:nowrap">${dateStr}</td>
+      <td style="padding:9px 14px"><span class="badge badge-${typeCls}">${typeLabel}</span></td>
+      <td style="padding:9px 14px;font-size:.82rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,50))}${(r.input||'').length>50?'…':''}</td>
+      <td style="padding:9px 14px;font-size:.84rem;font-weight:700;color:${level==='safe'||level==='low'?'var(--green)':level==='medium'?'var(--yellow)':'var(--red)'}">${r.score??'?'}</td>
+      <td style="padding:9px 14px"><span class="badge badge-${level}">${verdictLabel[level]||level}</span></td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML=`<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="border-bottom:1px solid var(--border)">
+      <th style="padding:9px 14px;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600">Dátum</th>
+      <th style="padding:9px 14px;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600">Typ</th>
+      <th style="padding:9px 14px;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600">Vstup</th>
+      <th style="padding:9px 14px;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600">Skóre</th>
+      <th style="padding:9px 14px;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600">Verdikt</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 async function teamInvite(){
