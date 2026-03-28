@@ -1014,7 +1014,6 @@ async function loadDailyUsage(){
 
   const today=new Date();today.setHours(0,0,0,0);
   const {data}=await _sb.from('analyses').select('id')
-    .eq('user_id',_currentUser.id)
     .gte('created_at',today.toISOString());
   const used=data?data.length:0;
   const limit=FREE_DAILY_LIMIT;
@@ -2268,8 +2267,7 @@ async function saveWebAnalysis(url, score){
 async function loadStats(){
   const{data,error}=await _sb
     .from('analyses')
-    .select('score,verdict')
-    .eq('user_id',_currentUser.id);
+    .select('score,verdict');
   if(error){
     document.getElementById('statTotal').textContent='—';
     return;
