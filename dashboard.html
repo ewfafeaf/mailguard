@@ -3299,7 +3299,7 @@ async function loadTeam(){
     <div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 auto 10px"></div>Načítavam…</div>`;
 
   const {data,error}=await _sb.from('team_members')
-    .select('id,member_email,role,created_at')
+    .select('id,member_email,role,created_at,member_user_id')
     .eq('owner_id',_currentUser.id)
     .order('created_at',{ascending:true});
 
