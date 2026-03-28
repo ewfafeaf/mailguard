@@ -2979,6 +2979,7 @@ function renderHeadersResult(d){
 function generatePoliceReport(){
   const d=_lastHeaderResult;
   if(!d){ alert('Najprv spusti analyzu hlaviciek.'); return; }
+  console.log('lastHeaderResult meta:', _lastHeaderResult?.meta);
 
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -3078,11 +3079,11 @@ function generatePoliceReport(){
   // ══ 1. ZAKLADNE INFORMACIE ════════════════════════════════════════
   sectionHeader('1. ZAKLADNE INFORMACIE');
   // Od (From) — zobraz celu hodnotu vratane emailu
-  dataRow('Od (From):',         d.from||'—');
+  dataRow('Od (From):',         d.meta?.from||d.from||'—');
   dataRow('Predmet (Subject):', d.subject||'—');
   dataRow('Datum emailu:',      d.date||'—');
   dataRow('Reply-To:',          d.replyTo||'—');
-  dataRow('Return-Path:',       d.returnPath||'—');
+  dataRow('Return-Path:',       d.meta?.returnPath||d.returnPath||'—');
   dataRow('Pocet hopov:',       d.receivedHops!=null?String(d.receivedHops):'—');
   y+=5;
 
