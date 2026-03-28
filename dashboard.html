@@ -2270,6 +2270,7 @@ async function loadHistory(){
     .eq('user_id',_currentUser.id)
     .order('created_at',{ascending:false})
     .limit(20);
+  console.log('history data:', data, 'error:', error);
 
   const container=document.getElementById('historyContent');
   if(error||!data||data.length===0){
