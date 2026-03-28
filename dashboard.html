@@ -3340,11 +3340,13 @@ async function loadTeam(){
     </div>`).join('');
 
   listEl.innerHTML=rows;
+  console.log('loadTeam calling activity with:', data);
   loadTeamActivity(data);
 }
 
 /* ── TEAM ACTIVITY ── */
 async function loadTeamActivity(members){
+  console.log('loadTeamActivity called with:', members);
   const actEl=document.getElementById('teamActivity');
 
   if(!members?.length){
