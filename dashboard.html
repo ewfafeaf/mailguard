@@ -3344,23 +3344,18 @@ async function loadTeam(){
 }
 
 /* ── TEAM ACTIVITY ── */
-async function loadTeamActivity(){
+async function loadTeamActivity(members){
   const actEl=document.getElementById('teamActivity');
 
-  actEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)">
-    <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam aktivitu…</div>`;
-
-  // 1. Načítaj členov tímu s member_user_id
-  const {data:members,error}=await _sb.from('team_members')
-    .select('member_email,member_user_id')
-    .eq('owner_id',_currentUser.id);
-
-  if(error||!members?.length){
+  if(!members?.length){
     actEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Žiadni členovia.</div>`;
     return;
   }
 
-  // 2. Pre každého člena s member_user_id načítaj analýzy
+  actEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)">
+    <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam aktivitu…</div>`;
+
+  // Pre každého člena s member_user_id načítaj analýzy
   const rows=await Promise.all(members.map(async m=>{
     if(!m.member_user_id){
       return{email:m.member_email,total:0,threats:0,userId:null,notRegistered:true};
