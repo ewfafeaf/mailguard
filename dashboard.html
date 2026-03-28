@@ -2801,6 +2801,7 @@ async function savePDFAnalysis(filename, data){
       suspiciousCount: data.suspiciousUrls?.length||0,
     }),
   };
+  console.log('sb client:', _sb);
   console.log('PDF insert payload:', JSON.stringify(insertObj));
   const {error}=await _sb.from('analyses').insert(insertObj);
   console.log('PDF insert error:', error);
