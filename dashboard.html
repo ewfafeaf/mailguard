@@ -3369,6 +3369,9 @@ async function loadTeamActivity(members){
     if(email && !emailToUserId[email]) emailToUserId[email]=a.user_id;
   }
 
+  console.log('allAnalyses sample:', allAnalyses?.slice(0,3));
+  console.log('emailToUserId:', emailToUserId);
+
   // 3. Zostav riadky pre každého člena
   const rows=members.map(m=>{
     const userId=emailToUserId[m.member_email]||null;
