@@ -2788,7 +2788,7 @@ async function savePDFAnalysis(filename, data){
   const{data:{user}}=await _sb.auth.getUser();
   if(!user) return;
   const pdfVerdict=data.score>=70?'safe':data.score>=40?'low':data.score>=20?'medium':'high';
-  await _sb.from('analyses').insert({
+  const insertObj={
     user_id: user.id,
     input:   filename,
     type:    'pdf',
@@ -2799,7 +2799,10 @@ async function savePDFAnalysis(filename, data){
       hasJS: data.hasJS, hasEmbedded: data.hasEmbedded,
       suspiciousCount: data.suspiciousUrls?.length||0,
     }),
-  });
+  };
+  console.log('PDF insert payload:', JSON.stringify(insertObj));
+  const {error}=await _sb.from('analyses').insert(insertObj);
+  console.log('PDF insert error:', error);
 }
 
 /* ══════════════════════════════════════════
