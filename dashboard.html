@@ -2786,13 +2786,12 @@ function renderPDFResult(d){
 }
 
 async function savePDFAnalysis(filename, data){
-  const{data:{user}}=await _sb.auth.getUser();
-  if(!user) return;
+  if(!_currentUser) return;
   const pdfVerdict=data.score>=70?'safe':data.score>=40?'low':data.score>=20?'medium':'high';
-  const insertObj={
-    user_id: user.id,
-    input:   filename,
+  const {error}=await _sb.from('analyses').insert({
+    user_id: _currentUser.id,
     type:    'pdf',
+    input:   filename,
     score:   data.score,
     verdict: pdfVerdict,
     result:  JSON.stringify({
@@ -2800,12 +2799,9 @@ async function savePDFAnalysis(filename, data){
       hasJS: data.hasJS, hasEmbedded: data.hasEmbedded,
       suspiciousCount: data.suspiciousUrls?.length||0,
     }),
-  };
-  console.log('sb client:', _sb);
-  console.log('PDF insert payload:', JSON.stringify(insertObj));
-  const {error}=await _sb.from('analyses').insert(insertObj);
-  console.log('PDF insert error:', error);
-  if(!error){ loadStats(); loadHistory(); }
+  });
+  if(error) console.warn('savePDFAnalysis error:', error.message);
+  else { loadStats(); loadHistory(); }
 }
 
 /* ══════════════════════════════════════════
