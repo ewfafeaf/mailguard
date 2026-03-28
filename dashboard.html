@@ -3340,44 +3340,38 @@ async function loadTeam(){
     </div>`).join('');
 
   listEl.innerHTML=rows;
-  loadTeamActivity(data);
+  loadTeamActivity();
 }
 
 /* ── TEAM ACTIVITY ── */
-async function loadTeamActivity(members){
+async function loadTeamActivity(){
   const actEl=document.getElementById('teamActivity');
-  if(!members||!members.length){
-    actEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Žiadni členovia.</div>`;
-    return;
-  }
 
   actEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)">
     <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam aktivitu…</div>`;
 
-  // 1. Načítaj VŠETKY analýzy naraz vrátane emailu z profiles — RLS vráti vlastné aj členov tímu
-  const {data:allAnalyses}=await _sb.from('analyses').select('id,user_id,verdict,profiles(email)');
+  // 1. Načítaj členov tímu s member_user_id
+  const {data:members,error}=await _sb.from('team_members')
+    .select('member_email,member_user_id')
+    .eq('owner_id',_currentUser.id);
 
-  // 2. Zoskup podľa user_id + vytvor mapu email → user_id priamo z dát
-  const byUserId={};
-  const emailToUserId={};
-  for(const a of allAnalyses||[]){
-    if(!byUserId[a.user_id]) byUserId[a.user_id]={total:0,threats:0};
-    byUserId[a.user_id].total++;
-    if(a.verdict==='high'||a.verdict==='medium') byUserId[a.user_id].threats++;
-    // Mapuj email → user_id z joined profiles
-    const email=a.profiles?.email;
-    if(email && !emailToUserId[email]) emailToUserId[email]=a.user_id;
+  if(error||!members?.length){
+    actEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Žiadni členovia.</div>`;
+    return;
   }
 
-  console.log('allAnalyses sample:', allAnalyses?.slice(0,3));
-  console.log('emailToUserId:', emailToUserId);
-
-  // 3. Zostav riadky pre každého člena
-  const rows=members.map(m=>{
-    const userId=emailToUserId[m.member_email]||null;
-    const stats=userId?byUserId[userId]:null;
-    return{email:m.member_email,total:stats?.total||0,threats:stats?.threats||0,userId};
-  });
+  // 2. Pre každého člena s member_user_id načítaj analýzy
+  const rows=await Promise.all(members.map(async m=>{
+    if(!m.member_user_id){
+      return{email:m.member_email,total:0,threats:0,userId:null,notRegistered:true};
+    }
+    const {data:analyses}=await _sb.from('analyses')
+      .select('id,verdict')
+      .eq('user_id',m.member_user_id);
+    const total=analyses?.length||0;
+    const threats=analyses?.filter(a=>a.verdict==='high'||a.verdict==='medium').length||0;
+    return{email:m.member_email,total,threats,userId:m.member_user_id,notRegistered:false};
+  }));
 
   const html=rows.map(r=>`
     <div style="padding:12px 18px;border-bottom:1px solid var(--border)">
@@ -3385,13 +3379,16 @@ async function loadTeamActivity(members){
         <div style="display:flex;align-items:center;gap:12px">
           <div style="font-size:.87rem;font-weight:600">${escHtml(r.email)}</div>
           <div style="display:flex;gap:8px">
-            <span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)">
-              ${r.total} analýz
-            </span>
-            <span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:${r.threats>0?'rgba(239,68,68,.12)':'var(--surface2)'};color:${r.threats>0?'var(--red)':'var(--muted)'};border:1px solid ${r.threats>0?'rgba(239,68,68,.25)':'var(--border)'}"
-              title="Analýzy s verdiktom medium alebo high">
-              ${r.threats} hrozieb
-            </span>
+            ${r.notRegistered
+              ? `<span style="font-size:.76rem;color:var(--muted);font-style:italic">Člen sa ešte nezaregistroval</span>`
+              : `<span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)">
+                  ${r.total} analýz
+                </span>
+                <span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:${r.threats>0?'rgba(239,68,68,.12)':'var(--surface2)'};color:${r.threats>0?'var(--red)':'var(--muted)'};border:1px solid ${r.threats>0?'rgba(239,68,68,.25)':'var(--border)'}"
+                  title="Analýzy s verdiktom medium alebo high">
+                  ${r.threats} hrozieb
+                </span>`
+            }
           </div>
         </div>
         ${r.userId
@@ -3401,7 +3398,7 @@ async function loadTeamActivity(members){
               onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
               Zobraziť históriu
             </button>`
-          : `<span style="font-size:.76rem;color:var(--muted)">Účet nenájdený</span>`
+          : ''
         }
       </div>
     </div>`).join('');
