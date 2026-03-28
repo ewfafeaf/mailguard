@@ -3058,6 +3058,24 @@ async function teamInvite(){
     _teamMsg(msgEl,'Chyba: '+error.message,'var(--red)'); return;
   }
 
+  // Odošli pozvánku cez Edge Function
+  try{
+    await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/invite-team-member',{
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+      },
+      body: JSON.stringify({
+        memberEmail: email,
+        ownerEmail:  _currentUser.email,
+        role,
+      }),
+    });
+  }catch(efErr){
+    console.warn('[Team] Edge Function chyba:', efErr.message);
+  }
+
   _teamMsg(msgEl,`✅ ${email} bol(a) pridaný/á do tímu. Pozvánka odoslaná emailom.`,'var(--green)');
   emailEl.value='';
   loadTeam();
