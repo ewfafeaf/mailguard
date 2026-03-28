@@ -3072,8 +3072,12 @@ function generatePoliceReport(){
     y+=Math.max(8,lines.length*5+3);
   };
 
+  // Helper: detekuj ci retazec vyzera ako Base64 (ziadna bodka ani dvojbodka = nie je IP ani hostname)
+  const looksLikeBase64=(s)=> s && !/[.:]/.test(s) && /^[A-Za-z0-9+/=]{8,}$/.test(s);
+
   // ══ 1. ZAKLADNE INFORMACIE ════════════════════════════════════════
   sectionHeader('1. ZAKLADNE INFORMACIE');
+  // Od (From) — zobraz celu hodnotu vratane emailu
   dataRow('Od (From):',         d.from||'—');
   dataRow('Predmet (Subject):', d.subject||'—');
   dataRow('Datum emailu:',      d.date||'—');
@@ -3098,18 +3102,18 @@ function generatePoliceReport(){
   const [dkimTxt, dkimCol] = authVal(d.dkim);
   const [dmarcTxt,dmarcCol]= authVal(d.dmarc);
 
-  dataRow('SPF vysledok:',       spfTxt,   spfCol);
-  dataRow('DKIM vysledok:',      dkimTxt,  dkimCol);
-  dataRow('DMARC vysledok:',     dmarcTxt, dmarcCol);
-  dataRow('Return-Path zhoda:',  d.fromReturnMatch?'ANO – zhoda':'NIE – rozdielne domeny', d.fromReturnMatch?C.green:C.red);
-  dataRow('Spoofing detekovaný:', d.spoofingDetected?'ANO':'NIE', d.spoofingDetected?C.red:C.green);
+  dataRow('SPF vysledok:',      spfTxt,   spfCol);
+  dataRow('DKIM vysledok:',     dkimTxt,  dkimCol);
+  dataRow('DMARC vysledok:',    dmarcTxt, dmarcCol);
+  dataRow('Return-Path zhoda:', d.fromReturnMatch?'ANO – zhoda':'NIE – rozdielne domeny', d.fromReturnMatch?C.green:C.red);
+  dataRow('Spoofing detekowany:',d.spoofingDetected?'ANO':'NIE', d.spoofingDetected?C.red:C.green);
   y+=3;
 
   // Spoofing flagy
   if(d.spoofingDetected && d.spoofingFlags?.length){
     checkY(10);
     setFont(8,'bold',C.red);
-    doc.text('Detekované indikátory podvodu:',margin+2,y);
+    doc.text('Detekowane indikatory podvodu:',margin+2,y);
     y+=5;
     for(const flag of d.spoofingFlags){
       checkY(7);
@@ -3128,56 +3132,57 @@ function generatePoliceReport(){
   // Parsuj Received headery z raw vstupu
   const parseReceivedChain=(rawHdrs)=>{
     if(!rawHdrs) return [];
-    // Unfold
     const unfolded=rawHdrs.replace(/\r\n/g,'\n').replace(/\n([ \t]+)/g,' ');
     const hops=[];
     for(const line of unfolded.split('\n')){
       if(!/^received\s*:/i.test(line)) continue;
       const val=line.slice(line.indexOf(':')+1).trim();
-      // IP adresa v hranatych zatvorkach
-      const ipMatch=val.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/);
-      // Hostname za "from "
+      const ipMatch  =val.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/);
       const hostMatch=val.match(/from\s+([^\s([\]]+)/i);
-      // Datum na konci (za poslednym bodkociarkou)
       const dateMatch=val.match(/;\s*(.+)$/);
+      // Ignoruj Base64-like hodnoty v hostname
+      const rawHost=hostMatch?hostMatch[1]:null;
       hops.push({
-        ip:   ipMatch  ? ipMatch[1]   : null,
-        host: hostMatch? hostMatch[1] : null,
+        ip:   ipMatch ? ipMatch[1] : null,
+        host: rawHost && !looksLikeBase64(rawHost) ? rawHost : null,
         time: dateMatch? dateMatch[1].trim().slice(0,40) : null,
-        raw:  val,
       });
     }
-    // Received headery su v opacnom poradi — prvy zaznam je posledny hop
     return hops.reverse(); // chronologicky: odosielatel → prijimatel
   };
 
   const hops=parseReceivedChain(d._rawHeaders);
-  const originIp=hops.length ? (hops[0].ip||hops[0].host||'—') : '—';
 
-  // Originalna IP odosielatela
-  checkY(10);
-  fillRect(margin,y,W-2*margin,8,[30,20,45]);
-  hline(margin,y,margin,y+8,C.yellow,3);
+  // Originalna IP — prvy hop (odosielatel)
+  const rawOrigin=hops.length?(hops[0].ip||hops[0].host||null):null;
+  const originDisplay= !rawOrigin || looksLikeBase64(rawOrigin)
+    ? 'Nedostupna (skryta providerom)'
+    : rawOrigin;
+  const originColor= (!rawOrigin||looksLikeBase64(rawOrigin)) ? C.muted : C.text;
+
+  checkY(14);
+  fillRect(margin,y,W-2*margin,12,[30,20,45]);
+  hline(margin,y,margin,y+12,C.yellow,3);
   setFont(7,'bold',C.yellow);
-  doc.text('Originálna IP odosielateľa (posledný Received: from):',margin+5,y+3.5);
-  setFont(9,'bold',C.text);
-  doc.text(originIp,margin+5,y+7.5);
-  y+=12;
+  doc.text('Originalna IP odosielatela (posledny Received: from):',margin+5,y+5);
+  setFont(8,'bold',originColor);
+  doc.text(originDisplay,margin+5,y+10);
+  y+=16;
 
   if(!hops.length){
     checkY(10);
     fillRect(margin,y,W-2*margin,9,C.rowBg,2);
     setFont(8,'normal',C.muted);
-    doc.text('Dáta nie sú dostupné (Received: hlavičky chýbajú).',margin+4,y+6);
+    doc.text('Data nie su dostupne (Received: hlavicky chybaju).',margin+4,y+6);
     y+=13;
   } else {
     // Hlavicka tabulky
     checkY(10);
     fillRect(margin,y,W-2*margin,8,[35,40,65]);
     setFont(7,'bold',C.accent);
-    doc.text('#',    margin+3,  y+5.5);
-    doc.text('IP / Hostname',  margin+12, y+5.5);
-    doc.text('Čas prijatia',   margin+100,y+5.5);
+    doc.text('#',           margin+3,   y+5.5);
+    doc.text('IP / Hostname', margin+12, y+5.5);
+    doc.text('Cas prijatia',  margin+100,y+5.5);
     y+=8;
 
     hops.forEach((hop,i)=>{
@@ -3188,10 +3193,16 @@ function generatePoliceReport(){
       setFont(7,'bold',C.muted);
       doc.text(String(i+1),margin+3,y+5.5);
 
-      setFont(7,'normal',hop.ip?C.text:C.muted);
-      const serverStr=hop.ip
-        ? (hop.host&&hop.host!==hop.ip ? hop.ip+' ('+hop.host+')' : hop.ip)
-        : (hop.host||'—');
+      // Zobraz IP + hostname, pri Base64-like hodnote zobraz —
+      const ipOk  = hop.ip   && !looksLikeBase64(hop.ip);
+      const hostOk= hop.host && !looksLikeBase64(hop.host);
+      let serverStr;
+      if(ipOk && hostOk && hop.host!==hop.ip) serverStr=hop.ip+' ('+hop.host+')';
+      else if(ipOk)   serverStr=hop.ip;
+      else if(hostOk) serverStr=hop.host;
+      else            serverStr='—';
+
+      setFont(7,'normal',serverStr==='—'?C.muted:C.text);
       const serverLines=doc.splitTextToSize(serverStr,82);
       doc.text(serverLines,margin+12,y+5.5);
 
@@ -3205,18 +3216,18 @@ function generatePoliceReport(){
   y+=5;
 
   // ══ 4. ZAVER ══════════════════════════════════════════════════════
-  sectionHeader('4. ZÁVER A ODPORÚČANIE');
+  sectionHeader('4. ZAVER A ODPORUCANIE');
   checkY(28);
 
   let verdictText, verdictBg;
   if(score>=70){
-    verdictText='Email je pravdepodobne legitímny. Technická analýza nenachádza príznaky podvodu.';
+    verdictText='Email je pravdepodobne legitimny. Technicka analyza nenachadza priznaky podvodu.';
     verdictBg=[20,45,30];
   } else if(score>=40){
-    verdictText='Email je podozrivý – odporúčame preveriť u odosielateľa overenými kanálmi.';
+    verdictText='Email je podozrivy – odporucame preverit u odosielatela overenymi kanalmi.';
     verdictBg=[45,38,15];
   } else {
-    verdictText='Email vykazuje znaky podvodu alebo hrozby – okamžite kontaktujte políciu SR.';
+    verdictText='Email vykazuje znaky podvodu alebo hrozby – okamzite kontaktujte policiu SR.';
     verdictBg=[45,15,15];
   }
 
@@ -3234,7 +3245,7 @@ function generatePoliceReport(){
     doc.setPage(p);
     fillRect(0,284,W,13,C.rowBg);
     setFont(6,'normal',C.muted);
-    doc.text('Tento report bol vygenerovaný automaticky systémom MailGuard. Nie je právnym dokumentom.',margin,290);
+    doc.text('Tento report bol vygenerovany automaticky systemom MailGuard. Nie je pravnym dokumentom.',margin,290);
     doc.text('Strana '+p+' / '+pageCount,W-margin,290,{align:'right'});
   }
 
