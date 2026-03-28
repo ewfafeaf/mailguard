@@ -379,6 +379,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .badge-url{background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.2)}
 .badge-email{background:rgba(124,95,247,.12);color:#a78bfa;border:1px solid rgba(124,95,247,.2)}
+.badge-web{background:rgba(20,184,166,.12);color:#2dd4bf;border:1px solid rgba(20,184,166,.2)}
+.badge-pdf{background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.2)}
+.badge-headers{background:rgba(163,230,53,.12);color:#a3e635;border:1px solid rgba(163,230,53,.2)}
 .badge-safe{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
 .badge-low{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
 .badge-medium{background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.2)}
@@ -2277,7 +2280,9 @@ async function loadHistory(){
   const rows=data.map(r=>{
     const d=new Date(r.created_at);
     const dateStr=d.toLocaleDateString('sk-SK')+' '+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
-    const typeBadge=r.type==='url'?'<span class="badge badge-url">URL</span>':'<span class="badge badge-email">Email</span>';
+    const typeMap={url:['URL','url'],email:['Email','email'],web:['Web','web'],pdf:['Súbor','pdf'],headers:['Hlavičky','headers']};
+    const [typeLabel,typeCls]=typeMap[r.type]||['Iné','email'];
+    const typeBadge=`<span class="badge badge-${typeCls}">${typeLabel}</span>`;
     const level=r.verdict||'safe';
     const levelLabel={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'}[level]||'—';
     const score=r.score??'?';
