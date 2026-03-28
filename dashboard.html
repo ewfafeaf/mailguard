@@ -3354,23 +3354,28 @@ async function loadTeamActivity(members){
   actEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)">
     <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam aktivitu…</div>`;
 
-  // Pre každého člena: zisti user_id z profiles, potom načítaj štatistiky
-  const rows=await Promise.all(members.map(async m=>{
-    // Zisti user_id podľa emailu
-    const {data:profile}=await _sb.from('profiles').select('id').eq('email',m.member_email).maybeSingle();
-    if(!profile) return {email:m.member_email,total:0,threats:0,userId:null};
+  // 1. Načítaj VŠETKY analýzy naraz — RLS vráti vlastné aj členov tímu
+  const {data:allAnalyses}=await _sb.from('analyses').select('id,user_id,verdict');
 
-    const {data:analyses}=await _sb.from('analyses')
-      .select('id,verdict')
-      .eq('user_id',profile.id);
+  // 2. Zoskup podľa user_id
+  const byUserId={};
+  for(const a of allAnalyses||[]){
+    if(!byUserId[a.user_id]) byUserId[a.user_id]={total:0,threats:0};
+    byUserId[a.user_id].total++;
+    if(a.verdict==='high'||a.verdict==='medium') byUserId[a.user_id].threats++;
+  }
 
-    const total=analyses?.length||0;
-    const threats=analyses?.filter(a=>a.verdict==='high'||a.verdict==='medium').length||0;
-    return {email:m.member_email,total,threats,userId:profile.id};
-  }));
+  // 3. Jeden batch dotaz na profiles — zisti user_id pre všetky member emaily naraz
+  const memberEmails=members.map(m=>m.member_email);
+  const {data:profiles}=await _sb.from('profiles').select('id,email').in('email',memberEmails);
+  const emailToUserId=Object.fromEntries((profiles||[]).map(p=>[p.email,p.id]));
 
-  const typeMap={url:'URL',email:'Email',web:'Web',pdf:'Súbor',headers:'Hlavičky'};
-  const verdictLabel={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
+  // 4. Zostav riadky pre každého člena
+  const rows=members.map(m=>{
+    const userId=emailToUserId[m.member_email]||null;
+    const stats=userId?byUserId[userId]:null;
+    return{email:m.member_email,total:stats?.total||0,threats:stats?.threats||0,userId};
+  });
 
   const html=rows.map(r=>`
     <div style="padding:12px 18px;border-bottom:1px solid var(--border)">
