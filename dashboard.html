@@ -629,15 +629,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">Analyzovať</button>
         </div>
 
-        <div class="term-inline-wrap" id="novaTermWrap">
-          <div class="wst-window">
-            <div class="wst-titlebar">
-              <div class="wst-dots"><span class="wst-dot r"></span><span class="wst-dot y"></span><span class="wst-dot g"></span></div>
-              <span class="wst-title">mailguard-analyze.sh</span>
-              <span style="width:60px"></span>
-            </div>
-            <div class="wst-body" id="novaTermBody"><span class="wst-cursor" id="novaTermCursor">█</span></div>
-          </div>
+        <div class="result-wrap" id="novaResultWrap" style="display:none;margin-top:20px">
+          <div id="dashResult"></div>
           <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
         </div>
       </div>
@@ -790,16 +783,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           style="display:none" onchange="analyzeFileFromInput(this)"/>
       </div>
 
-      <!-- Result terminal -->
-      <div class="term-inline-wrap" id="filesTermWrap">
-        <div class="wst-window">
-          <div class="wst-titlebar">
-            <div class="wst-dots"><span class="wst-dot r"></span><span class="wst-dot y"></span><span class="wst-dot g"></span></div>
-            <span class="wst-title">mailguard-scan-file.sh</span>
-            <span style="width:60px"></span>
-          </div>
-          <div class="wst-body" id="filesTermBody"><span class="wst-cursor" id="filesTermCursor">█</span></div>
-        </div>
+      <!-- Result -->
+      <div id="filesResultWrap" style="display:none;margin-top:16px">
+        <div id="fileResult"></div>
         <div class="save-indicator" id="fileSaveIndicator">✓ Analýza uložená do histórie</div>
       </div>
     </div>
@@ -1479,7 +1465,7 @@ function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
 ══════════════════════════════════════════ */
 let _termChain=Promise.resolve();
 
-function showTerminalOverlay(){
+function showTerminalOverlay(title='mailguard-scan.sh'){
   // Odstráň prípadný starý overlay
   document.getElementById('wsTerminalOverlay')?.remove();
   const el=document.createElement('div');
@@ -1487,7 +1473,7 @@ function showTerminalOverlay(){
   el.innerHTML=`<div class="wst-window">
     <div class="wst-titlebar">
       <div class="wst-dots"><span class="wst-dot r"></span><span class="wst-dot y"></span><span class="wst-dot g"></span></div>
-      <span class="wst-title">mailguard-scan.sh</span>
+      <span class="wst-title">${escHtml(title)}</span>
       <span style="width:60px"></span>
     </div>
     <div class="wst-body" id="wstBody"><span class="wst-cursor" id="wstCursor">█</span></div>
@@ -1521,39 +1507,6 @@ function closeTerminalOverlay(){
   return _termChain;
 }
 
-/* ── Inline terminals (Nova + Files) ── */
-let _novaChain=Promise.resolve();
-let _filesChain=Promise.resolve();
-
-function novaTermLine(icon,text,iconCls='info',textCls='info',delay=200){
-  _novaChain=_novaChain.then(async()=>{
-    await new Promise(ok=>setTimeout(ok,delay));
-    const body=document.getElementById('novaTermBody');
-    const cursor=document.getElementById('novaTermCursor');
-    if(!body) return;
-    const div=document.createElement('div');
-    div.className='wst-line';
-    div.innerHTML=`<span class="wst-icon ${iconCls}">${escHtml(icon)}</span><span class="wst-text ${textCls}">${escHtml(text)}</span>`;
-    body.insertBefore(div,cursor);
-    requestAnimationFrame(()=>div.classList.add('wst-show'));
-    body.scrollTop=body.scrollHeight;
-  });
-}
-
-function filesTermLine(icon,text,iconCls='info',textCls='info',delay=200){
-  _filesChain=_filesChain.then(async()=>{
-    await new Promise(ok=>setTimeout(ok,delay));
-    const body=document.getElementById('filesTermBody');
-    const cursor=document.getElementById('filesTermCursor');
-    if(!body) return;
-    const div=document.createElement('div');
-    div.className='wst-line';
-    div.innerHTML=`<span class="wst-icon ${iconCls}">${escHtml(icon)}</span><span class="wst-text ${textCls}">${escHtml(text)}</span>`;
-    body.insertBefore(div,cursor);
-    requestAnimationFrame(()=>div.classList.add('wst-show'));
-    body.scrollTop=body.scrollHeight;
-  });
-}
 
 /* ══════════════════════════════════════════
    PROGRESS BAR
@@ -2615,16 +2568,6 @@ async function checkGoogleSafeBrowsing(url){
 }
 
 /* ── ANALYSIS ── */
-function _novaTermInit(){
-  const wrap=document.getElementById('novaTermWrap');
-  const body=document.getElementById('novaTermBody');
-  _novaChain=Promise.resolve();
-  body.innerHTML='<span class="wst-cursor" id="novaTermCursor">█</span>';
-  wrap.style.display='block';
-  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
-  document.getElementById('saveIndicator').style.display='none';
-}
-
 async function dashAnalyze(){
   const val=document.getElementById('dashInput').value.trim();
   if(!val) return;
@@ -2637,37 +2580,50 @@ async function dashAnalyze(){
       .gte('created_at',today.toISOString());
     const used=usageData?usageData.length:0;
     if(used>=FREE_DAILY_LIMIT){
-      _novaTermInit();
-      novaTermLine('[*]','MailGuard Analyzer v2.1','info','muted',80);
-      novaTermLine('[-]',`Daily limit reached: ${FREE_DAILY_LIMIT}/${FREE_DAILY_LIMIT} analyses used`,'err','err',180);
-      novaTermLine('[!]','Upgrade to PRO for unlimited analyses — index.html#pricing','info','info',200);
+      const novaResultWrap=document.getElementById('novaResultWrap');
+      const resultEl=document.getElementById('dashResult');
+      novaResultWrap.style.display='block';
+      resultEl.innerHTML=`
+        <div class="hres" style="padding:24px;text-align:center">
+          <div style="font-size:2rem;margin-bottom:10px">🚫</div>
+          <div style="font-size:1.05rem;font-weight:700;margin-bottom:8px">Denný limit vyčerpaný</div>
+          <div style="font-size:.88rem;color:var(--muted);line-height:1.6;margin-bottom:18px">
+            Dosiahol si denný limit <strong>${FREE_DAILY_LIMIT} analýz</strong>. Upgraduj na PRO pre neobmedzené analýzy.
+          </div>
+          <button onclick="window.location.href='index.html#pricing'"
+            style="padding:10px 24px;border:none;border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+            color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:.9rem">
+            ⚡ Upgradovať na PRO
+          </button>
+        </div>`;
+      novaResultWrap.scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
     }
   }
 
   const btn=document.getElementById('dashBtn');
+  const novaResultWrap=document.getElementById('novaResultWrap');
+  const resultEl=document.getElementById('dashResult');
+  const saveInd=document.getElementById('saveIndicator');
   const isEmail=val.includes('\n')||(val.includes('@')&&!val.startsWith('http'))||val.length>200;
 
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:16px;height:16px;border-width:2px"></div>';
+  saveInd.style.display='none';
+  novaResultWrap.style.display='none';
 
-  // For URLs: await GSB before showing terminal (runs while button shows spinner)
   let gsbMatches=null;
-  if(!isEmail){
-    const fullUrl=val.startsWith('http')?val:'https://'+val;
-    gsbMatches=await checkGoogleSafeBrowsing(fullUrl);
-  }
 
-  // ── Show terminal ──
-  _novaTermInit();
-  novaTermLine('[*]','MailGuard Analyzer v2.1','info','muted',80);
+  // ── Terminálový overlay ──
+  showTerminalOverlay('mailguard-analyze.sh');
+  termLine('[*]','MailGuard Analyzer v2.1','info','muted',150);
 
   if(isEmail){
     const target=val.slice(0,65)+(val.length>65?'...':'');
-    novaTermLine('[*]',`Input: ${target}`,'info','info',130);
-    novaTermLine('[*]','Detecting input type...','info','muted',160);
-    novaTermLine('[+]','Type: EMAIL TEXT','ok','ok',110);
-    novaTermLine('[*]','Running phishing pattern checks...','info','muted',200);
+    termLine('[*]',`Input: ${target}`,'info','info',200);
+    termLine('[*]','Detecting input type...','info','muted',220);
+    termLine('[+]','Type: EMAIL TEXT','ok','ok',180);
+    termLine('[*]','Running phishing pattern checks...','info','muted',250);
 
     const ef=[];let es=0;
     for(const rule of EMAIL_RULES){
@@ -2679,72 +2635,73 @@ async function dashAnalyze(){
     const score=Math.min(es,100);
 
     if(ef.length===0){
-      novaTermLine('[+]','No suspicious patterns detected','ok','ok',200);
+      termLine('[+]','No suspicious patterns detected','ok','ok',220);
     } else {
       for(const f of ef){
         const cls=f.sev==='high'?'err':f.sev==='medium'?'err':'info';
-        novaTermLine(f.icon,f.text,cls,cls,170);
+        termLine(f.icon,f.text,cls,cls,200);
       }
     }
-
-    novaTermLine('[*]','Calculating risk score...','info','muted',270);
+    termLine('[*]','Calculating risk score...','info','info',300);
     const level=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
     const meta=levelMeta(level);
-    const sIcon=level==='safe'?'[+]':level==='low'?'[!]':'[-]';
+    const sIcon=level==='safe'?'[+]':level==='low'?'[*]':'[-]';
     const sCls=level==='safe'?'ok':level==='low'?'info':'err';
-    novaTermLine(sIcon,`Score: ${score}/100 — ${meta.label}`,sCls,sCls,240);
-    novaTermLine('[✓]','Analysis complete','done','ok',180);
-
-    _novaChain=_novaChain.then(async()=>{
-      btn.disabled=false; btn.textContent='Analyzovať';
-      await saveAnalysis(val,null);
-      document.getElementById('saveIndicator').style.display='block';
-      loadStats();
-    });
+    termLine(sIcon,`Final score: ${score}/100`,sCls,sCls,350);
+    termLine('[✓]','Analysis complete!','done','ok',300);
 
   } else {
     const fullUrl=val.startsWith('http')?val:'https://'+val;
-    const short=fullUrl.slice(0,75)+(fullUrl.length>75?'...':'');
-    novaTermLine('[*]',`Target: ${short}`,'info','info',130);
-    novaTermLine('[*]','Detecting input type...','info','muted',160);
-    novaTermLine('[+]','Type: URL','ok','ok',110);
-    novaTermLine('[*]','Analyzing URL structure...','info','muted',200);
+    termLine('[*]',`Target: ${fullUrl.slice(0,80)+(fullUrl.length>80?'...':'')}` ,'info','info',200);
+    termLine('[*]','Detecting input type...','info','muted',220);
+    termLine('[+]','Type: URL','ok','ok',180);
+    termLine('[*]','Analyzing URL structure...','info','muted',250);
 
     const urlResult=analyzeUrl(fullUrl);
     for(const f of urlResult.findings){
       const cls=f.sev==='ok'?'ok':f.sev==='high'?'err':'info';
       const icon=f.sev==='ok'?'[+]':f.sev==='high'?'[-]':'[!]';
-      novaTermLine(icon,f.text,cls,cls,170);
+      termLine(icon,f.text,cls,cls,200);
     }
 
     const gsbKey=localStorage.getItem('gsb_api_key')||'';
     if(gsbKey){
+      termLine('[*]','Querying Google Safe Browsing...','info','info',300);
+      // GSB runs while URL-structure lines are animating
+      gsbMatches=await checkGoogleSafeBrowsing(fullUrl);
       if(gsbMatches&&gsbMatches.length>0){
-        novaTermLine('[-]',`Google Safe Browsing: ${gsbMatches.length} threat(s) detected`,'err','err',190);
-        for(const m of gsbMatches){
-          novaTermLine('[-]','  '+(GSB_THREAT_SK[m.threatType]||m.threatType),'err','err',140);
-        }
+        termLine('[-]',`Google Safe Browsing: ${gsbMatches.length} threat(s) detected`,'err','err',250);
+        for(const m of gsbMatches)
+          termLine('[-]','  '+(GSB_THREAT_SK[m.threatType]||m.threatType),'err','err',180);
       } else {
-        novaTermLine('[+]','Google Safe Browsing: clean','ok','ok',190);
+        termLine('[+]','Google Safe Browsing: CLEAN','ok','ok',250);
       }
     }
 
-    novaTermLine('[*]','Calculating risk score...','info','muted',270);
+    termLine('[*]','Calculating security score...','info','info',300);
     const score=gsbMatches&&gsbMatches.length>0?100:urlResult.score;
     const level=score===0?'safe':score<20?'safe':score<45?'low':score<70?'medium':'high';
     const meta=levelMeta(level);
-    const sIcon=level==='safe'?'[+]':level==='low'?'[!]':'[-]';
+    const sIcon=level==='safe'?'[+]':level==='low'?'[*]':'[-]';
     const sCls=level==='safe'?'ok':level==='low'?'info':'err';
-    novaTermLine(sIcon,`Score: ${score}/100 — ${meta.label}`,sCls,sCls,240);
-    novaTermLine('[✓]','Analysis complete','done','ok',180);
-
-    _novaChain=_novaChain.then(async()=>{
-      btn.disabled=false; btn.textContent='Analyzovať';
-      await saveAnalysis(val,gsbMatches);
-      document.getElementById('saveIndicator').style.display='block';
-      loadStats();
-    });
+    termLine(sIcon,`Final score: ${score}/100`,sCls,sCls,350);
+    termLine('[✓]','Analysis complete!','done','ok',300);
   }
+
+  // Čakaj na koniec animácie + fade overlaya
+  await closeTerminalOverlay();
+
+  // Zobraz štandardný výsledok
+  const html=renderResultHTML(val,gsbMatches);
+  resultEl.innerHTML='<div class="hres">'+html+'</div>';
+  novaResultWrap.style.display='block';
+  novaResultWrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+  btn.disabled=false;
+  btn.textContent='Analyzovať';
+
+  await saveAnalysis(val,gsbMatches);
+  saveInd.style.display='block';
+  loadStats();
 }
 
 /* ══════════════════════════════════════════
@@ -2775,96 +2732,95 @@ async function analyzeFile(file){
     return;
   }
 
-  // ── Show terminal ──
-  const termWrap=document.getElementById('filesTermWrap');
-  const filesBody=document.getElementById('filesTermBody');
+  const filesResultWrap=document.getElementById('filesResultWrap');
+  const fileResultEl=document.getElementById('fileResult');
   const saveInd=document.getElementById('fileSaveIndicator');
-  _filesChain=Promise.resolve();
-  filesBody.innerHTML='<span class="wst-cursor" id="filesTermCursor">█</span>';
-  termWrap.style.display='block';
+  filesResultWrap.style.display='none';
   saveInd.style.display='none';
-  termWrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 
   const sizeMB=(file.size/1048576).toFixed(2);
-  filesTermLine('[*]','MailGuard File Scanner v2.1','info','muted',80);
-  filesTermLine('[*]',`File: ${file.name} (${sizeMB} MB)`,'info','info',160);
-  filesTermLine('[*]','Reading file content...','info','muted',240);
-
-  // Read file as base64
-  let b64;
-  try{
-    b64=await new Promise((res,rej)=>{
-      const reader=new FileReader();
-      reader.onload=e=>res(e.target.result.split(',')[1]);
-      reader.onerror=rej;
-      reader.readAsDataURL(file);
-    });
-  }catch(e){
-    filesTermLine('[-]',`Read error: ${e.message}`,'err','err',100);
-    return;
-  }
-
-  filesTermLine('[+]','File read OK','ok','ok',130);
-  filesTermLine('[*]','Uploading to analysis engine...','info','muted',230);
-
   const gsbKey=localStorage.getItem('gsb_api_key')||'';
-  let data;
-  try{
-    const resp=await fetch('/api/analyze-file',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ filename:file.name, mimetype:file.type, data:b64, gsbKey }),
-    });
-    data=await resp.json();
-  }catch(e){
-    filesTermLine('[-]',`Network error: ${e.message}`,'err','err',100);
-    return;
-  }
 
-  if(!data.ok){
-    filesTermLine('[-]',`Analysis error: ${data.error||'Unknown error'}`,'err','err',150);
-    return;
-  }
+  // ── Terminálový overlay ──
+  showTerminalOverlay('mailguard-scan-file.sh');
+  termLine('[*]','MailGuard File Scanner v2.1','info','muted',150);
+  termLine('[*]',`File: ${file.name} (${sizeMB} MB)`,'info','info',200);
+  termLine('[*]','Reading file content...','info','muted',280);
 
-  // ── Display results ──
-  const dtype=data.docType||'PDF';
-  filesTermLine('[+]',`Document type: ${dtype}`,'ok','ok',170);
-  if(data.pages!=null){
-    const pageWord=dtype==='XLSX'?(data.pages===1?'sheet':'sheets'):(data.pages===1?'page':'pages');
-    filesTermLine('[+]',`${pageWord.charAt(0).toUpperCase()+pageWord.slice(1)}: ${data.pages}`,'ok','ok',160);
-  }
-  filesTermLine('[+]',`URLs found: ${data.urlCount||0}`,'ok','ok',160);
+  // Async pipeline — každý krok pridáva termLine keď sa dokončí
+  let analysisData=null;
+  const pipeline=new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onerror=rej;
+    reader.onload=async e=>{
+      try{
+        const b64=e.target.result.split(',')[1];
+        termLine('[+]','File read OK','ok','ok',150);
+        termLine('[*]','Uploading to analysis engine...','info','muted',280);
 
-  // Security flags
-  const noThreats=!data.hasJS&&!data.hasMacros&&!data.hasAutoOpen;
-  if(data.hasJS)       filesTermLine('[-]','JavaScript detected — risk of malicious execution','err','err',190);
-  if(data.hasAutoOpen) filesTermLine('[-]','Auto-open action detected','err','err',190);
-  if(data.hasMacros)   filesTermLine('[-]','VBA macros detected — do not enable','err','err',190);
-  if(data.hasEmbedded&&!data.hasMacros) filesTermLine('[!]','Embedded files present','info','info',190);
-  if(data.hasForms)    filesTermLine('[!]','Interactive form detected — be cautious','info','info',190);
-  if(noThreats)        filesTermLine('[+]','No malicious code detected','ok','ok',190);
+        const resp=await fetch('/api/analyze-file',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({filename:file.name,mimetype:file.type,data:b64,gsbKey}),
+        });
+        const data=await resp.json();
 
-  // GSB results
-  if(gsbKey){
-    if(data.suspiciousUrls&&data.suspiciousUrls.length>0){
-      filesTermLine('[-]',`Google Safe Browsing: ${data.suspiciousUrls.length} dangerous URL(s) found`,'err','err',210);
-    } else if((data.urlCount||0)>0){
-      filesTermLine('[+]','Google Safe Browsing: all URLs clean','ok','ok',190);
-    }
-  }
+        if(!data.ok){
+          termLine('[-]',`Analysis error: ${data.error||'Unknown error'}`,'err','err',200);
+          res(null); return;
+        }
 
-  filesTermLine('[*]','Calculating security score...','info','muted',290);
-  const sLabel=data.score>=80?'SAFE':data.score>=50?'SUSPICIOUS':'DANGEROUS';
-  const sCls=data.score>=80?'ok':data.score>=50?'info':'err';
-  const sIcon=data.score>=80?'[+]':data.score>=50?'[!]':'[-]';
-  filesTermLine(sIcon,`Score: ${data.score}/100 — ${sLabel}`,sCls,sCls,240);
-  filesTermLine('[✓]','Scan complete','done','ok',180);
+        const dtype=data.docType||'PDF';
+        termLine('[+]',`Document type: ${dtype}`,'ok','ok',200);
+        if(data.pages!=null){
+          const pw=dtype==='XLSX'?(data.pages===1?'sheet':'sheets'):(data.pages===1?'page':'pages');
+          termLine('[+]',`${pw.charAt(0).toUpperCase()+pw.slice(1)}: ${data.pages}`,'ok','ok',180);
+        }
+        termLine('[+]',`URLs found: ${data.urlCount||0}`,'ok','ok',180);
 
-  _filesChain=_filesChain.then(async()=>{
-    await savePDFAnalysis(file.name, data);
-    saveInd.style.display='block';
-    loadStats();
-  });
+        if(data.hasJS)       termLine('[-]','JavaScript detected — risk of malicious execution','err','err',220);
+        if(data.hasAutoOpen) termLine('[-]','Auto-open action detected','err','err',220);
+        if(data.hasMacros)   termLine('[-]','VBA macros detected — do not enable','err','err',220);
+        if(data.hasEmbedded&&!data.hasMacros) termLine('[!]','Embedded files present','info','info',220);
+        if(data.hasForms)    termLine('[!]','Interactive form detected — be cautious','info','info',220);
+        if(!data.hasJS&&!data.hasMacros&&!data.hasAutoOpen) termLine('[+]','No malicious code detected','ok','ok',220);
+
+        if(gsbKey){
+          if(data.suspiciousUrls&&data.suspiciousUrls.length>0)
+            termLine('[-]',`Google Safe Browsing: ${data.suspiciousUrls.length} dangerous URL(s)`,'err','err',250);
+          else if((data.urlCount||0)>0)
+            termLine('[+]','Google Safe Browsing: all URLs CLEAN','ok','ok',220);
+        }
+
+        termLine('[*]','Calculating security score...','info','info',300);
+        const sLabel=data.score>=80?'SAFE':data.score>=50?'SUSPICIOUS':'DANGEROUS';
+        const sCls=data.score>=80?'ok':data.score>=50?'info':'err';
+        const sIcon=data.score>=80?'[+]':data.score>=50?'[*]':'[-]';
+        termLine(sIcon,`Final score: ${data.score}/100`,sCls,sCls,350);
+        termLine('[✓]','Scan complete!','done','ok',300);
+
+        analysisData=data;
+        res(data);
+      }catch(err){ termLine('[-]',`Error: ${err.message}`,'err','err',150); rej(err); }
+    };
+    reader.readAsDataURL(file);
+  }).catch(()=>null);
+
+  await pipeline;
+
+  // Čakaj na koniec animácie + fade overlaya
+  await closeTerminalOverlay();
+
+  if(!analysisData) return;
+
+  // Zobraz štandardný výsledok
+  fileResultEl.innerHTML=renderPDFResult(analysisData);
+  filesResultWrap.style.display='block';
+  filesResultWrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  await savePDFAnalysis(file.name, analysisData);
+  saveInd.style.display='block';
+  loadStats();
 }
 
 function renderPDFResult(d){
@@ -2998,7 +2954,7 @@ function switchAnalysisTab(tab){
   document.getElementById('atPaneText').style.display    = tab==='text'    ? 'block' : 'none';
   document.getElementById('atPaneHeaders').style.display = tab==='headers' ? 'block' : 'none';
   // Vyčisti výsledky pri prepnutí
-  document.getElementById('novaTermWrap').style.display='none';
+  document.getElementById('novaResultWrap').style.display='none';
   document.getElementById('saveIndicator').style.display='none';
 }
 
