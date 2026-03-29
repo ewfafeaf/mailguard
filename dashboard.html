@@ -774,17 +774,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   <!-- Sidebar -->
   <aside class="sidebar">
     <!-- User panel compact -->
-    <div class="sidebar-user-compact" onclick="showSection('nastavenia')">
+    <div class="sidebar-user-compact" onclick="showSection('nastavenia')" style="padding:12px 10px">
       <div class="sidebar-user-top">
         <div class="sidebar-avatar" id="sidebarAvatar">??</div>
         <span class="sidebar-user-email" id="sidebarName">—</span>
       </div>
       <span class="sidebar-plan-badge" id="sidebarPlan">Free</span>
-      <a class="sidebar-user-plans" onclick="showSection('plans')" style="margin-top:8px">
-        <span style="font-size:.9rem;width:16px;text-align:center;flex-shrink:0">◆</span>
-        <span>Plány</span>
-        <span style="margin-left:auto;background:rgba(0,212,255,.2);color:#00d4ff;font-size:.6rem;padding:2px 6px;border-radius:4px;font-weight:700">PRO</span>
-      </a>
+      <div style="font-size:.65rem;color:var(--muted);margin-left:40px;margin-top:3px" id="sidebarTotalLabel"></div>
     </div>
     <!-- Usage / upgrade -->
     <div class="sidebar-usage">
@@ -818,6 +814,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         <span class="icon">▣</span><span>Správa tímu</span>
       </a>
       <div class="sidebar-divider"></div>
+      <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
+        <span class="icon">◆</span><span>Plány</span>
+      </a>
       <a class="sidebar-item" id="navNastavenia" onclick="showSection('nastavenia')">
         <span class="icon">◈</span><span>Nastavenia</span>
       </a>
@@ -896,7 +895,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         </div>
 
         <!-- Row 2: Hero input (1/10) + Setup sidebar (10/-1, row 2/5) -->
-        <div class="dg-input-card" style="grid-column:1/10">
+        <div class="dg-input-card" style="grid-column:1/-1">
           <div class="dg-input-heading">Začni novú analýzu</div>
           <div class="dg-input-sub">Vlož email, URL alebo text na okamžitú bezpečnostnú kontrolu</div>
           <div class="analysis-input-row">
@@ -911,34 +910,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <!-- Setup card (spans rows 2–4) -->
-        <div style="grid-column:10/-1;grid-row:3/7">
-          <div class="setup-card">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-              <div style="position:relative;width:48px;height:48px;flex-shrink:0">
-                <svg width="48" height="48">
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="#4f8ef7" stroke-width="4"
-                    stroke-dasharray="125" stroke-dashoffset="100" transform="rotate(-90 24 24)"
-                    id="setupRing"/>
-                </svg>
-                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700" id="setupPct">20%</div>
-              </div>
-              <div>
-                <div style="font-weight:700;font-size:.9rem">Quick Setup</div>
-                <div style="font-size:.73rem;color:var(--muted)" id="setupCount">2 / 5 hotových</div>
-              </div>
-            </div>
-            <div class="setup-item done">✓ Prvá analýza</div>
-            <div class="setup-item done">✓ Web skener test</div>
-            <div class="setup-item" id="setupTeam">◯ Pozvať tím <span class="badge-paid">PRO</span></div>
-            <div class="setup-item">◯ Nastaviť API kľúče</div>
-            <div class="setup-item">◯ Exportovať report</div>
-          </div>
-        </div>
-
         <!-- Row 3: Dnes + Live Feed (pod inputom) -->
-        <div style="grid-column:1/10;display:flex;gap:12px">
+        <div style="grid-column:1/-1;display:flex;gap:12px">
           <div class="dg-today-card" style="flex:1">
             <div>
               <div class="dg-today-label">Dnes</div>
@@ -963,14 +936,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <!-- Row 4: Chart full-width (minus setup sidebar) -->
-        <div class="chart-card" style="grid-column:1/10">
+        <!-- Row 4: Chart full-width -->
+        <div class="chart-card" style="grid-column:1/-1">
           <div class="chart-card-label">📈 Aktivita (7 dní)</div>
           <canvas id="activityChart" height="140"></canvas>
         </div>
 
         <!-- Row 5: Quick actions + Threat map -->
-        <div style="grid-column:1/6;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="grid-column:1/7;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
           <a class="quick-action" onclick="showSection('webskener')">
             <span class="quick-action-icon">◬</span><span>Web skener</span>
           </a>
@@ -985,7 +958,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </a>
         </div>
 
-        <div class="threat-map-card" style="grid-column:6/10">
+        <div class="threat-map-card" style="grid-column:7/-1">
           <div class="threat-map-label">🌍 Threat Map</div>
           <svg viewBox="0 0 200 110" style="width:100%;height:100px;border-radius:8px">
             <rect width="200" height="110" rx="6" fill="rgba(13,13,20,.6)"/>
@@ -2778,20 +2751,9 @@ async function loadStats(){
     }
   }
 
-  // Setup ring — vypočítaj dokončenie (2 fixed + ďalšie podľa aktivity)
-  let done=0;
-  if(total>0) done++;           // prvá analýza
-  if(data.some(r=>r.type==='web')) done++; // web skener
-  const setupSteps=5;
-  const setupPct=Math.round((done/setupSteps)*100);
-  const circumference=2*Math.PI*20;
-  const offset=circumference-(setupPct/100)*circumference;
-  const ring=document.getElementById('setupRing');
-  const pctEl=document.getElementById('setupPct');
-  const cntEl=document.getElementById('setupCount');
-  if(ring) ring.setAttribute('stroke-dashoffset',offset.toFixed(1));
-  if(pctEl) pctEl.textContent=setupPct+'%';
-  if(cntEl) cntEl.textContent=`${done} / ${setupSteps} hotových`;
+  // Sidebar total label
+  const sidebarTotal=document.getElementById('sidebarTotalLabel');
+  if(sidebarTotal) sidebarTotal.textContent=`${total} analýz celkovo`;
 }
 
 /* ── HISTORY ── */
