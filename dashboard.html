@@ -1259,18 +1259,34 @@ async function loadDailyUsage(){
   const isFree=_currentPlan==='free';
   const usageBlock=document.getElementById('usageCount').closest('.sidebar-usage');
   const upgradeBtn=document.querySelector('.sidebar-upgrade');
+  const todayCount=document.getElementById('todayCount');
+  const todayBarFill=document.getElementById('todayBarFill');
+  const todayLimitLabel=document.getElementById('todayLimitLabel');
 
-  if(!isFree){
-    // PRO+ – schovaj usage bar aj upgrade tlačidlo
-    usageBlock.style.display='none';
-    if(upgradeBtn) upgradeBtn.style.display='none';
-    return;
-  }
-
+  // Načítaj počet analýz dnes vždy (aj pre paid plány — zobrazujeme v dg-today-card)
   const today=new Date();today.setHours(0,0,0,0);
   const {data}=await _sb.from('analyses').select('id')
     .gte('created_at',today.toISOString());
   const used=data?data.length:0;
+
+  if(!isFree){
+    // PRO/Business/School — schovaj sidebar usage bar + upgrade btn
+    usageBlock.style.display='none';
+    if(upgradeBtn) upgradeBtn.style.display='none';
+    // dg-today-card: neobmedzené
+    if(todayCount) todayCount.textContent=used;
+    if(todayLimitLabel){
+      todayLimitLabel.innerHTML='<span style="color:#00d4ff">Neobmedzené ✨</span>';
+      todayLimitLabel.style.color='';
+    }
+    if(todayBarFill){
+      todayBarFill.style.width='100%';
+      todayBarFill.style.background='linear-gradient(90deg,#22c55e,#00d4ff)';
+    }
+    return;
+  }
+
+  // FREE plán
   const limit=FREE_DAILY_LIMIT;
   const pct=Math.min(used/limit*100,100);
   document.getElementById('usageCount').textContent=`${used}/${limit}`;
@@ -1278,15 +1294,15 @@ async function loadDailyUsage(){
   document.getElementById('usageFill').style.background=
     pct>=100?'var(--red)':pct>=66?'var(--orange)':'linear-gradient(90deg,var(--accent),var(--accent2))';
   // dg-today-card
-  const todayCount=document.getElementById('todayCount');
-  const todayBarFill=document.getElementById('todayBarFill');
-  const todayLimitLabel=document.getElementById('todayLimitLabel');
   if(todayCount) todayCount.textContent=used;
-  if(todayLimitLabel) todayLimitLabel.textContent=`${used} / ${limit}`;
-  if(todayBarFill){todayBarFill.style.width=pct+'%';
-    const barColor=used>=limit?'var(--red)':used>=limit-1?'#f59e0b':'linear-gradient(90deg,var(--green),var(--teal))';
-    todayBarFill.style.background=barColor;
-    if(todayLimitLabel) todayLimitLabel.style.color=used>=limit?'var(--red)':used>=limit-1?'#f59e0b':'var(--green)'}
+  if(todayLimitLabel){
+    todayLimitLabel.textContent=`${used} / ${limit}`;
+    todayLimitLabel.style.color=used>=limit?'var(--red)':used>=limit-1?'#f59e0b':'var(--green)';
+  }
+  if(todayBarFill){
+    todayBarFill.style.width=pct+'%';
+    todayBarFill.style.background=used>=limit?'var(--red)':used>=limit-1?'#f59e0b':'linear-gradient(90deg,var(--green),var(--teal))';
+  }
 }
 
 function saveGsbKey(){
