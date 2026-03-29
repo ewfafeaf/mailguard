@@ -73,6 +73,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Dashboard – MailGuard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
@@ -578,12 +579,52 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .dg-widget-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
   color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 
+/* ── QUICK ACTIONS ── */
+.quick-action{background:rgba(26,29,39,.6);backdrop-filter:blur(12px);
+  padding:20px 12px;border-radius:12px;cursor:pointer;text-align:center;
+  font-size:.75rem;font-weight:600;color:rgba(255,255,255,.7);
+  transition:all .3s ease;border:1px solid rgba(79,142,247,.15);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  text-decoration:none}
+.quick-action:hover{transform:scale(1.05);border-color:#4f8ef7;
+  box-shadow:0 0 30px rgba(79,142,247,.3);color:#fff}
+.quick-action-icon{font-size:1.5rem}
+
+/* ── CHART CARD ── */
+.chart-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
+.chart-card-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+
+/* ── THREAT FEED ── */
+.threat-feed{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:18px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
+.threat-feed-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);margin-bottom:12px}
+.feed-item{display:flex;align-items:center;gap:8px;padding:6px 0;
+  font-size:.77rem;color:rgba(255,255,255,.65);border-bottom:1px solid rgba(255,255,255,.04)}
+.feed-item:last-child{border-bottom:none}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.feed-dot.green{background:#22c55e;box-shadow:0 0 6px #22c55e}
+.feed-dot.yellow{background:#f59e0b;box-shadow:0 0 6px #f59e0b}
+.feed-dot.red{background:#ef4444;box-shadow:0 0 6px #ef4444;animation:pulse 2s infinite}
+
+/* ── THREAT MAP ── */
+.threat-map-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:18px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
+.threat-map-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+
 /* ── RESPONSIVE dashboard grid ── */
 @media(max-width:1100px){
   .dg-input-card{grid-column:1/-1}
   .dg-today-card{grid-column:1/-1}
   .nova-feature-grid{grid-template-columns:repeat(2,1fr)}
   .dg-tip-card,.dg-activity-card{grid-column:1/-1}
+  .dg-row3-chart,.dg-row3-actions,.dg-row3-map{grid-column:1/-1}
 }
 
 /* ── PREMIUM ANIMATIONS ── */
@@ -772,8 +813,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <div id="sectionNova" class="dash-section">
       <div class="dashboard-grid">
 
-        <!-- Stats row -->
-        <div class="stats-row" style="grid-column:1/-1;margin-bottom:0">
+        <!-- Row 1: Stats -->
+        <div style="grid-column:1/-1;display:flex;gap:12px">
           <div class="stat-card">
             <div class="stat-label">Celkový počet analýz</div>
             <div class="stat-value blue" id="statTotal">—</div>
@@ -791,8 +832,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <!-- Hlavný input -->
-        <div class="dg-input-card">
+        <!-- Row 2: Hero input + Dnes + Threat feed -->
+        <div class="dg-input-card" style="grid-column:1/8">
           <div class="dg-input-heading">Začni novú analýzu</div>
           <div class="dg-input-sub">Vlož email, URL alebo text na okamžitú bezpečnostnú kontrolu</div>
           <div class="analysis-input-row">
@@ -807,62 +848,97 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <!-- Dnes karta -->
-        <div class="dg-today-card">
-          <div>
-            <div class="dg-today-label">Dnes</div>
-            <div class="dg-today-number" id="todayCount">0</div>
-            <div class="dg-today-sub">analýz dnes</div>
+        <div style="grid-column:8/-1;display:flex;flex-direction:column;gap:12px">
+          <!-- Dnes karta -->
+          <div class="dg-today-card" style="flex:1">
+            <div>
+              <div class="dg-today-label">Dnes</div>
+              <div class="dg-today-number" id="todayCount">0</div>
+              <div class="dg-today-sub">analýz dnes</div>
+            </div>
+            <div class="dg-today-bar-wrap">
+              <div class="dg-today-bar-row">
+                <span>Denný limit</span>
+                <span id="todayLimitLabel">0 / 3</span>
+              </div>
+              <div class="dg-today-bar">
+                <div class="dg-today-bar-fill" id="todayBarFill" style="width:0%"></div>
+              </div>
+            </div>
           </div>
-          <div class="dg-today-bar-wrap">
-            <div class="dg-today-bar-row">
-              <span>Denný limit</span>
-              <span id="todayLimitLabel">0 / 3</span>
-            </div>
-            <div class="dg-today-bar">
-              <div class="dg-today-bar-fill" id="todayBarFill" style="width:0%"></div>
-            </div>
+          <!-- Live Threat Feed -->
+          <div class="threat-feed">
+            <div class="threat-feed-label">🔴 Live Activity</div>
+            <div class="feed-item"><span class="feed-dot green"></span><span>URL scan • Bezpečné • Teraz</span></div>
+            <div class="feed-item"><span class="feed-dot yellow"></span><span>Email check • 2 min</span></div>
+            <div class="feed-item"><span class="feed-dot red"></span><span>Phishing blocked • 5 min</span></div>
           </div>
         </div>
 
-        <!-- Feature karty -->
-        <div class="nova-feature-grid">
-          <a class="nova-feature-card stagger-1" onclick="showSection('nova')">
-            <div class="nfc-icon">🔗</div>
-            <div class="nfc-title">Email & URL analýza</div>
-            <div class="nfc-desc">Automatická detekcia phishingu, malvéru a podozrivých odkazov v reálnom čase.</div>
-            <div class="nfc-arrow">→ Otvoriť</div>
-          </a>
-          <a class="nova-feature-card stagger-2" onclick="showSection('webskener')">
-            <div class="nfc-icon">🌐</div>
-            <div class="nfc-title">Web skener</div>
-            <div class="nfc-desc">Kontrola SSL, WHOIS, VirusTotal, Shodan a bezpečnostných hlavičiek webstránok.</div>
-            <div class="nfc-arrow">→ Otvoriť</div>
-          </a>
-          <a class="nova-feature-card stagger-3" onclick="showSection('files')">
-            <div class="nfc-icon">📄</div>
-            <div class="nfc-title">Analýza súborov</div>
-            <div class="nfc-desc">Skenovanie PDF, DOCX a XLS súborov na škodlivé URL, JavaScript a vložené objekty.</div>
-            <div class="nfc-arrow">→ Otvoriť</div>
-          </a>
-          <a class="nova-feature-card stagger-4" onclick="showSection('headers')">
-            <div class="nfc-icon">◐</div>
-            <div class="nfc-title">Analýza hlavičiek</div>
-            <div class="nfc-desc">Analýza emailových hlavičiek — SPF, DKIM, DMARC a sledovanie cesty správy.</div>
-            <div class="nfc-arrow">→ Otvoriť</div>
-          </a>
+        <!-- Row 3: Chart + Quick actions + Threat map -->
+        <div class="chart-card dg-row3-chart" style="grid-column:1/6">
+          <div class="chart-card-label">📈 Aktivita (7 dní)</div>
+          <canvas id="activityChart" height="160"></canvas>
         </div>
 
-        <!-- Tip dňa -->
-        <div class="dg-tip-card">
+        <div class="dg-row3-actions" style="grid-column:6/9">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;height:100%">
+            <a class="quick-action" onclick="showSection('webskener')">
+              <span class="quick-action-icon">🌐</span><span>Web skener</span>
+            </a>
+            <a class="quick-action" onclick="showSection('files')">
+              <span class="quick-action-icon">📄</span><span>Súbory</span>
+            </a>
+            <a class="quick-action" onclick="showSection('headers')">
+              <span class="quick-action-icon">📧</span><span>Headers</span>
+            </a>
+            <a class="quick-action" onclick="showSection('historia')">
+              <span class="quick-action-icon">📊</span><span>História</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="threat-map-card dg-row3-map" style="grid-column:9/-1">
+          <div class="threat-map-label">🌍 Threat Map</div>
+          <svg viewBox="0 0 200 110" style="width:100%;height:110px;border-radius:8px;overflow:visible">
+            <rect width="200" height="110" rx="6" fill="rgba(13,13,20,.6)"/>
+            <!-- continents simplified -->
+            <ellipse cx="55" cy="40" rx="28" ry="18" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <ellipse cx="115" cy="38" rx="38" ry="22" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <ellipse cx="155" cy="55" rx="22" ry="16" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <ellipse cx="80" cy="72" rx="18" ry="12" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <!-- pulzujúce hrozby -->
+            <circle cx="52" cy="36" r="3" fill="#ef4444" opacity=".85">
+              <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="118" cy="33" r="3" fill="#f97316" opacity=".85">
+              <animate attributeName="r" values="3;5;3" dur="2s" begin=".5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" begin=".5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="82" cy="68" r="3" fill="#22c55e" opacity=".85">
+              <animate attributeName="r" values="3;5;3" dur="2s" begin="1s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" begin="1s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="155" cy="52" r="3" fill="#f59e0b" opacity=".85">
+              <animate attributeName="r" values="3;5;3" dur="2s" begin="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" begin="1.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="98" cy="45" r="2" fill="#a78bfa" opacity=".7">
+              <animate attributeName="r" values="2;4;2" dur="3s" begin=".8s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
+
+        <!-- Row 4: Tip dňa + Posledná aktivita -->
+        <div class="dg-tip-card" style="grid-column:1/7">
           <div class="dg-widget-label">💡 Tip dňa</div>
           <div style="border-left:3px solid var(--accent);padding-left:12px">
             <div id="novaTip" style="font-size:.83rem;color:var(--text);line-height:1.65"></div>
           </div>
         </div>
 
-        <!-- Posledná aktivita -->
-        <div class="dg-activity-card" id="novaLastActivity" style="display:none">
+        <div class="dg-activity-card" id="novaLastActivity" style="grid-column:7/-1;display:none">
           <div class="dg-widget-label">🕐 Posledná aktivita</div>
           <div id="novaLastActivityContent" style="font-size:.83rem;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
         </div>
@@ -3013,10 +3089,48 @@ const _NOVA_TIPS=[
   'Ak dostanete email od "riaditeľa" s nezvyčajnou požiadavkou — vždy ho overte telefonicky pred akýmkoľvek konaním.',
 ];
 
+let _activityChart=null;
 async function loadNovaExtras(){
   // ── Tip dňa ──
   const tipEl=document.getElementById('novaTip');
   if(tipEl) tipEl.textContent=_NOVA_TIPS[Math.floor(Math.random()*_NOVA_TIPS.length)];
+
+  // ── 7-Day Activity Chart ──
+  const canvasEl=document.getElementById('activityChart');
+  if(canvasEl&&typeof Chart!=='undefined'){
+    if(_activityChart){_activityChart.destroy();_activityChart=null;}
+    // Načítaj reálne dáta za posledných 7 dní
+    const days=[];const labels=[];
+    const dayNames=['Ned','Pon','Ut','Str','Štv','Pia','Sob'];
+    for(let i=6;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);d.setHours(0,0,0,0);
+      days.push(d);labels.push(dayNames[d.getDay()]);
+    }
+    let chartData=[0,0,0,0,0,0,0];
+    if(_currentUser){
+      const from=new Date(days[0]);
+      const{data}=await _sb.from('analyses').select('created_at')
+        .eq('user_id',_currentUser.id).gte('created_at',from.toISOString());
+      if(data) data.forEach(r=>{
+        const rd=new Date(r.created_at);rd.setHours(0,0,0,0);
+        const idx=days.findIndex(d=>d.getTime()===rd.getTime());
+        if(idx>=0) chartData[idx]++;
+      });
+    }
+    const ctx=canvasEl.getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,0,160);
+    grad.addColorStop(0,'rgba(79,142,247,.45)');
+    grad.addColorStop(1,'rgba(79,142,247,.0)');
+    _activityChart=new Chart(ctx,{
+      type:'line',
+      data:{labels,datasets:[{data:chartData,fill:true,backgroundColor:grad,
+        borderColor:'#4f8ef7',borderWidth:2,tension:.4,
+        pointBackgroundColor:'#4f8ef7',pointRadius:3,pointHoverRadius:5}]},
+      options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} analýz`}}},
+        scales:{y:{display:false,min:0},x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}}},
+        animation:{duration:800}}
+    });
+  }
 
   // ── Posledná aktivita ──
   if(!_currentUser) return;
