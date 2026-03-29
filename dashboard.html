@@ -145,17 +145,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .sidebar-nav{padding:0 10px;display:flex;flex-direction:column;gap:2px}
 
 /* ── SIDEBAR USER PANEL ── */
-.sidebar-user-compact{display:flex;align-items:center;gap:8px;padding:10px;
+.sidebar-user-compact{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;
   border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .18s;
   margin-bottom:0;flex-shrink:0}
 .sidebar-user-compact:hover{background:rgba(255,255,255,.04)}
+.sidebar-user-top{display:flex;align-items:center;gap:8px;width:100%}
 .sidebar-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;
   background:linear-gradient(135deg,var(--accent),var(--accent2))}
 .sidebar-user-email{font-size:.75rem;color:var(--muted);flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}
 .sidebar-plan-badge{background:rgba(79,142,247,.15);color:#4f8ef7;font-size:.6rem;
-  padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0}
+  padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0;
+  align-self:flex-start;margin-left:40px}
 
 /* ── SIDEBAR USAGE BAR ── */
 .sidebar-usage{padding:6px 10px 14px;display:flex;flex-direction:column;gap:6px}
@@ -580,8 +582,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   <aside class="sidebar">
     <!-- User panel compact -->
     <div class="sidebar-user-compact" onclick="showSection('nastavenia')">
-      <div class="sidebar-avatar" id="sidebarAvatar">??</div>
-      <span class="sidebar-user-email" id="sidebarName">—</span>
+      <div class="sidebar-user-top">
+        <div class="sidebar-avatar" id="sidebarAvatar">??</div>
+        <span class="sidebar-user-email" id="sidebarName">—</span>
+      </div>
       <span class="sidebar-plan-badge" id="sidebarPlan">Free</span>
     </div>
     <!-- Usage / upgrade -->
@@ -617,7 +621,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       </a>
       <div class="sidebar-divider"></div>
       <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
-        <span class="icon">◆</span><span>Plány</span>
+        <span class="icon">◆</span><span>Plány</span><span style="margin-left:auto"><span style="background:rgba(0,212,255,.15);color:#00d4ff;font-size:.55rem;padding:2px 5px;border-radius:3px;font-weight:700">PRO</span></span>
       </a>
       <div class="sidebar-divider"></div>
       <a class="sidebar-item" id="navNastavenia" onclick="showSection('nastavenia')">
