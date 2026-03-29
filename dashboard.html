@@ -407,6 +407,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .history-table tr:last-child td{border-bottom:none}
 .history-table tr:hover td{background:rgba(255,255,255,.02)}
 .history-empty{padding:32px;text-align:center;color:var(--muted);font-size:.88rem}
+.pagination{display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-top:24px;padding:20px 16px 16px;border-top:1px solid rgba(255,255,255,.06)}
+.pagination button{background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);
+  color:#4f8ef7;padding:8px 16px;border-radius:8px;cursor:pointer;
+  font-size:.85rem;font-weight:600;font-family:inherit;transition:all .2s}
+.pagination button:hover:not(:disabled){background:rgba(79,142,247,.2);transform:translateY(-1px)}
+.pagination button:disabled{opacity:.3;cursor:not-allowed}
+.pagination span{font-size:.85rem;color:var(--muted)}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .badge-url{background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.2)}
 .badge-email{background:rgba(124,95,247,.12);color:#a78bfa;border:1px solid rgba(124,95,247,.2)}
@@ -2774,17 +2782,29 @@ async function loadStats(){
 }
 
 /* ── HISTORY ── */
-async function loadHistory(){
-  const{data,error}=await _sb
-    .from('analyses')
-    .select('*')
-    .eq('user_id',_currentUser.id)
-    .order('created_at',{ascending:false})
-    .limit(20);
-  console.log('history data:', data, 'error:', error);
+let _historyPage=1;
+const _HISTORY_PER_PAGE=20;
+
+async function loadHistory(page=1){
+  _historyPage=page;
+  const start=(page-1)*_HISTORY_PER_PAGE;
+  const end=start+_HISTORY_PER_PAGE-1;
 
   const container=document.getElementById('historyContent');
-  if(error||!data||data.length===0){
+  container.innerHTML='<div class="history-empty">Načítavam…</div>';
+
+  const{data,error,count}=await _sb
+    .from('analyses')
+    .select('*',{count:'exact'})
+    .eq('user_id',_currentUser.id)
+    .order('created_at',{ascending:false})
+    .range(start,end);
+
+  if(error){
+    container.innerHTML='<div class="history-empty">Chyba načítania histórie.</div>';
+    return;
+  }
+  if(!data||data.length===0){
     container.innerHTML='<div class="history-empty">Zatiaľ žiadne analýzy. Spusti svoju prvú analýzu! 🔍</div>';
     return;
   }
@@ -2807,12 +2827,20 @@ async function loadHistory(){
     </tr>`;
   }).join('');
 
+  const totalPages=Math.ceil((count||0)/_HISTORY_PER_PAGE);
+  const pagination=totalPages>1?`
+    <div class="pagination">
+      <button onclick="loadHistory(${page-1})" ${page===1?'disabled':''}>← Predošlá</button>
+      <span>Strana ${page} z ${totalPages}</span>
+      <button onclick="loadHistory(${page+1})" ${page===totalPages?'disabled':''}>Ďalšia →</button>
+    </div>`:'';
+
   container.innerHTML=`<table class="history-table">
     <thead><tr>
       <th>Dátum</th><th>Typ</th><th>Vstup</th><th>Skóre</th><th>Verdikt</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-  </table>`;
+  </table>${pagination}`;
 }
 
 /* ── PDF EXPORT ── */
