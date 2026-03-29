@@ -104,9 +104,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 /* ── BACKGROUND ORBS ── */
 .bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.3}
-.orb1{width:600px;height:600px;background:#1a3a6e;top:-100px;left:-150px;animation:orbA 24s ease-in-out infinite}
-.orb2{width:500px;height:500px;background:#0f2040;top:40%;right:-150px;animation:orbB 30s ease-in-out infinite}
-.orb3{width:450px;height:450px;background:#2a2a3e;bottom:-100px;left:40%;animation:orbC 20s ease-in-out infinite}
+.orb1{width:600px;height:600px;background:rgba(79,142,247,.25);top:-100px;left:-150px;animation:orbA 24s ease-in-out infinite}
+.orb2{width:500px;height:500px;background:rgba(124,95,247,.2);top:40%;right:-150px;animation:orbB 30s ease-in-out infinite}
+.orb3{width:450px;height:450px;background:rgba(0,212,255,.15);bottom:-100px;left:40%;animation:orbC 20s ease-in-out infinite}
 @keyframes orbA{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
 @keyframes orbB{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,70px)}}
 @keyframes orbC{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-60px)}}
@@ -292,7 +292,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar-w);flex:1;padding:24px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden;
-  background:radial-gradient(ellipse 70% 50% at 30% 0%,rgba(79,142,247,.06) 0%,transparent 60%)}
+  background:radial-gradient(ellipse 70% 50% at 30% 0%,rgba(79,142,247,.06) 0%,transparent 60%);
+  position:relative}
+.main::before{content:'';position:fixed;top:-50%;right:-50%;width:200%;height:200%;
+  background:radial-gradient(ellipse at 20% 30%,rgba(79,142,247,.15) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 70%,rgba(124,95,247,.12) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 50%,rgba(0,212,255,.08) 0%,transparent 50%);
+  opacity:.6;animation:meshMove 20s ease-in-out infinite;pointer-events:none;z-index:0}
+.main::after{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 0%,rgba(0,0,0,.3) 100%);
+  pointer-events:none;z-index:0}
+@keyframes meshMove{
+  0%,100%{transform:translate(0,0) rotate(0deg)}
+  25%    {transform:translate(-10%,10%) rotate(5deg)}
+  50%    {transform:translate(-5%,-15%) rotate(-3deg)}
+  75%    {transform:translate(15%,5%) rotate(8deg)}
+}
+.dashboard-grid,.welcome-row,.stats-row,.dash-section{position:relative;z-index:1}
 
 /* ── WELCOME ── */
 .welcome-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
