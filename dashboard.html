@@ -271,7 +271,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
 
 /* ── TICKET STYLES ── */
-.ticket-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.ticket-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
+  border-radius:10px;padding:14px 16px;margin-bottom:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:all .3s ease}
+.ticket-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
 .ticket-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .ticket-type-badge{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:5px;
   background:rgba(79,142,247,.15);color:var(--accent);border:1px solid rgba(79,142,247,.2)}
@@ -281,7 +285,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar-w);flex:1;padding:32px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden;
-  background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(79,142,247,.04) 0%,transparent 60%)}
+  background:radial-gradient(ellipse 70% 50% at 30% 0%,rgba(79,142,247,.06) 0%,transparent 60%)}
 
 /* ── WELCOME ── */
 .welcome-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
@@ -305,13 +309,18 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .stat-icon{position:absolute;right:18px;top:18px;font-size:1.6rem;opacity:.25}
 
 /* ── SECTION ── */
-.dash-section{margin-bottom:32px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.dash-section{margin-bottom:32px;animation:fadeIn .5s ease-out}
 .dash-section-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;
   display:flex;align-items:center;gap:8px}
 .dash-section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 
 /* ── NEW ANALYSIS CARD ── */
-.analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.analysis-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
+  border-radius:var(--radius);padding:24px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:all .3s ease}
+.analysis-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
 .analysis-input-row{display:flex;gap:10px;margin-bottom:0}
 /* ── Analysis Tabs ── */
 .atab-row{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0}
@@ -374,7 +383,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .save-indicator{font-size:.78rem;color:var(--green);margin-top:8px;display:none;padding:0 4px}
 
 /* ── HISTORY TABLE ── */
-.history-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.history-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
+  border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:all .3s ease}
+.history-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
 .history-table{width:100%;border-collapse:collapse}
 .history-table th{padding:11px 16px;text-align:left;font-size:.74rem;font-weight:700;
   color:var(--muted);letter-spacing:.06em;text-transform:uppercase;
@@ -419,7 +432,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .loading-screen p{color:var(--muted);font-size:.9rem}
 
 /* ── SETTINGS CARDS ── */
-.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px}
+.settings-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
+  border-radius:var(--radius);padding:24px;margin-bottom:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:all .3s ease}
+.settings-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
 .settings-section-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .settings-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .settings-field label{font-size:.82rem;font-weight:600;color:var(--muted)}
@@ -439,8 +456,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .danger-title{color:var(--red)!important}
 /* ── PLANS SECTION ── */
 .plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start;margin-top:4px}
-.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;transition:border-color .3s,transform .3s;position:relative}
-.plan-card:hover{transform:translateY(-4px)}
+.plan-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
+  border-radius:14px;padding:28px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:all .3s ease;position:relative}
+.plan-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
 .plan-card.popular{border-color:var(--accent);box-shadow:0 0 40px rgba(79,142,247,.18);background:linear-gradient(160deg,var(--surface),rgba(79,142,247,.06))}
 .plan-card.current{border-color:var(--green);box-shadow:0 0 24px rgba(34,197,94,.12)}
 .plan-badge{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em}
@@ -504,9 +524,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 }
 
 /* ── NOVA FEATURE CARDS ── */
-.nova-feature-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
-  padding:22px;transition:border-color .25s,transform .25s,box-shadow .25s;cursor:default}
-.nova-feature-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 32px rgba(79,142,247,.12)}
+.nova-feature-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
+  border-radius:14px;padding:22px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:all .3s ease;cursor:default}
+.nova-feature-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-3px);box-shadow:0 8px 32px rgba(79,142,247,.15)}
 
 /* ── SECTION TRANSITIONS ── */
 @keyframes fadeSlideIn{
