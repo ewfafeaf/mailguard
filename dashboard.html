@@ -500,7 +500,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   .nav-user-email{display:none}
   .analysis-input-row{flex-direction:column}
   .analysis-btn{width:100%}
+  .nova-feature-card{padding:16px}
 }
+
+/* ── NOVA FEATURE CARDS ── */
+.nova-feature-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:22px;transition:border-color .25s,transform .25s,box-shadow .25s;cursor:default}
+.nova-feature-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 32px rgba(79,142,247,.12)}
 
 /* ── SECTION TRANSITIONS ── */
 @keyframes fadeSlideIn{
@@ -652,6 +658,39 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           <div id="dashResult"></div>
           <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
         </div>
+      </div>
+
+      <!-- Feature karty -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px">
+        <div class="nova-feature-card stagger-1">
+          <div style="font-size:1.8rem;margin-bottom:12px">🔗</div>
+          <div style="font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:8px">Email & URL analýza</div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.6">Automatická detekcia phishingu, malvéru a podozrivých odkazov v reálnom čase.</div>
+        </div>
+        <div class="nova-feature-card stagger-2">
+          <div style="font-size:1.8rem;margin-bottom:12px">🌐</div>
+          <div style="font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:8px">Web skener</div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.6">Kontrola SSL, WHOIS, VirusTotal, Shodan a bezpečnostných hlavičiek webstránok.</div>
+        </div>
+        <div class="nova-feature-card stagger-3">
+          <div style="font-size:1.8rem;margin-bottom:12px">📄</div>
+          <div style="font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:8px">Analýza súborov</div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.6">Skenovanie PDF, DOCX a XLS súborov na škodlivé URL, JavaScript a vložené objekty.</div>
+        </div>
+      </div>
+
+      <!-- Tip dňa -->
+      <div style="margin-top:24px">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">💡 Tip dňa</div>
+        <div style="border-left:3px solid var(--accent);padding-left:14px">
+          <div id="novaTip" style="font-size:.88rem;color:var(--text);line-height:1.65"></div>
+        </div>
+      </div>
+
+      <!-- Posledná aktivita -->
+      <div id="novaLastActivity" style="margin-top:20px;display:none">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px">🕐 Posledná aktivita</div>
+        <div id="novaLastActivityContent" style="font-size:.84rem;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
       </div>
     </div>
 
@@ -969,6 +1008,7 @@ async function initDashboard(){
   loadStats();
   loadHistory();
   loadDailyUsage();
+  loadNovaExtras();
   handlePaymentReturn();
 }
 
@@ -1156,6 +1196,7 @@ function showSection(s){
   const hideStats=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
   document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
+  if(s==='nova')    loadNovaExtras();
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
@@ -2742,6 +2783,53 @@ async function dashAnalyze(){
   await saveAnalysis(val,gsbMatches);
   saveInd.style.display='block';
   loadStats();
+}
+
+/* ══════════════════════════════════════════
+   NOVA EXTRAS (tip + posledná aktivita)
+══════════════════════════════════════════ */
+const _NOVA_TIPS=[
+  'Nikdy neklikajte na linky v emailoch ktoré vyžadujú urgentné prihlásenie — školy sú častým cieľom phishingu.',
+  'Skontrolujte pravidelne SPF a DKIM záznamy vašej školskej domény — chránia pred falšovaním emailov.',
+  'Podozrivé prílohy v emailoch vždy najprv analyzujte cez MailGuard pred otvorením.',
+  'Používajte dvojfaktorové overenie pre všetky školské účty — je to najrýchlejší spôsob ako zastaviť útočníka.',
+  'Ak dostanete email od "riaditeľa" s nezvyčajnou požiadavkou — vždy ho overte telefonicky pred akýmkoľvek konaním.',
+];
+
+async function loadNovaExtras(){
+  // ── Tip dňa ──
+  const tipEl=document.getElementById('novaTip');
+  if(tipEl) tipEl.textContent=_NOVA_TIPS[Math.floor(Math.random()*_NOVA_TIPS.length)];
+
+  // ── Posledná aktivita ──
+  if(!_currentUser) return;
+  const actWrap=document.getElementById('novaLastActivity');
+  const actContent=document.getElementById('novaLastActivityContent');
+  if(!actWrap||!actContent) return;
+
+  const{data}=await _sb.from('analyses')
+    .select('type,input,verdict,created_at')
+    .eq('user_id',_currentUser.id)
+    .order('created_at',{ascending:false})
+    .limit(1);
+
+  if(!data||data.length===0){ actWrap.style.display='none'; return; }
+
+  const r=data[0];
+  const typeMap={url:'URL',email:'Email',web:'Web',pdf:'Súbor',headers:'Hlavičky'};
+  const verdictMap={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
+  const verdictColor={safe:'var(--green)',low:'var(--yellow)',medium:'#f97316',high:'var(--red)'};
+  const typeLabel=typeMap[r.type]||r.type;
+  const verdictLabel=verdictMap[r.verdict]||'—';
+  const vColor=verdictColor[r.verdict]||'var(--muted)';
+  const inputShort=(r.input||'').slice(0,55)+((r.input||'').length>55?'…':'');
+
+  actContent.innerHTML=
+    `<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+       padding:2px 8px;font-size:.76rem;font-weight:700;color:var(--accent)">${escHtml(typeLabel)}</span>`+
+    `<span style="color:var(--text);font-size:.83rem">${escHtml(inputShort)}</span>`+
+    `<span style="color:${vColor};font-weight:600;font-size:.82rem">— ${escHtml(verdictLabel)}</span>`;
+  actWrap.style.display='block';
 }
 
 /* ══════════════════════════════════════════
