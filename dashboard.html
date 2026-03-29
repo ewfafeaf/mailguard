@@ -618,6 +618,40 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .threat-map-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
 
+/* ── ALERT BANNER ── */
+.alert-banner{grid-column:1/-1;background:linear-gradient(135deg,#ef4444,#dc2626);
+  padding:14px 20px;border-radius:12px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;box-shadow:0 4px 24px rgba(239,68,68,.3)}
+.alert-banner-title{font-weight:700;font-size:.95rem;color:#fff;margin-bottom:3px}
+.alert-banner-sub{font-size:.8rem;color:rgba(255,255,255,.88)}
+.alert-banner-btn{background:#fff;color:#ef4444;padding:7px 14px;border-radius:8px;
+  font-weight:700;font-size:.82rem;border:none;cursor:pointer;white-space:nowrap;
+  transition:opacity .2s;flex-shrink:0}
+.alert-banner-btn:hover{opacity:.88}
+
+/* ── SETUP CARD ── */
+.setup-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  height:100%}
+.setup-item{font-size:.8rem;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);
+  color:rgba(255,255,255,.55);display:flex;align-items:center;gap:8px}
+.setup-item:last-child{border-bottom:none}
+.setup-item.done{color:var(--green)}
+.badge-paid{background:rgba(0,212,255,.15);color:#00d4ff;font-size:.58rem;
+  padding:1px 5px;border-radius:3px;font-weight:700;margin-left:auto}
+
+/* ── SCORE STAT CARD ── */
+.stat-score-big{font-size:2rem;font-weight:900;color:#ff6b35;font-family:'Courier New',monospace;
+  letter-spacing:-1px;line-height:1}
+.stat-score-sub{font-size:.75rem;color:var(--muted)}
+.stat-breakdown{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.breakdown-badge{font-size:.6rem;padding:2px 6px;border-radius:4px;font-weight:700;white-space:nowrap}
+.bb-critical{background:rgba(239,68,68,.15);color:#ef4444}
+.bb-high{background:rgba(249,115,22,.15);color:#f97316}
+.bb-med{background:rgba(251,191,36,.15);color:#fbbf24}
+.bb-low{background:rgba(34,197,94,.15);color:#22c55e}
+
 /* ── RESPONSIVE dashboard grid ── */
 @media(max-width:1100px){
   .dg-input-card{grid-column:1/-1}
@@ -813,27 +847,56 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <div id="sectionNova" class="dash-section">
       <div class="dashboard-grid">
 
-        <!-- Row 1: Stats -->
+        <!-- Alert banner (skrytý pokiaľ danger=0) -->
+        <div class="alert-banner" id="threatAlertBanner" style="display:none">
+          <div>
+            <div class="alert-banner-title">⚠️ Hrozby detekované dnes</div>
+            <div class="alert-banner-sub" id="threatAlertSub">Skontroluj detaily v histórii.</div>
+          </div>
+          <button class="alert-banner-btn" onclick="showSection('historia')">Zobraziť report →</button>
+        </div>
+
+        <!-- Row 1: Stat karty — CheckVibe štýl -->
         <div style="grid-column:1/-1;display:flex;gap:12px">
+          <!-- Bezpečnostné skóre -->
+          <div class="stat-card" style="flex:1.2">
+            <div class="stat-label">Bezpečnostné skóre</div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px">
+              <div class="stat-score-big" id="statScore">—</div>
+              <div class="stat-score-sub">/ 100</div>
+            </div>
+            <div class="stat-icon">🛡️</div>
+          </div>
+          <!-- Posledná aktivita -->
+          <div class="stat-card" style="flex:1.2">
+            <div class="stat-label">Posledná aktivita</div>
+            <div class="stat-value blue" style="font-size:1.4rem" id="statLastDate">—</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px" id="statLastTime"></div>
+            <div class="stat-icon">🕐</div>
+          </div>
+          <!-- Celkovo analýz -->
           <div class="stat-card">
-            <div class="stat-label">Celkový počet analýz</div>
+            <div class="stat-label">Celkovo analýz</div>
             <div class="stat-value blue" id="statTotal">—</div>
             <div class="stat-icon">📊</div>
           </div>
+          <!-- Bezpečné -->
           <div class="stat-card">
             <div class="stat-label">Bezpečné</div>
             <div class="stat-value green" id="statSafe">—</div>
             <div class="stat-icon">✅</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Nebezpečné</div>
+          <!-- Hrozby s breakdown -->
+          <div class="stat-card" style="flex:1.3">
+            <div class="stat-label">Hrozby</div>
             <div class="stat-value red" id="statDanger">—</div>
+            <div class="stat-breakdown" id="statBreakdown"></div>
             <div class="stat-icon">🚨</div>
           </div>
         </div>
 
-        <!-- Row 2: Hero input + Dnes + Threat feed -->
-        <div class="dg-input-card" style="grid-column:1/8">
+        <!-- Row 2: Hero input (1/10) + Setup sidebar (10/-1, row 2/5) -->
+        <div class="dg-input-card" style="grid-column:1/10">
           <div class="dg-input-heading">Začni novú analýzu</div>
           <div class="dg-input-sub">Vlož email, URL alebo text na okamžitú bezpečnostnú kontrolu</div>
           <div class="analysis-input-row">
@@ -848,8 +911,34 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <div style="grid-column:8/-1;display:flex;flex-direction:column;gap:12px">
-          <!-- Dnes karta -->
+        <!-- Setup card (spans rows 2–4) -->
+        <div style="grid-column:10/-1;grid-row:3/7">
+          <div class="setup-card">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <div style="position:relative;width:48px;height:48px;flex-shrink:0">
+                <svg width="48" height="48">
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="#4f8ef7" stroke-width="4"
+                    stroke-dasharray="125" stroke-dashoffset="100" transform="rotate(-90 24 24)"
+                    id="setupRing"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700" id="setupPct">20%</div>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:.9rem">Quick Setup</div>
+                <div style="font-size:.73rem;color:var(--muted)" id="setupCount">2 / 5 hotových</div>
+              </div>
+            </div>
+            <div class="setup-item done">✓ Prvá analýza</div>
+            <div class="setup-item done">✓ Web skener test</div>
+            <div class="setup-item" id="setupTeam">◯ Pozvať tím <span class="badge-paid">PRO</span></div>
+            <div class="setup-item">◯ Nastaviť API kľúče</div>
+            <div class="setup-item">◯ Exportovať report</div>
+          </div>
+        </div>
+
+        <!-- Row 3: Dnes + Live Feed (pod inputom) -->
+        <div style="grid-column:1/10;display:flex;gap:12px">
           <div class="dg-today-card" style="flex:1">
             <div>
               <div class="dg-today-label">Dnes</div>
@@ -866,8 +955,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
               </div>
             </div>
           </div>
-          <!-- Live Threat Feed -->
-          <div class="threat-feed">
+          <div class="threat-feed" style="flex:1.4">
             <div class="threat-feed-label">🔴 Live Activity</div>
             <div class="feed-item"><span class="feed-dot safe"></span><span>URL scan • Bezpečné • Teraz</span></div>
             <div class="feed-item"><span class="feed-dot warning"></span><span>Email check • 2 min</span></div>
@@ -875,65 +963,48 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <!-- Row 3: Chart + Quick actions + Threat map -->
-        <div class="chart-card dg-row3-chart" style="grid-column:1/6">
+        <!-- Row 4: Chart full-width (minus setup sidebar) -->
+        <div class="chart-card" style="grid-column:1/10">
           <div class="chart-card-label">📈 Aktivita (7 dní)</div>
-          <canvas id="activityChart" height="160"></canvas>
+          <canvas id="activityChart" height="140"></canvas>
         </div>
 
-        <div class="dg-row3-actions" style="grid-column:6/9">
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;height:100%">
-            <a class="quick-action" onclick="showSection('webskener')">
-              <span class="quick-action-icon">◬</span><span>Web skener</span>
-            </a>
-            <a class="quick-action" onclick="showSection('files')">
-              <span class="quick-action-icon">◫</span><span>Súbory</span>
-            </a>
-            <a class="quick-action" onclick="showSection('headers')">
-              <span class="quick-action-icon">◐</span><span>Headers</span>
-            </a>
-            <a class="quick-action" onclick="showSection('historia')">
-              <span class="quick-action-icon">▤</span><span>História</span>
-            </a>
-          </div>
+        <!-- Row 5: Quick actions + Threat map -->
+        <div style="grid-column:1/6;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <a class="quick-action" onclick="showSection('webskener')">
+            <span class="quick-action-icon">◬</span><span>Web skener</span>
+          </a>
+          <a class="quick-action" onclick="showSection('files')">
+            <span class="quick-action-icon">◫</span><span>Súbory</span>
+          </a>
+          <a class="quick-action" onclick="showSection('headers')">
+            <span class="quick-action-icon">◐</span><span>Headers</span>
+          </a>
+          <a class="quick-action" onclick="showSection('historia')">
+            <span class="quick-action-icon">▤</span><span>História</span>
+          </a>
         </div>
 
-        <div class="threat-map-card dg-row3-map" style="grid-column:9/-1">
+        <div class="threat-map-card" style="grid-column:6/10">
           <div class="threat-map-label">🌍 Threat Map</div>
-          <svg viewBox="0 0 200 110" style="width:100%;height:110px;border-radius:8px">
+          <svg viewBox="0 0 200 110" style="width:100%;height:100px;border-radius:8px">
             <rect width="200" height="110" rx="6" fill="rgba(13,13,20,.6)"/>
             <ellipse cx="55" cy="48" rx="28" ry="18" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
             <ellipse cx="115" cy="44" rx="38" ry="22" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
             <ellipse cx="162" cy="58" rx="22" ry="14" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
             <ellipse cx="78" cy="76" rx="16" ry="10" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
-            <!-- USA -->
-            <circle cx="50" cy="44" r="4" fill="#ff3b3b" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" repeatCount="indefinite"/>
-            </circle>
+            <circle cx="50" cy="44" r="4" fill="#ff3b3b" opacity=".9"><animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite"/></circle>
             <text x="50" y="37" font-size="7" fill="#ff3b3b" text-anchor="middle" font-family="system-ui">USA</text>
-            <!-- EU -->
-            <circle cx="118" cy="38" r="4" fill="#ff9500" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2s" begin=".5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" begin=".5s" repeatCount="indefinite"/>
-            </circle>
+            <circle cx="118" cy="38" r="4" fill="#ff9500" opacity=".9"><animate attributeName="r" values="4;7;4" dur="2s" begin=".5s" repeatCount="indefinite"/></circle>
             <text x="118" y="31" font-size="7" fill="#ff9500" text-anchor="middle" font-family="system-ui">EU</text>
-            <!-- Asia -->
-            <circle cx="162" cy="52" r="4" fill="#00ff88" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2s" begin="1s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" begin="1s" repeatCount="indefinite"/>
-            </circle>
+            <circle cx="162" cy="52" r="4" fill="#00ff88" opacity=".9"><animate attributeName="r" values="4;7;4" dur="2s" begin="1s" repeatCount="indefinite"/></circle>
             <text x="162" y="45" font-size="7" fill="#00ff88" text-anchor="middle" font-family="system-ui">Asia</text>
-            <!-- SA -->
-            <circle cx="78" cy="72" r="4" fill="#00fff2" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2s" begin="1.5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" begin="1.5s" repeatCount="indefinite"/>
-            </circle>
+            <circle cx="78" cy="72" r="4" fill="#00fff2" opacity=".9"><animate attributeName="r" values="4;7;4" dur="2s" begin="1.5s" repeatCount="indefinite"/></circle>
             <text x="78" y="65" font-size="7" fill="#00fff2" text-anchor="middle" font-family="system-ui">SA</text>
           </svg>
         </div>
 
-        <!-- Row 4: Tip dňa + Posledná aktivita -->
+        <!-- Row 6: Tip dňa + Posledná aktivita -->
         <div class="dg-tip-card" style="grid-column:1/7">
           <div class="dg-widget-label">💡 Tip dňa</div>
           <div style="border-left:3px solid var(--accent);padding-left:12px">
@@ -941,7 +1012,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           </div>
         </div>
 
-        <div class="dg-activity-card" id="novaLastActivity" style="grid-column:7/-1;display:none">
+        <div class="dg-activity-card" id="novaLastActivity" style="grid-column:7/10;display:none">
           <div class="dg-widget-label">🕐 Posledná aktivita</div>
           <div id="novaLastActivityContent" style="font-size:.83rem;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
         </div>
@@ -2649,8 +2720,9 @@ async function saveWebAnalysis(url, score){
 async function loadStats(){
   const{data,error}=await _sb
     .from('analyses')
-    .select('score,verdict')
-    .eq('user_id',_currentUser.id);
+    .select('score,verdict,created_at')
+    .eq('user_id',_currentUser.id)
+    .order('created_at',{ascending:false});
   if(error){
     document.getElementById('statTotal').textContent='—';
     return;
@@ -2658,9 +2730,68 @@ async function loadStats(){
   const total=data.length;
   const safe=data.filter(r=>r.verdict==='safe'||r.verdict==='low').length;
   const danger=data.filter(r=>r.verdict==='medium'||r.verdict==='high').length;
+  const critical=data.filter(r=>r.verdict==='high'&&(r.score||0)>=80).length;
+  const high=data.filter(r=>r.verdict==='high'&&(r.score||0)<80).length;
+  const med=data.filter(r=>r.verdict==='medium').length;
+  const low=data.filter(r=>r.verdict==='low').length;
+
   document.getElementById('statTotal').textContent=total;
   document.getElementById('statSafe').textContent=safe;
   document.getElementById('statDanger').textContent=danger;
+
+  // Bezpečnostné skóre (0–100, vyššie = bezpečnejšie)
+  const score=total>0?Math.round((safe/total)*100):100;
+  const scoreEl=document.getElementById('statScore');
+  if(scoreEl){
+    scoreEl.textContent=score;
+    scoreEl.style.color=score>=70?'#22c55e':score>=40?'#ff9500':'#ff3b3b';
+  }
+
+  // Threat breakdown badges
+  const breakdownEl=document.getElementById('statBreakdown');
+  if(breakdownEl){
+    breakdownEl.innerHTML='';
+    if(critical) breakdownEl.innerHTML+=`<span class="breakdown-badge bb-critical">Critical ${critical}</span>`;
+    if(high)     breakdownEl.innerHTML+=`<span class="breakdown-badge bb-high">High ${high}</span>`;
+    if(med)      breakdownEl.innerHTML+=`<span class="breakdown-badge bb-med">Med ${med}</span>`;
+    if(low)      breakdownEl.innerHTML+=`<span class="breakdown-badge bb-low">Low ${low}</span>`;
+  }
+
+  // Posledná aktivita dátum/čas
+  if(data.length>0){
+    const last=new Date(data[0].created_at);
+    const dateEl=document.getElementById('statLastDate');
+    const timeEl=document.getElementById('statLastTime');
+    if(dateEl) dateEl.textContent=last.toLocaleDateString('sk-SK',{day:'numeric',month:'short'});
+    if(timeEl) timeEl.textContent=last.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  // Alert banner — zobraz ak danger > 0
+  const banner=document.getElementById('threatAlertBanner');
+  const bannerSub=document.getElementById('threatAlertSub');
+  if(banner){
+    if(danger>0){
+      banner.style.display='flex';
+      if(bannerSub) bannerSub.textContent=`Nájdených ${danger} ${danger===1?'hrozba':'hrozieb'} celkovo. Skontroluj detaily v histórii.`;
+    } else {
+      banner.style.display='none';
+    }
+  }
+
+  // Setup ring — vypočítaj dokončenie (2 fixed + ďalšie podľa aktivity)
+  let done=0;
+  if(total>0) done++;           // prvá analýza
+  if(data.some(r=>r.type==='web')) done++; // web skener
+  const setupSteps=5;
+  const setupPct=Math.round((done/setupSteps)*100);
+  const circumference=2*Math.PI*20;
+  const offset=circumference-(setupPct/100)*circumference;
+  const ring=document.getElementById('setupRing');
+  const pctEl=document.getElementById('setupPct');
+  const cntEl=document.getElementById('setupCount');
+  if(ring) ring.setAttribute('stroke-dashoffset',offset.toFixed(1));
+  if(pctEl) pctEl.textContent=setupPct+'%';
+  if(cntEl) cntEl.textContent=`${done} / ${setupSteps} hotových`;
 }
 
 /* ── HISTORY ── */
