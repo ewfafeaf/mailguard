@@ -284,40 +284,40 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .ticket-empty{text-align:center;color:var(--muted);font-size:.86rem;padding:24px 0}
 
 /* ── MAIN ── */
-.main{margin-left:var(--sidebar-w);flex:1;padding:32px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden;
+.main{margin-left:var(--sidebar-w);flex:1;padding:24px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden;
   background:radial-gradient(ellipse 70% 50% at 30% 0%,rgba(79,142,247,.06) 0%,transparent 60%)}
 
 /* ── WELCOME ── */
 .welcome-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
-.welcome-title{font-size:1.6rem;font-weight:800;letter-spacing:-.5px}
+.welcome-title{font-size:1.4rem;font-weight:800;letter-spacing:-.5px}
 .welcome-title span{background:linear-gradient(90deg,var(--accent),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.welcome-sub{font-size:.88rem;color:var(--muted);margin-top:4px}
+.welcome-sub{font-size:.8rem;color:var(--muted);margin-top:4px}
 
 /* ── STAT CARDS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.stats-row{display:flex;gap:12px;margin-bottom:20px}
 .stat-card{background:var(--surface);border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);
-  padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;
+  flex:1;min-width:0;padding:16px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;
   box-shadow:0 0 30px rgba(79,142,247,.05)}
 .stat-card:hover{border-color:rgba(79,142,247,.3);box-shadow:0 0 40px rgba(79,142,247,.1)}
 .stat-card::before{content:'';position:absolute;inset:0;border-radius:var(--radius);
   background:linear-gradient(135deg,rgba(79,142,247,.04),transparent);pointer-events:none}
-.stat-label{font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.03em;text-transform:uppercase;margin-bottom:10px}
-.stat-value{font-size:2.6rem;font-weight:900;letter-spacing:-1px;line-height:1;font-family:'Courier New',Courier,monospace}
+.stat-label{font-size:.7rem;color:var(--muted);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.stat-value{font-size:2rem;font-weight:900;letter-spacing:-1px;line-height:1;font-family:'Courier New',Courier,monospace}
 .stat-value.green{color:var(--green)}
 .stat-value.red{color:var(--red)}
 .stat-value.blue{color:var(--accent)}
-.stat-icon{position:absolute;right:18px;top:18px;font-size:1.6rem;opacity:.25}
+.stat-icon{position:absolute;right:12px;top:12px;font-size:2.2rem;opacity:.15}
 
 /* ── SECTION ── */
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.dash-section{margin-bottom:32px;animation:fadeIn .5s ease-out}
+.dash-section{margin-bottom:20px;animation:fadeIn .5s ease-out}
 .dash-section-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;
   display:flex;align-items:center;gap:8px}
 .dash-section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 
 /* ── NEW ANALYSIS CARD ── */
 .analysis-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
-  border-radius:var(--radius);padding:24px;
+  border-radius:var(--radius);padding:20px;
   box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
   transition:all .3s ease}
 .analysis-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
@@ -332,11 +332,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   border:1px solid var(--border);border-radius:10px;font-family:'Courier New',Courier,monospace;font-size:.78rem;
   color:var(--text);line-height:1.6;resize:vertical;outline:none;transition:border-color .2s;box-sizing:border-box}
 .hdr-textarea:focus{border-color:var(--accent)}
-.analysis-input{flex:1;height:50px;padding:12px 16px;background:#0d0d14;border:1px solid #2a2a45;border-radius:10px;
-  font-size:.95rem;color:#e8eaf0;font-family:inherit;outline:none;caret-color:#4f8ef7;transition:border-color .2s,box-shadow .2s}
+.analysis-input{flex:1;height:44px;padding:12px 16px;background:#0d0d14;border:1px solid #2a2a45;border-radius:10px;
+  font-size:.88rem;color:#e8eaf0;font-family:inherit;outline:none;caret-color:#4f8ef7;transition:border-color .2s,box-shadow .2s}
 .analysis-input::placeholder{color:rgba(232,234,240,.3)}
 .analysis-input:focus{border-color:#4f8ef7;box-shadow:0 0 0 3px rgba(79,142,247,.1)}
-.analysis-btn{height:50px;padding:0 24px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);
+.analysis-btn{height:44px;padding:0 24px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);
   color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;
   font-family:inherit;white-space:nowrap;transition:opacity .3s,transform .3s,box-shadow .3s;flex-shrink:0;
   box-shadow:0 4px 20px rgba(79,142,247,.3)}
@@ -507,7 +507,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
-  .stats-grid{grid-template-columns:1fr 1fr}
+  .stats-row{flex-wrap:wrap}
   .main{padding:24px 20px}
 }
 @media(max-width:680px){
@@ -516,16 +516,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   .sidebar-label{display:none}
   .sidebar-divider{margin:8px 4px}
   .main{margin-left:60px;padding:20px 16px}
-  .stats-grid{grid-template-columns:1fr}
+  .stats-row{flex-direction:column}
   .nav-user-email{display:none}
   .analysis-input-row{flex-direction:column}
   .analysis-btn{width:100%}
-  .nova-feature-card{padding:16px}
+  .nova-feature-card{padding:14px}
 }
 
 /* ── NOVA FEATURE CARDS ── */
 .nova-feature-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
-  border-radius:14px;padding:22px;
+  border-radius:14px;padding:18px;
   box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
   transition:all .3s ease;cursor:default}
 .nova-feature-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-3px);box-shadow:0 8px 32px rgba(79,142,247,.15)}
@@ -647,7 +647,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     </div>
 
     <!-- Stats -->
-    <div class="stats-grid">
+    <div class="stats-row">
       <div class="stat-card">
         <div class="stat-label">Celkový počet analýz</div>
         <div class="stat-value blue" id="statTotal">—</div>
@@ -683,29 +683,29 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       </div>
 
       <!-- Feature karty -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:20px">
         <div class="nova-feature-card stagger-1">
-          <div style="font-size:1.8rem;margin-bottom:12px">🔗</div>
-          <div style="font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:8px">Email & URL analýza</div>
-          <div style="font-size:.82rem;color:var(--muted);line-height:1.6">Automatická detekcia phishingu, malvéru a podozrivých odkazov v reálnom čase.</div>
+          <div style="font-size:1.4rem;margin-bottom:10px">🔗</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:6px">Email & URL analýza</div>
+          <div style="font-size:.77rem;color:var(--muted);line-height:1.6">Automatická detekcia phishingu, malvéru a podozrivých odkazov v reálnom čase.</div>
         </div>
         <div class="nova-feature-card stagger-2">
-          <div style="font-size:1.8rem;margin-bottom:12px">🌐</div>
-          <div style="font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:8px">Web skener</div>
-          <div style="font-size:.82rem;color:var(--muted);line-height:1.6">Kontrola SSL, WHOIS, VirusTotal, Shodan a bezpečnostných hlavičiek webstránok.</div>
+          <div style="font-size:1.4rem;margin-bottom:10px">🌐</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:6px">Web skener</div>
+          <div style="font-size:.77rem;color:var(--muted);line-height:1.6">Kontrola SSL, WHOIS, VirusTotal, Shodan a bezpečnostných hlavičiek webstránok.</div>
         </div>
         <div class="nova-feature-card stagger-3">
-          <div style="font-size:1.8rem;margin-bottom:12px">📄</div>
-          <div style="font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:8px">Analýza súborov</div>
-          <div style="font-size:.82rem;color:var(--muted);line-height:1.6">Skenovanie PDF, DOCX a XLS súborov na škodlivé URL, JavaScript a vložené objekty.</div>
+          <div style="font-size:1.4rem;margin-bottom:10px">📄</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:6px">Analýza súborov</div>
+          <div style="font-size:.77rem;color:var(--muted);line-height:1.6">Skenovanie PDF, DOCX a XLS súborov na škodlivé URL, JavaScript a vložené objekty.</div>
         </div>
       </div>
 
       <!-- Tip dňa -->
-      <div style="margin-top:24px">
-        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">💡 Tip dňa</div>
-        <div style="border-left:3px solid var(--accent);padding-left:14px">
-          <div id="novaTip" style="font-size:.88rem;color:var(--text);line-height:1.65"></div>
+      <div style="margin-top:16px;padding:12px;background:rgba(79,142,247,.04);border-radius:var(--radius)">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px">💡 Tip dňa</div>
+        <div style="border-left:3px solid var(--accent);padding-left:12px">
+          <div id="novaTip" style="font-size:.82rem;color:var(--text);line-height:1.65"></div>
         </div>
       </div>
 
@@ -1216,7 +1216,7 @@ function showSection(s){
   const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
   const hideStats=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
-  document.querySelector('.stats-grid').style.display=hideStats?'none':'grid';
+  document.querySelector('.stats-row').style.display=hideStats?'none':'flex';
   document.querySelector('.welcome-row').style.display=hideStats?'none':'flex';
   if(s==='nova')    loadNovaExtras();
   if(s==='historia') loadHistory();
