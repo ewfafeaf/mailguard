@@ -606,10 +606,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .feed-item{display:flex;align-items:center;gap:8px;padding:6px 0;
   font-size:.77rem;color:rgba(255,255,255,.65);border-bottom:1px solid rgba(255,255,255,.04)}
 .feed-item:last-child{border-bottom:none}
-.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.feed-dot.green{background:#22c55e;box-shadow:0 0 6px #22c55e}
-.feed-dot.yellow{background:#f59e0b;box-shadow:0 0 6px #f59e0b}
-.feed-dot.red{background:#ef4444;box-shadow:0 0 6px #ef4444;animation:pulse 2s infinite}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;flex-shrink:0}
+.feed-dot.green,.feed-dot.safe{background:#00ff88;box-shadow:0 0 8px #00ff88}
+.feed-dot.yellow,.feed-dot.warning{background:#ff9500;box-shadow:0 0 8px #ff9500}
+.feed-dot.red,.feed-dot.danger{background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:pulse 2s infinite}
 
 /* ── THREAT MAP ── */
 .threat-map-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
@@ -869,9 +869,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
           <!-- Live Threat Feed -->
           <div class="threat-feed">
             <div class="threat-feed-label">🔴 Live Activity</div>
-            <div class="feed-item"><span class="feed-dot green"></span><span>URL scan • Bezpečné • Teraz</span></div>
-            <div class="feed-item"><span class="feed-dot yellow"></span><span>Email check • 2 min</span></div>
-            <div class="feed-item"><span class="feed-dot red"></span><span>Phishing blocked • 5 min</span></div>
+            <div class="feed-item"><span class="feed-dot safe"></span><span>URL scan • Bezpečné • Teraz</span></div>
+            <div class="feed-item"><span class="feed-dot warning"></span><span>Email check • 2 min</span></div>
+            <div class="feed-item"><span class="feed-dot danger"></span><span>Phishing blocked • 5 min</span></div>
           </div>
         </div>
 
@@ -884,49 +884,52 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         <div class="dg-row3-actions" style="grid-column:6/9">
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;height:100%">
             <a class="quick-action" onclick="showSection('webskener')">
-              <span class="quick-action-icon">🌐</span><span>Web skener</span>
+              <span class="quick-action-icon">◬</span><span>Web skener</span>
             </a>
             <a class="quick-action" onclick="showSection('files')">
-              <span class="quick-action-icon">📄</span><span>Súbory</span>
+              <span class="quick-action-icon">◫</span><span>Súbory</span>
             </a>
             <a class="quick-action" onclick="showSection('headers')">
-              <span class="quick-action-icon">📧</span><span>Headers</span>
+              <span class="quick-action-icon">◐</span><span>Headers</span>
             </a>
             <a class="quick-action" onclick="showSection('historia')">
-              <span class="quick-action-icon">📊</span><span>História</span>
+              <span class="quick-action-icon">▤</span><span>História</span>
             </a>
           </div>
         </div>
 
         <div class="threat-map-card dg-row3-map" style="grid-column:9/-1">
           <div class="threat-map-label">🌍 Threat Map</div>
-          <svg viewBox="0 0 200 110" style="width:100%;height:110px;border-radius:8px;overflow:visible">
+          <svg viewBox="0 0 200 110" style="width:100%;height:110px;border-radius:8px">
             <rect width="200" height="110" rx="6" fill="rgba(13,13,20,.6)"/>
-            <!-- continents simplified -->
-            <ellipse cx="55" cy="40" rx="28" ry="18" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
-            <ellipse cx="115" cy="38" rx="38" ry="22" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
-            <ellipse cx="155" cy="55" rx="22" ry="16" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
-            <ellipse cx="80" cy="72" rx="18" ry="12" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
-            <!-- pulzujúce hrozby -->
-            <circle cx="52" cy="36" r="3" fill="#ef4444" opacity=".85">
-              <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" repeatCount="indefinite"/>
+            <ellipse cx="55" cy="48" rx="28" ry="18" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <ellipse cx="115" cy="44" rx="38" ry="22" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <ellipse cx="162" cy="58" rx="22" ry="14" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <ellipse cx="78" cy="76" rx="16" ry="10" fill="rgba(79,142,247,.07)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
+            <!-- USA -->
+            <circle cx="50" cy="44" r="4" fill="#ff3b3b" opacity=".9">
+              <animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="118" cy="33" r="3" fill="#f97316" opacity=".85">
-              <animate attributeName="r" values="3;5;3" dur="2s" begin=".5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" begin=".5s" repeatCount="indefinite"/>
+            <text x="50" y="37" font-size="7" fill="#ff3b3b" text-anchor="middle" font-family="system-ui">USA</text>
+            <!-- EU -->
+            <circle cx="118" cy="38" r="4" fill="#ff9500" opacity=".9">
+              <animate attributeName="r" values="4;7;4" dur="2s" begin=".5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" begin=".5s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="82" cy="68" r="3" fill="#22c55e" opacity=".85">
-              <animate attributeName="r" values="3;5;3" dur="2s" begin="1s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" begin="1s" repeatCount="indefinite"/>
+            <text x="118" y="31" font-size="7" fill="#ff9500" text-anchor="middle" font-family="system-ui">EU</text>
+            <!-- Asia -->
+            <circle cx="162" cy="52" r="4" fill="#00ff88" opacity=".9">
+              <animate attributeName="r" values="4;7;4" dur="2s" begin="1s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" begin="1s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="155" cy="52" r="3" fill="#f59e0b" opacity=".85">
-              <animate attributeName="r" values="3;5;3" dur="2s" begin="1.5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".85;.4;.85" dur="2s" begin="1.5s" repeatCount="indefinite"/>
+            <text x="162" y="45" font-size="7" fill="#00ff88" text-anchor="middle" font-family="system-ui">Asia</text>
+            <!-- SA -->
+            <circle cx="78" cy="72" r="4" fill="#00fff2" opacity=".9">
+              <animate attributeName="r" values="4;7;4" dur="2s" begin="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values=".9;.5;.9" dur="2s" begin="1.5s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="98" cy="45" r="2" fill="#a78bfa" opacity=".7">
-              <animate attributeName="r" values="2;4;2" dur="3s" begin=".8s" repeatCount="indefinite"/>
-            </circle>
+            <text x="78" y="65" font-size="7" fill="#00fff2" text-anchor="middle" font-family="system-ui">SA</text>
           </svg>
         </div>
 
@@ -3125,7 +3128,8 @@ async function loadNovaExtras(){
       type:'line',
       data:{labels,datasets:[{data:chartData,fill:true,backgroundColor:grad,
         borderColor:'#4f8ef7',borderWidth:2,tension:.4,
-        pointBackgroundColor:'#4f8ef7',pointRadius:3,pointHoverRadius:5}]},
+        pointBackgroundColor:'#4f8ef7',pointBorderColor:'#fff',pointBorderWidth:2,
+        pointRadius:4,pointHoverRadius:6}]},
       options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} analýz`}}},
         scales:{y:{display:false,min:0},x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}}},
         animation:{duration:800}}
@@ -4460,6 +4464,29 @@ function showToast(msg,type=''){
   t.textContent=msg;t.className='toast show '+(type||'');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+// ── Live Threat Feed simulation ──
+const _feedActivities=[
+  {type:'safe',    text:'URL scan • Bezpečné'},
+  {type:'warning', text:'Email check • Podozrivý link'},
+  {type:'danger',  text:'Phishing blocked'},
+  {type:'safe',    text:'Header analysis • Clean'},
+  {type:'warning', text:'File scan • Low risk'},
+  {type:'danger',  text:'Malware URL detected'},
+  {type:'safe',    text:'Web scan • OK'},
+];
+let _feedIdx=0;
+setInterval(()=>{
+  const feed=document.querySelector('.threat-feed');
+  if(!feed) return;
+  const items=feed.querySelectorAll('.feed-item');
+  items.forEach((item,i)=>{
+    const act=_feedActivities[(_feedIdx+i)%_feedActivities.length];
+    const time=i===0?'Teraz':`${i*2} min`;
+    item.innerHTML=`<span class="feed-dot ${act.type}"></span><span>${act.text} • ${time}</span>`;
+  });
+  _feedIdx=(_feedIdx+1)%_feedActivities.length;
+},3000);
 </script>
 </body>
 </html>
