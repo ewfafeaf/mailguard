@@ -285,27 +285,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar-w);flex:1;padding:24px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden;
   position:relative;overflow:hidden}
-.main::before{content:'';position:fixed;inset:-50%;width:200%;height:200%;
+.main::before{content:'';position:fixed;top:-80%;left:-80%;width:260%;height:260%;
   background:
-    radial-gradient(circle 900px at 10% 20%,rgba(79,142,247,.6) 0%,rgba(79,142,247,.3) 25%,transparent 50%),
-    radial-gradient(circle 800px at 90% 80%,rgba(124,95,247,.55) 0%,rgba(124,95,247,.25) 25%,transparent 50%),
-    radial-gradient(circle 700px at 50% 50%,rgba(0,212,255,.4) 0%,rgba(0,212,255,.2) 25%,transparent 50%);
-  filter:blur(100px);animation:strongMove 20s ease-in-out infinite;pointer-events:none;z-index:0}
-.main::after{content:'';position:fixed;inset:-30%;width:160%;height:160%;
+    radial-gradient(circle 1200px at 15% 25%,rgba(79,142,247,.85) 0%,rgba(79,142,247,.5) 20%,rgba(79,142,247,.2) 40%,transparent 60%),
+    radial-gradient(circle 1100px at 85% 75%,rgba(124,95,247,.75) 0%,rgba(124,95,247,.45) 20%,rgba(124,95,247,.18) 40%,transparent 60%),
+    radial-gradient(circle 1000px at 50% 50%,rgba(0,212,255,.6) 0%,rgba(0,212,255,.3) 20%,transparent 50%);
+  filter:blur(140px);animation:ultraMove 18s ease-in-out infinite;pointer-events:none;z-index:0}
+.main::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%;
   background:
-    radial-gradient(ellipse 600px 800px at 80% 30%,rgba(255,107,53,.35) 0%,transparent 50%),
-    radial-gradient(ellipse 700px 600px at 20% 70%,rgba(34,197,94,.25) 0%,transparent 50%);
-  filter:blur(120px);animation:strongMove2 25s ease-in-out infinite reverse;pointer-events:none;z-index:0}
-@keyframes strongMove{
-  0%,100%{transform:translate(0,0) scale(1)}
-  25%    {transform:translate(-25%,20%) scale(1.15)}
-  50%    {transform:translate(15%,-25%) scale(.9)}
-  75%    {transform:translate(30%,15%) scale(1.2)}
+    radial-gradient(ellipse 900px 1200px at 75% 25%,rgba(255,107,53,.6) 0%,rgba(255,107,53,.3) 25%,transparent 55%),
+    radial-gradient(ellipse 1000px 900px at 25% 75%,rgba(34,197,94,.5) 0%,rgba(34,197,94,.25) 25%,transparent 55%),
+    radial-gradient(circle 800px at 60% 40%,rgba(255,59,59,.4) 0%,transparent 50%);
+  filter:blur(150px);animation:ultraMove2 22s ease-in-out infinite reverse;pointer-events:none;z-index:0}
+@keyframes ultraMove{
+  0%,100%{transform:translate(0,0) scale(1) rotate(0deg)}
+  33%    {transform:translate(-30%,25%) scale(1.2) rotate(15deg)}
+  66%    {transform:translate(25%,-30%) scale(.85) rotate(-18deg)}
 }
-@keyframes strongMove2{
-  0%,100%{transform:translate(0,0) rotate(0deg)}
-  33%    {transform:translate(20%,-20%) rotate(15deg)}
-  66%    {transform:translate(-20%,25%) rotate(-12deg)}
+@keyframes ultraMove2{
+  0%,100%{transform:translate(0,0) rotate(0deg) scale(1)}
+  50%    {transform:translate(-25%,30%) rotate(-20deg) scale(1.25)}
 }
 .dashboard-grid,.welcome-row,.stats-row,.dash-section{position:relative;z-index:1}
 
@@ -757,11 +756,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .sidebar-item:hover{transform:translateX(4px)}
 .sidebar-item.active{transform:none}
 
-/* ── BODY EXTRA PULSE LAYER ── */
+/* ── BODY MEGA PULSE LAYER ── */
 body::before{content:'';position:fixed;inset:0;
-  background:radial-gradient(circle 500px at 40% 60%,rgba(79,142,247,.2) 0%,transparent 60%);
-  filter:blur(80px);animation:bodyPulse 8s ease-in-out infinite;pointer-events:none;z-index:0}
-@keyframes bodyPulse{0%,100%{opacity:.3}50%{opacity:.7}}
+  background:radial-gradient(circle 700px at 50% 50%,rgba(124,95,247,.4) 0%,transparent 70%);
+  filter:blur(100px);animation:megaPulse 6s ease-in-out infinite;pointer-events:none;z-index:0}
+@keyframes megaPulse{
+  0%,100%{opacity:.5;transform:scale(1)}
+  50%    {opacity:1;transform:scale(1.15)}
+}
 </style>
 </head>
 <body>
