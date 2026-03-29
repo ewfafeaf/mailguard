@@ -2973,54 +2973,112 @@ async function analyzeEmailHeaders(){
 
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="display:inline-block;width:15px;height:15px;border-width:2px;vertical-align:middle;margin-right:6px"></div>Analyzujem…';
-  wrap.style.display='block';
+  wrap.style.display='none';
   saveInd.style.display='none';
-  resultEl.innerHTML=`<div class="hres" style="padding:24px;text-align:center;color:var(--muted)">
-    <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 12px"></div>
-    <div>Parsovanie email hlavičiek…</div>
-  </div>`;
+
+  // ── Terminálový overlay ──
+  showTerminalOverlay('mailguard-analyze-headers.sh');
+  termLine('[*]','MailGuard Header Analyzer v2.1','info','muted',150);
+  termLine('[*]','Parsing email headers...','info','muted',280);
+
+  // Async pipeline — termLine volania sa pridávajú keď sa výsledky vrátia
+  const pipeline=fetch('/api/analyze-headers',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({headers:raw}),
+  }).then(async resp=>{
+    const data=await resp.json();
+    if(!data.ok){
+      termLine('[-]',`Error: ${data.error||'Unknown error'}`,'err','err',200);
+      return null;
+    }
+
+    // SPF
+    termLine('[*]','Checking SPF record...','info','muted',300);
+    const spfPass=data.spf==='pass';
+    termLine(
+      data.spf?(spfPass?'[+]':'[-]'):'[*]',
+      `SPF: ${data.spf?data.spf.toUpperCase():'N/A'}`,
+      data.spf?(spfPass?'ok':'err'):'info',
+      data.spf?(spfPass?'ok':'err'):'info',
+      220
+    );
+
+    // DKIM
+    termLine('[*]','Checking DKIM signature...','info','muted',280);
+    const dkimPass=data.dkim==='pass'||data.dkim==='present';
+    termLine(
+      data.dkim?(dkimPass?'[+]':'[-]'):'[*]',
+      `DKIM: ${data.dkim?data.dkim.toUpperCase():'N/A'}`,
+      data.dkim?(dkimPass?'ok':'err'):'info',
+      data.dkim?(dkimPass?'ok':'err'):'info',
+      220
+    );
+
+    // DMARC
+    termLine('[*]','Checking DMARC policy...','info','muted',280);
+    const dmarcPass=data.dmarc==='pass';
+    termLine(
+      data.dmarc?(dmarcPass?'[+]':'[-]'):'[*]',
+      `DMARC: ${data.dmarc?data.dmarc.toUpperCase():'N/A'}`,
+      data.dmarc?(dmarcPass?'ok':'err'):'info',
+      data.dmarc?(dmarcPass?'ok':'err'):'info',
+      220
+    );
+
+    // Spoofing
+    termLine('[*]','Detecting spoofing...','info','muted',300);
+    termLine(
+      data.spoofingDetected?'[-]':'[+]',
+      data.spoofingDetected?'Spoofing: DETECTED':'Spoofing: not detected',
+      data.spoofingDetected?'err':'ok',
+      data.spoofingDetected?'err':'ok',
+      220
+    );
+
+    // Score
+    termLine('[*]','Calculating risk score...','info','info',320);
+    const sIcon=data.score>=70?'[+]':data.score>=40?'[*]':'[-]';
+    const sCls =data.score>=70?'ok' :data.score>=40?'info':'err';
+    termLine(sIcon,`Score: ${data.score}/100`,sCls,sCls,350);
+    termLine('[✓]','Analysis complete!','done','ok',300);
+
+    return data;
+  }).catch(e=>{
+    termLine('[-]',`Error: ${e.message}`,'err','err',150);
+    return null;
+  });
+
+  const data=await pipeline;
+
+  // Čakaj na koniec animácie + fade overlaya
+  await closeTerminalOverlay();
+
+  btn.disabled=false;
+  btn.textContent='🔍 Analyzovať hlavičky';
+
+  if(!data) return;
+
+  // Zobraz štandardný výsledok
+  resultEl.innerHTML=renderHeadersResult(data);
+  if(_lastHeaderResult) _lastHeaderResult._rawHeaders=raw;
+  wrap.style.display='block';
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 
-  try{
-    const resp=await fetch('/api/analyze-headers',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({headers:raw}),
+  const {data:{user}}=await _sb.auth.getUser();
+  if(user){
+    const hdrVerdict=data.score>=70?'safe':data.score>=40?'low':data.score>=20?'medium':'high';
+    await _sb.from('analyses').insert({
+      user_id: user.id,
+      input:   data.from||'email headers',
+      type:    'headers',
+      score:   data.score,
+      verdict: hdrVerdict,
+      result:  JSON.stringify({spf:data.spf,dkim:data.dkim,dmarc:data.dmarc,spoofing:data.spoofingDetected}),
     });
-    const data=await resp.json();
-
-    if(!data.ok){
-      resultEl.innerHTML=`<div class="hres" style="padding:24px">
-        <div style="font-size:1.4rem;margin-bottom:8px">⚠️</div>
-        <div style="font-weight:700;margin-bottom:6px">Chyba analýzy</div>
-        <div style="font-size:.85rem;color:var(--muted)">${escHtml(data.error||'Neznáma chyba')}</div>
-      </div>`;
-      return;
-    }
-
-    resultEl.innerHTML=renderHeadersResult(data);
-    if(_lastHeaderResult) _lastHeaderResult._rawHeaders=raw;
-    wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
-    const {data:{user}}=await _sb.auth.getUser();
-    if(user){
-      const hdrVerdict=data.score>=70?'safe':data.score>=40?'low':data.score>=20?'medium':'high';
-      await _sb.from('analyses').insert({
-        user_id: user.id,
-        input:   data.from||'email headers',
-        type:    'headers',
-        score:   data.score,
-        verdict: hdrVerdict,
-        result:  JSON.stringify({spf:data.spf,dkim:data.dkim,dmarc:data.dmarc,spoofing:data.spoofingDetected}),
-      });
-      saveInd.style.display='block';
-      loadStats();
-      loadHistory();
-    }
-  }catch(e){
-    resultEl.innerHTML=`<div class="hres" style="padding:24px;color:var(--muted)">Chyba: ${escHtml(e.message)}</div>`;
-  }finally{
-    btn.disabled=false;
-    btn.textContent='🔍 Analyzovať hlavičky';
+    saveInd.style.display='block';
+    loadStats();
+    loadHistory();
   }
 }
 
