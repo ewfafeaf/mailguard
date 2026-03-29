@@ -155,9 +155,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   background:linear-gradient(135deg,var(--accent),var(--accent2))}
 .sidebar-user-email{font-size:.75rem;color:var(--muted);flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}
-.sidebar-plan-badge{background:rgba(79,142,247,.15);color:#4f8ef7;font-size:.6rem;
-  padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0;
+.sidebar-plan-badge{background:rgba(79,142,247,.15);color:#4f8ef7;font-size:.75rem;
+  padding:4px 10px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0;
   align-self:flex-start;margin-left:40px}
+.sidebar-user-plans{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;
+  border-radius:8px;background:rgba(255,255,255,.03);cursor:pointer;
+  font-size:.82rem;font-weight:500;color:rgba(255,255,255,.55);
+  text-decoration:none;transition:background .18s,color .18s;border:none;font-family:inherit}
+.sidebar-user-plans:hover{background:rgba(255,255,255,.07);color:var(--text)}
 
 /* ── SIDEBAR USAGE BAR ── */
 .sidebar-usage{padding:6px 10px 14px;display:flex;flex-direction:column;gap:6px}
@@ -587,6 +592,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
         <span class="sidebar-user-email" id="sidebarName">—</span>
       </div>
       <span class="sidebar-plan-badge" id="sidebarPlan">Free</span>
+      <a class="sidebar-user-plans" onclick="showSection('plans')" style="margin-top:8px">
+        <span style="font-size:.9rem;width:16px;text-align:center;flex-shrink:0">◆</span>
+        <span>Plány</span>
+        <span style="margin-left:auto;background:rgba(0,212,255,.2);color:#00d4ff;font-size:.6rem;padding:2px 6px;border-radius:4px;font-weight:700">PRO</span>
+      </a>
     </div>
     <!-- Usage / upgrade -->
     <div class="sidebar-usage">
@@ -618,10 +628,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
       </a>
       <a class="sidebar-item" id="navTeam" onclick="showSection('team')" style="display:none">
         <span class="icon">▣</span><span>Správa tímu</span>
-      </a>
-      <div class="sidebar-divider"></div>
-      <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
-        <span class="icon">◆</span><span>Plány</span><span style="margin-left:auto"><span style="background:rgba(0,212,255,.15);color:#00d4ff;font-size:.55rem;padding:2px 5px;border-radius:3px;font-weight:700">PRO</span></span>
       </a>
       <div class="sidebar-divider"></div>
       <a class="sidebar-item" id="navNastavenia" onclick="showSection('nastavenia')">
