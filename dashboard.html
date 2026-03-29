@@ -329,9 +329,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .analysis-input:focus{border-color:#4f8ef7;box-shadow:0 0 0 3px rgba(79,142,247,.1)}
 .analysis-btn{height:50px;padding:0 24px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);
   color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;
-  font-family:inherit;white-space:nowrap;transition:opacity .2s,transform .2s,box-shadow .2s;flex-shrink:0;
+  font-family:inherit;white-space:nowrap;transition:opacity .3s,transform .3s,box-shadow .3s;flex-shrink:0;
   box-shadow:0 4px 20px rgba(79,142,247,.3)}
-.analysis-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 28px rgba(79,142,247,.4)}
+.analysis-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 0 20px rgba(79,142,247,.4)}
 .analysis-btn:active{transform:scale(.97) translateY(0)}
 .analysis-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 
@@ -501,6 +501,22 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   .analysis-input-row{flex-direction:column}
   .analysis-btn{width:100%}
 }
+
+/* ── SECTION TRANSITIONS ── */
+@keyframes fadeSlideIn{
+  from{opacity:0;transform:translateY(18px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+.animate-in{animation:fadeSlideIn .4s ease-out both}
+.stagger-1{animation-delay:0ms}
+.stagger-2{animation-delay:80ms}
+.stagger-3{animation-delay:160ms}
+.stagger-4{animation-delay:240ms}
+
+/* ── SIDEBAR HOVER SLIDE ── */
+.sidebar-item{transition:background .2s,color .2s,border-color .2s,transform .2s !important}
+.sidebar-item:hover{transform:translateX(4px)}
+.sidebar-item.active{transform:none}
 </style>
 </head>
 <body>
@@ -1108,7 +1124,28 @@ async function signOut(){
 function showSection(s){
   ['nova','historia','nastavenia','podpora','webskener','files','headers','team','plans'].forEach(id=>{
     const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
-    if(el) el.style.display=id===s?'block':'none';
+    if(!el) return;
+    if(id===s){
+      el.style.display='block';
+      // Spusti fadeSlideIn na sekcii
+      el.classList.remove('animate-in');
+      void el.offsetWidth; // force reflow aby sa animácia reštartovala
+      el.classList.add('animate-in');
+      // Stagger na priamych deťoch (karty, panely, gridy)
+      const cards=[...el.children].filter(c=>
+        c.className&&(
+          /card|panel|stat|hres|settings|drop-zone|ws-input|hdr-/.test(c.className)||
+          (c.style&&c.style.borderRadius)
+        )
+      );
+      cards.slice(0,4).forEach((c,i)=>{
+        c.classList.remove('animate-in','stagger-1','stagger-2','stagger-3','stagger-4');
+        void c.offsetWidth;
+        c.classList.add('animate-in',`stagger-${i+1}`);
+      });
+    } else {
+      el.style.display='none';
+    }
   });
   ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
