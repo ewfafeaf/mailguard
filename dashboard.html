@@ -2970,13 +2970,19 @@ async function exportPDF(){
   const typeMap={email:'Email',url:'URL',web:'Web'};
 
   const tableRows=data.map(r=>{
-    const d=new Date(r.created_at);
+    let dateStr='—';
+    if(r.created_at){
+      const d=new Date(r.created_at);
+      if(!isNaN(d)){
+        dateStr=d.toLocaleDateString('sk-SK')+'\n'+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+      }
+    }
     return[
-      d.toLocaleDateString('sk-SK')+'\n'+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'}),
-      typeMap[r.type]||r.type,
-      (r.input||'').slice(0,55)+(r.input&&r.input.length>55?'…':''),
+      dateStr,
+      String(typeMap[r.type]||r.type||'—'),
+      String((r.input||'').slice(0,55)+(r.input&&r.input.length>55?'…':'')||'—'),
       String(r.score??'?'),
-      verdictMap[r.verdict]||r.verdict||'—',
+      String(verdictMap[r.verdict]||r.verdict||'—'),
     ];
   });
 
@@ -3004,12 +3010,9 @@ async function exportPDF(){
     alternateRowStyles:{fillColor:[245,246,252]},
     didDrawCell(data){
       if(data.section==='body'&&data.column.index===4){
-        const verdict=tableRows[data.row.index]?.[4];
+        const verdict=String(tableRows[data.row.index]?.[4]||'—');
         const col=verdictColors[verdict]||[120,120,140];
         const {x,y:cy,width,height}=data.cell;
-        const pad=2;
-        doc.setFillColor(col[0],col[1],col[2],0.15);
-        // tint background of verdict cell
         doc.setFillColor(Math.round(col[0]*0.15+218),Math.round(col[1]*0.15+218),Math.round(col[2]*0.15+218));
         doc.rect(x+0.5,cy+0.5,width-1,height-1,'F');
         doc.setFont('helvetica','bold');
