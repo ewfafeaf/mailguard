@@ -2850,32 +2850,6 @@ async function exportPDF(){
 
   try {
 
-  // ── Safe text helper: strips chars outside cp1252 (jsPDF helvetica limitation)
-  // Replaces Slovak ľ→l, ť→t, ď→d, ň→n, ŕ→r, ĺ→l, emoji stripped
-  const _st=v=>{
-    if(v==null) return '—';
-    return String(v)
-      .replace(/[^\x00-\xFF]/g,'?')  // strip all non-Latin1 (emoji, etc.)
-      .replace(/ľ/g,'l').replace(/Ľ/g,'L')
-      .replace(/ť/g,'t').replace(/Ť/g,'T')
-      .replace(/ď/g,'d').replace(/Ď/g,'D')
-      .replace(/ň/g,'n').replace(/Ň/g,'N')
-      .replace(/ŕ/g,'r').replace(/Ŕ/g,'R')
-      .replace(/ĺ/g,'l').replace(/Ĺ/g,'L')
-      .replace(/ž/g,'\u017E').replace(/Ž/g,'\u017D')
-      || '—';
-  };
-  // Safe doc.text wrapper: logs label on error so we know which call failed
-  const _tx=(label,txt,x,y,opts)=>{
-    try{
-      const s=_st(txt);
-      if(opts) doc.text(s,x,y,opts);
-      else doc.text(s,x,y);
-    }catch(e){
-      console.error('doc.text() failed at ['+label+']',{txt,x,y},e);
-    }
-  };
-
   // Load full history (no limit)
   const{data,error}=await _sb
     .from('analyses').select('*')
@@ -2883,12 +2857,18 @@ async function exportPDF(){
     .order('created_at',{ascending:false});
 
   if(error||!data||data.length===0){
-    showToast('Žiadne analyzy na export.','');
+    showToast('Žiadne analýzy na export.','');
     return;
   }
 
   const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const doc=new jsPDF({
+    orientation:'portrait',
+    unit:'mm',
+    format:'a4',
+    putOnlyUsedFonts:true,
+    compress:true,
+  });
 
   const pageW=doc.internal.pageSize.getWidth();
   const margin=14;
@@ -2898,7 +2878,7 @@ async function exportPDF(){
   doc.setFillColor(79,142,247);
   doc.rect(0,0,pageW,22,'F');
 
-  // Shield circle (no emoji — plain circle only)
+  // Shield circle
   doc.setFillColor(255,255,255);
   doc.circle(margin+5,11,4.5,'F');
 
@@ -2906,18 +2886,18 @@ async function exportPDF(){
   doc.setFont('helvetica','bold');
   doc.setFontSize(15);
   doc.setTextColor(255,255,255);
-  _tx('logo','MailGuard',margin+13,13);
+  doc.text('MailGuard',margin+13,13);
 
   // Subtitle
   doc.setFont('helvetica','normal');
   doc.setFontSize(9);
   doc.setTextColor(200,220,255);
-  _tx('subtitle','Bezpecnostny report',margin+13,18.5);
+  doc.text('Bezpecnostny report',margin+13,18.5);
 
   y=30;
 
   // ── Report meta
-  const email=_currentUser.email||'—';
+  const email=_currentUser.email||'-';
   const name=email.split('@')[0];
   const exportDate=new Date().toLocaleDateString('sk-SK',{day:'2-digit',month:'long',year:'numeric'});
   const exportTime=new Date().toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
@@ -2925,21 +2905,21 @@ async function exportPDF(){
   doc.setFont('helvetica','bold');
   doc.setFontSize(10);
   doc.setTextColor(30,30,50);
-  _tx('meta-user-label','Pouzivatel:',margin,y);
+  doc.text('Pouzivatel:',margin,y);
   doc.setFont('helvetica','normal');
-  _tx('meta-user-val',`${name} (${email})`,margin+28,y);
+  doc.text(String(name)+' ('+String(email)+')',margin+28,y);
   y+=7;
 
   doc.setFont('helvetica','bold');
-  _tx('meta-date-label','Datum exportu:',margin,y);
+  doc.text('Datum exportu:',margin,y);
   doc.setFont('helvetica','normal');
-  _tx('meta-date-val',`${exportDate} ${exportTime}`,margin+35,y);
+  doc.text(String(exportDate)+' '+String(exportTime),margin+35,y);
   y+=7;
 
   doc.setFont('helvetica','bold');
-  _tx('meta-count-label','Celkom analyz:',margin,y);
+  doc.text('Celkovo analyz:',margin,y);
   doc.setFont('helvetica','normal');
-  _tx('meta-count-val',String(data.length),margin+35,y);
+  doc.text(String(data.length),margin+35,y);
   y+=4;
 
   // ── Divider
@@ -2959,7 +2939,7 @@ async function exportPDF(){
     {label:'Celkom analyz',val:String(data.length),col:[79,142,247]},
     {label:'Bezpecne',val:String(safe),col:[34,197,94]},
     {label:'Rizikove',val:String(danger),col:[239,68,68]},
-    {label:'Priem. skore',val:String(avgScore),col:[245,158,11]},
+    {label:'Priemerné skóre',val:String(avgScore),col:[245,158,11]},
   ];
   const boxW=(pageW-margin*2-9)/4;
   boxes.forEach((b,i)=>{
@@ -2972,11 +2952,11 @@ async function exportPDF(){
     doc.setFont('helvetica','bold');
     doc.setFontSize(14);
     doc.setTextColor(...b.col);
-    _tx('box-val-'+i,b.val,bx+boxW/2,y+10,{align:'center'});
+    doc.text(b.val,bx+boxW/2,y+10,{align:'center'});
     doc.setFont('helvetica','normal');
     doc.setFontSize(6.5);
     doc.setTextColor(100,100,120);
-    _tx('box-label-'+i,b.label,bx+boxW/2,y+14.5,{align:'center'});
+    doc.text(b.label,bx+boxW/2,y+14.5,{align:'center'});
   });
   y+=22;
 
@@ -2984,40 +2964,42 @@ async function exportPDF(){
   doc.setFont('helvetica','bold');
   doc.setFontSize(10);
   doc.setTextColor(30,30,50);
-  _tx('section-title','Historia analyz',margin,y);
+  doc.text('História analýz',margin,y);
   y+=4;
 
   // ── Table
-  const verdictMap={safe:'Bezpecne',low:'Nizke riziko',medium:'Stredne riziko',high:'Vysoke riziko'};
+  const verdictMap={safe:'Bezpecne',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
   const typeMap={email:'Email',url:'URL',web:'Web'};
 
   const tableRows=data.map(r=>{
-    let dateStr='—';
+    let dateStr='-';
     if(r.created_at){
       const d=new Date(r.created_at);
       if(!isNaN(d)){
         dateStr=d.toLocaleDateString('sk-SK')+'\n'+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
       }
     }
+    const inputRaw=r.input||'';
+    const inputTxt=inputRaw.length>55 ? inputRaw.slice(0,55)+'...' : inputRaw || '-';
     return[
       dateStr,
-      String(typeMap[r.type]||r.type||'—'),
-      _st((r.input||'').slice(0,55)+(r.input&&r.input.length>55?'...':'')||'—'),
+      String(typeMap[r.type]||r.type||'-'),
+      inputTxt,
       String(r.score??'?'),
-      String(verdictMap[r.verdict]||r.verdict||'—'),
+      String(verdictMap[r.verdict]||r.verdict||'-'),
     ];
   });
 
   const verdictColors={
     'Bezpecne':[34,197,94],
-    'Nizke riziko':[245,158,11],
-    'Stredne riziko':[249,115,22],
-    'Vysoke riziko':[239,68,68],
+    'Nízke riziko':[245,158,11],
+    'Stredné riziko':[249,115,22],
+    'Vysoké riziko':[239,68,68],
   };
 
   doc.autoTable({
     startY:y,
-    head:[['Datum','Typ','Vstup','Skore','Verdikt']],
+    head:[['Dátum','Typ','Vstup','Skóre','Verdikt']],
     body:tableRows,
     margin:{left:margin,right:margin},
     styles:{fontSize:7.5,cellPadding:3,overflow:'linebreak',textColor:[30,30,50]},
@@ -3032,7 +3014,7 @@ async function exportPDF(){
     alternateRowStyles:{fillColor:[245,246,252]},
     didDrawCell(cellData){
       if(cellData.section==='body'&&cellData.column.index===4){
-        const verdict=String(tableRows[cellData.row.index]?.[4]||'—');
+        const verdict=String(tableRows[cellData.row.index]?.[4]||'-');
         const col=verdictColors[verdict]||[120,120,140];
         const {x,y:cy,width,height}=cellData.cell;
         doc.setFillColor(Math.round(col[0]*0.15+218),Math.round(col[1]*0.15+218),Math.round(col[2]*0.15+218));
@@ -3040,7 +3022,7 @@ async function exportPDF(){
         doc.setFont('helvetica','bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...col);
-        _tx('cell-verdict',verdict,x+width/2,cy+height/2+0.5,{align:'center',baseline:'middle'});
+        doc.text(verdict,x+width/2,cy+height/2+0.5,{align:'center',baseline:'middle'});
       }
       if(cellData.section==='body'&&cellData.column.index===3){
         const score=parseInt(tableRows[cellData.row.index]?.[3])||0;
@@ -3049,7 +3031,7 @@ async function exportPDF(){
         doc.setFont('helvetica','bold');
         doc.setFontSize(8);
         doc.setTextColor(...col);
-        _tx('cell-score',String(score),x+width/2,cy+height/2+0.5,{align:'center',baseline:'middle'});
+        doc.text(String(score),x+width/2,cy+height/2+0.5,{align:'center',baseline:'middle'});
       }
     },
   });
@@ -3065,14 +3047,14 @@ async function exportPDF(){
     doc.setFont('helvetica','normal');
     doc.setFontSize(7);
     doc.setTextColor(150,155,175);
-    _tx('footer-brand','MailGuard - Bezpecnostny report',margin,pageH-5.5);
-    _tx('footer-page',`Strana ${p} / ${pageCount}`,pageW-margin,pageH-5.5,{align:'right'});
-    _tx('footer-date',exportDate,pageW/2,pageH-5.5,{align:'center'});
+    doc.text('MailGuard - Bezpecnostny report',margin,pageH-5.5);
+    doc.text('Strana '+p+' / '+pageCount,pageW-margin,pageH-5.5,{align:'right'});
+    doc.text(String(exportDate||''),pageW/2,pageH-5.5,{align:'center'});
   }
 
   // ── Save
   const dateTag=new Date().toISOString().slice(0,10);
-  doc.save(`mailguard-report-${dateTag}.pdf`);
+  doc.save('mailguard-report-'+dateTag+'.pdf');
   showToast('PDF stiahnuté','success');
 
   } catch(err) {
