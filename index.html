@@ -606,49 +606,39 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   font-family:inherit;transition:all .18s}
 .btn-signout:hover{border-color:rgba(255,255,255,.45);color:#fff}
 
-/* ── RAYS ── */
-.hero-rays{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  pointer-events:none;
-  z-index:1;
-  overflow:hidden;
+/* ── ORBS / GLOW (rovnaké ako dashboard) ── */
+body::before{content:'';position:fixed;top:-80%;left:-80%;width:260%;height:260%;
+  background:
+    radial-gradient(circle 1200px at 15% 25%,rgba(79,142,247,.85) 0%,rgba(79,142,247,.5) 20%,rgba(79,142,247,.2) 40%,transparent 60%),
+    radial-gradient(circle 1100px at 85% 75%,rgba(124,95,247,.75) 0%,rgba(124,95,247,.45) 20%,rgba(124,95,247,.18) 40%,transparent 60%),
+    radial-gradient(circle 1000px at 50% 50%,rgba(0,212,255,.6) 0%,rgba(0,212,255,.3) 20%,transparent 50%);
+  filter:blur(140px);animation:ultraMove 18s ease-in-out infinite;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%;
+  background:
+    radial-gradient(ellipse 900px 1200px at 75% 25%,rgba(255,107,53,.6) 0%,rgba(255,107,53,.3) 25%,transparent 55%),
+    radial-gradient(ellipse 1000px 900px at 25% 75%,rgba(34,197,94,.5) 0%,rgba(34,197,94,.25) 25%,transparent 55%),
+    radial-gradient(circle 800px at 60% 40%,rgba(255,59,59,.4) 0%,transparent 50%);
+  filter:blur(150px);animation:ultraMove2 22s ease-in-out infinite reverse;pointer-events:none;z-index:0}
+@keyframes ultraMove{
+  0%,100%{transform:translate(0,0) scale(1) rotate(0deg)}
+  33%    {transform:translate(-30%,25%) scale(1.2) rotate(15deg)}
+  66%    {transform:translate(25%,-30%) scale(.85) rotate(-18deg)}
 }
-.ray{
-  stroke-linecap:round;
-  filter:blur(1px);
-  animation:ray-fade 4s ease-in-out infinite;
-}
-.ray-left-1{animation-delay:0s}
-.ray-left-2{animation-delay:1s}
-.ray-right-1{animation-delay:2s}
-.ray-right-2{animation-delay:3s}
-@keyframes ray-fade{
-  0%{opacity:0;stroke-dasharray:1000;stroke-dashoffset:1000}
-  30%{opacity:0.7;stroke-dashoffset:0}
-  70%{opacity:0.7;stroke-dashoffset:0}
-  100%{opacity:0;stroke-dashoffset:-1000}
+@keyframes ultraMove2{
+  0%,100%{transform:translate(0,0) rotate(0deg) scale(1)}
+  50%    {transform:translate(-25%,30%) rotate(-20deg) scale(1.25)}
 }
 
-/* ── MESH GRADIENT ── */
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(79,142,247,0.12),transparent 50%),
-    radial-gradient(ellipse 60% 50% at 80% 50%,rgba(124,95,247,0.08),transparent 50%);
-  animation:mesh-move 20s ease-in-out infinite;
-  pointer-events:none;
-  z-index:0;
-}
-@keyframes mesh-move{
-  0%,100%{transform:translate(0,0) scale(1)}
-  25%{transform:translate(5%,-5%) scale(1.05)}
-  50%{transform:translate(-3%,3%) scale(0.98)}
-  75%{transform:translate(3%,-2%) scale(1.02)}
+/* ── PARTICLES ── */
+.particles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.particles span{position:absolute;border-radius:50%;
+  background:rgba(79,142,247,.6);animation:float linear infinite}
+.particles span:nth-child(odd){background:rgba(124,95,247,.5)}
+@keyframes float{
+  0%  {transform:translateY(100vh) scale(0);opacity:0}
+  10% {opacity:1}
+  90% {opacity:1}
+  100%{transform:translateY(-10vh) scale(1);opacity:0}
 }
 </style>
 </head>
@@ -684,19 +674,8 @@ body::before{
 </nav>
 
 <!-- ── HERO ── -->
-<section id="hero" style="position:relative;overflow:hidden">
-  <!-- Animované lúče - menia tvar a pozíciu -->
-  <svg class="hero-rays" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
-    <!-- Pravé lúče (modré) -->
-    <line x1="1920" y1="150" x2="1420" y2="350" class="ray ray-right-1" stroke="#4f8ef7" stroke-width="3">
-      <animate attributeName="x2" values="1420;1220;1420" dur="6s" repeatCount="indefinite"/>
-      <animate attributeName="y2" values="350;250;350" dur="6s" repeatCount="indefinite"/>
-    </line>
-    <line x1="1920" y1="400" x2="1470" y2="600" class="ray ray-right-2" stroke="#7c5ff7" stroke-width="2">
-      <animate attributeName="x2" values="1470;1320;1470" dur="7s" repeatCount="indefinite"/>
-      <animate attributeName="y2" values="600;500;600" dur="7s" repeatCount="indefinite"/>
-    </line>
-  </svg>
+<div class="particles" id="particles"></div>
+<section id="hero">
   <div style="width:100%;max-width:800px;position:relative;z-index:1">
     <div class="hero-badge"><span></span>Bezpečnosť pre školy, firmy &amp; jednotlivcov</div>
     <h1 class="hero-title">
@@ -1890,6 +1869,22 @@ _sb.auth.getSession().then(({data:{session}})=>{
   _currentUser=session?.user ?? null;
   updateNavAuth(_currentUser);
 });
+
+// Particles (rovnaké ako dashboard)
+(function initParticles(){
+  const container=document.getElementById('particles');
+  if(!container)return;
+  const count=28;
+  const sizes=[3,4,5,3,6,4,3,5,4,3,6,4,3,5,4,3,4,5,3,6,4,3,5,3,4,6,3,5];
+  const durations=[18,24,20,30,22,28,16,25,19,27,21,23,29,17,26,18,24,20,22,30,19,25,16,28,21,23,27,18];
+  const delays=[0,3,6,1,8,4,2,7,5,9,1,6,3,8,2,5,7,0,4,9,2,6,1,8,3,7,5,4];
+  for(let i=0;i<count;i++){
+    const s=document.createElement('span');
+    const sz=sizes[i%sizes.length];
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${durations[i%durations.length]}s;animation-delay:-${delays[i%delays.length]}s`;
+    container.appendChild(s);
+  }
+})();
 
 // Show password-changed toast if redirected from reset-password.html
 (()=>{
