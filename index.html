@@ -617,16 +617,29 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .btn-signout:hover{border-color:rgba(255,255,255,.45);color:#fff}
 
 /* ── RAYS ── */
-.rays{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.ray{stroke:rgba(79,142,247,0.4);stroke-width:0.5;stroke-dasharray:200;stroke-dashoffset:200}
-.ray-left-1{animation:ray-draw 3s ease-out infinite;animation-delay:0s}
-.ray-left-2{animation:ray-draw 3s ease-out infinite;animation-delay:0.3s}
-.ray-right-1{animation:ray-draw 3s ease-out infinite;animation-delay:0.6s}
-.ray-right-2{animation:ray-draw 3s ease-out infinite;animation-delay:0.9s}
-@keyframes ray-draw{
-  0%{stroke-dashoffset:200;opacity:0}
-  50%{stroke-dashoffset:0;opacity:1}
-  100%{stroke-dashoffset:-200;opacity:0}
+.hero-rays{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:1;
+  overflow:hidden;
+}
+.ray{
+  stroke-linecap:round;
+  filter:blur(1px);
+  animation:ray-fade 4s ease-in-out infinite;
+}
+.ray-left-1{animation-delay:0s}
+.ray-left-2{animation-delay:1s}
+.ray-right-1{animation-delay:2s}
+.ray-right-2{animation-delay:3s}
+@keyframes ray-fade{
+  0%{opacity:0;stroke-dasharray:1000;stroke-dashoffset:1000}
+  30%{opacity:0.7;stroke-dashoffset:0}
+  70%{opacity:0.7;stroke-dashoffset:0}
+  100%{opacity:0;stroke-dashoffset:-1000}
 }
 
 /* ── MESH GRADIENT ── */
@@ -635,8 +648,8 @@ body::before{
   position:fixed;
   inset:0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(79,142,247,0.15),transparent 50%),
-    radial-gradient(ellipse 60% 50% at 80% 50%,rgba(124,95,247,0.1),transparent 50%);
+    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(79,142,247,0.12),transparent 50%),
+    radial-gradient(ellipse 60% 50% at 80% 50%,rgba(124,95,247,0.08),transparent 50%);
   animation:mesh-move 20s ease-in-out infinite;
   pointer-events:none;
   z-index:0;
@@ -687,14 +700,26 @@ body::before{
 
 <!-- ── HERO ── -->
 <section id="hero" style="position:relative;overflow:hidden">
-  <!-- 4 lúče - 2 zľava, 2 sprava -->
-  <svg class="rays" viewBox="0 0 100 100" preserveAspectRatio="none">
-    <!-- Ľavé lúče -->
-    <line x1="15" y1="30" x2="5" y2="5" class="ray ray-left-1"/>
-    <line x1="15" y1="50" x2="5" y2="80" class="ray ray-left-2"/>
-    <!-- Pravé lúče -->
-    <line x1="85" y1="30" x2="95" y2="5" class="ray ray-right-1"/>
-    <line x1="85" y1="50" x2="95" y2="80" class="ray ray-right-2"/>
+  <!-- Animované lúče - menia tvar a pozíciu -->
+  <svg class="hero-rays" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+    <!-- Ľavé lúče (červené) -->
+    <line x1="0" y1="200" x2="500" y2="400" class="ray ray-left-1" stroke="#ef4444" stroke-width="3">
+      <animate attributeName="x2" values="500;700;500" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="400;300;400" dur="6s" repeatCount="indefinite"/>
+    </line>
+    <line x1="0" y1="450" x2="450" y2="650" class="ray ray-left-2" stroke="#f87171" stroke-width="2">
+      <animate attributeName="x2" values="450;600;450" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="650;550;650" dur="7s" repeatCount="indefinite"/>
+    </line>
+    <!-- Pravé lúče (modré) -->
+    <line x1="1920" y1="150" x2="1420" y2="350" class="ray ray-right-1" stroke="#4f8ef7" stroke-width="3">
+      <animate attributeName="x2" values="1420;1220;1420" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="350;250;350" dur="6s" repeatCount="indefinite"/>
+    </line>
+    <line x1="1920" y1="400" x2="1470" y2="600" class="ray ray-right-2" stroke="#7c5ff7" stroke-width="2">
+      <animate attributeName="x2" values="1470;1320;1470" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="y2" values="600;500;600" dur="7s" repeatCount="indefinite"/>
+    </line>
   </svg>
   <div style="width:100%;max-width:800px;position:relative;z-index:1">
     <div class="hero-badge"><span></span>Bezpečnosť pre školy, firmy &amp; jednotlivcov</div>
