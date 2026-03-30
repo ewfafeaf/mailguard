@@ -2892,7 +2892,7 @@ async function exportPDF(){
   doc.setFont('helvetica','normal');
   doc.setFontSize(9);
   doc.setTextColor(200,220,255);
-  doc.text('Bezpecnostny report',margin+13,18.5);
+  doc.text('Bezpečnostný report',margin+13,18.5);
 
   y=30;
 
@@ -2905,19 +2905,19 @@ async function exportPDF(){
   doc.setFont('helvetica','bold');
   doc.setFontSize(10);
   doc.setTextColor(30,30,50);
-  doc.text('Pouzivatel:',margin,y);
+  doc.text('Pou\u017Eivate\u013E:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(name)+' ('+String(email)+')',margin+28,y);
   y+=7;
 
   doc.setFont('helvetica','bold');
-  doc.text('Datum exportu:',margin,y);
+  doc.text('Dátum exportu:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(exportDate)+' '+String(exportTime),margin+35,y);
   y+=7;
 
   doc.setFont('helvetica','bold');
-  doc.text('Celkovo analyz:',margin,y);
+  doc.text('Celkovo analýz:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(data.length),margin+35,y);
   y+=4;
@@ -2936,9 +2936,9 @@ async function exportPDF(){
     : 0;
 
   const boxes=[
-    {label:'Celkom analyz',val:String(data.length),col:[79,142,247]},
-    {label:'Bezpecne',val:String(safe),col:[34,197,94]},
-    {label:'Rizikove',val:String(danger),col:[239,68,68]},
+    {label:'Celkovo analýz',val:String(data.length),col:[79,142,247]},
+    {label:'Bezpečné',val:String(safe),col:[34,197,94]},
+    {label:'Rizikové',val:String(danger),col:[239,68,68]},
     {label:'Priemerné skóre',val:String(avgScore),col:[245,158,11]},
   ];
   const boxW=(pageW-margin*2-9)/4;
@@ -2968,7 +2968,7 @@ async function exportPDF(){
   y+=4;
 
   // ── Table
-  const verdictMap={safe:'Bezpecne',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
+  const verdictMap={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'};
   const typeMap={email:'Email',url:'URL',web:'Web'};
 
   const tableRows=data.map(r=>{
@@ -2991,7 +2991,7 @@ async function exportPDF(){
   });
 
   const verdictColors={
-    'Bezpecne':[34,197,94],
+    'Bezpečné':[34,197,94],
     'Nízke riziko':[245,158,11],
     'Stredné riziko':[249,115,22],
     'Vysoké riziko':[239,68,68],
@@ -3047,7 +3047,7 @@ async function exportPDF(){
     doc.setFont('helvetica','normal');
     doc.setFontSize(7);
     doc.setTextColor(150,155,175);
-    doc.text('MailGuard - Bezpecnostny report',margin,pageH-5.5);
+    doc.text('MailGuard - Bezpečnostný report',margin,pageH-5.5);
     doc.text('Strana '+p+' / '+pageCount,pageW-margin,pageH-5.5,{align:'right'});
     doc.text(String(exportDate||''),pageW/2,pageH-5.5,{align:'center'});
   }
