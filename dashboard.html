@@ -1023,7 +1023,7 @@ body::before{content:'';position:fixed;inset:0;
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <div class="dash-section-title" style="margin-bottom:0"><div class="dot"></div>História analýz</div>
         <button class="analysis-btn" style="height:38px;padding:0 16px;font-size:.82rem;display:flex;align-items:center;gap:6px"
-          onclick="exportPDF()">📄 Export PDF</button>
+          onclick="openExportModal()">📄 Export PDF</button>
       </div>
       <div class="history-card">
         <div id="historyContent"><div class="history-empty">Načítavam históriu…</div></div>
@@ -2844,20 +2844,46 @@ async function loadHistory(page=1){
 }
 
 /* ── PDF EXPORT ── */
-async function exportPDF(){
-  console.log('exportPDF() called');
+async function exportPDF(filters={}){
+  console.log('exportPDF() called', filters);
   if(!checkPlan('pro')) return;
 
   try {
 
-  // Load full history (no limit)
-  const{data,error}=await _sb
-    .from('analyses').select('*')
-    .eq('user_id',_currentUser.id)
-    .order('created_at',{ascending:false});
+  // ── Build query with time filter
+  let query=_sb.from('analyses').select('*').eq('user_id',_currentUser.id);
 
-  if(error||!data||data.length===0){
-    showToast('Žiadne analýzy na export.','');
+  if(filters.timeFilter==='today'){
+    const today=new Date().toISOString().split('T')[0];
+    query=query.gte('created_at',today);
+  } else if(filters.timeFilter==='week'){
+    const weekAgo=new Date(Date.now()-7*24*60*60*1000).toISOString();
+    query=query.gte('created_at',weekAgo);
+  } else if(filters.timeFilter==='month'){
+    const monthAgo=new Date(Date.now()-30*24*60*60*1000).toISOString();
+    query=query.gte('created_at',monthAgo);
+  } else if(filters.timeFilter==='custom'&&filters.dateFrom&&filters.dateTo){
+    query=query.gte('created_at',filters.dateFrom).lte('created_at',filters.dateTo+'T23:59:59');
+  }
+
+  const{data:rawData,error}=await query.order('created_at',{ascending:false});
+
+  if(error||!rawData){
+    showToast('Chyba pri načítaní dát.','');
+    return;
+  }
+
+  // ── Apply type and verdict filters client-side
+  let data=rawData;
+  if(filters.types&&filters.types.length>0){
+    data=data.filter(r=>filters.types.includes(r.type));
+  }
+  if(filters.verdicts&&filters.verdicts.length>0){
+    data=data.filter(r=>filters.verdicts.includes(r.verdict));
+  }
+
+  if(data.length===0){
+    showToast('Žiadne analýzy zodpovedajú filtrom.','');
     return;
   }
 
@@ -4640,6 +4666,85 @@ setInterval(()=>{
   });
   _feedIdx=(_feedIdx+1)%_feedActivities.length;
 },3000);
+
+/* ── Export Modal ── */
+function openExportModal(){
+  if(!checkPlan('pro')) return;
+  document.getElementById('exportModal').style.display='flex';
+}
+function closeExportModal(){
+  document.getElementById('exportModal').style.display='none';
+}
+// exportTimeFilter change handler — attached inline on the select element
+async function confirmExport(){
+  const timeFilter=document.getElementById('exportTimeFilter').value;
+  const dateFrom=document.getElementById('exportDateFrom').value;
+  const dateTo=document.getElementById('exportDateTo').value;
+  const types=Array.from(document.querySelectorAll('.exportTypeFilter:checked')).map(el=>el.value);
+  const verdicts=Array.from(document.querySelectorAll('.exportVerdictFilter:checked')).map(el=>el.value);
+  closeExportModal();
+  await exportPDF({timeFilter,dateFrom,dateTo,types,verdicts});
+}
 </script>
+
+<!-- Export Filter Modal -->
+<div id="exportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9000;align-items:center;justify-content:center;">
+  <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:16px;padding:32px;width:90%;max-width:600px;max-height:80vh;overflow-y:auto;">
+    <h2 style="margin:0 0 20px;font-size:1.3rem;color:#e8eaf0;">📄 Export PDF – Nastavenia</h2>
+
+    <!-- Časové obdobie -->
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-weight:600;margin-bottom:8px;color:#e8eaf0;">📅 Časové obdobie</label>
+      <select id="exportTimeFilter" onchange="document.getElementById('customDateRange').style.display=this.value==='custom'?'grid':'none'" style="width:100%;padding:10px;background:#22263a;border:1px solid #2e3350;border-radius:8px;color:#e8eaf0;font-size:.9rem;">
+        <option value="all">Všetky analýzy</option>
+        <option value="today">Dnes</option>
+        <option value="week">Posledný týždeň</option>
+        <option value="month">Posledný mesiac</option>
+        <option value="custom">Vlastné obdobie</option>
+      </select>
+    </div>
+
+    <!-- Vlastné dátumy -->
+    <div id="customDateRange" style="display:none;margin-bottom:24px;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <label style="display:block;font-size:.8rem;margin-bottom:4px;color:#a0a8c0;">Od</label>
+        <input type="date" id="exportDateFrom" style="width:100%;padding:8px;background:#22263a;border:1px solid #2e3350;border-radius:8px;color:#e8eaf0;box-sizing:border-box;"/>
+      </div>
+      <div>
+        <label style="display:block;font-size:.8rem;margin-bottom:4px;color:#a0a8c0;">Do</label>
+        <input type="date" id="exportDateTo" style="width:100%;padding:8px;background:#22263a;border:1px solid #2e3350;border-radius:8px;color:#e8eaf0;box-sizing:border-box;"/>
+      </div>
+    </div>
+
+    <!-- Typ analýzy -->
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-weight:600;margin-bottom:8px;color:#e8eaf0;">🔍 Typ analýzy</label>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportTypeFilter" value="email"/> Email</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportTypeFilter" value="url"/> URL</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportTypeFilter" value="web"/> Web skener</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportTypeFilter" value="pdf"/> Súbory (PDF)</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportTypeFilter" value="headers"/> Hlavičky</label>
+      </div>
+    </div>
+
+    <!-- Verdikt -->
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-weight:600;margin-bottom:8px;color:#e8eaf0;">⚠️ Verdikt</label>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportVerdictFilter" value="safe"/> Bezpečné</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportVerdictFilter" value="low"/> Nízke riziko</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportVerdictFilter" value="medium"/> Stredné riziko</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#22263a;border-radius:8px;cursor:pointer;color:#e8eaf0;"><input type="checkbox" checked class="exportVerdictFilter" value="high"/> Vysoké riziko</label>
+      </div>
+    </div>
+
+    <!-- Tlačidlá -->
+    <div style="display:flex;gap:12px;margin-top:28px;">
+      <button onclick="closeExportModal()" style="flex:1;padding:12px;background:transparent;border:1px solid #2e3350;border-radius:8px;color:#a0a8c0;cursor:pointer;font-weight:600;font-family:inherit;">Zrušiť</button>
+      <button onclick="confirmExport()" style="flex:1;padding:12px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600;font-family:inherit;">📥 Exportovať PDF</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
