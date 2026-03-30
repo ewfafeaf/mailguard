@@ -60,16 +60,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 @keyframes orbB{0%,100%{transform:translate(0,0)}   50%{transform:translate(-70px,90px)}}
 @keyframes orbC{0%,100%{transform:translate(0,0)}   50%{transform:translate(60px,-80px)}}
 
-/* ── LASER LINES ── */
-.lasers{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
-.laser{position:fixed;left:0;top:50vh;width:100vw;height:3px;
-  background:#ff0000;opacity:.5;
-  filter:drop-shadow(0 0 8px #ff0000);
-  transform-origin:50% 50%}
-.lz1{animation:lzCW  15s linear infinite}
-.lz2{animation:lzCCW 20s linear infinite}
-@keyframes lzCW {from{transform:rotate(0deg)}   to{transform:rotate(360deg)}}
-@keyframes lzCCW{from{transform:rotate(360deg)} to{transform:rotate(0deg)}}
 
 /* ── NAV ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;
@@ -673,11 +663,6 @@ body::before{
   <div class="orb orb3"></div>
 </div>
 
-<!-- ── LASER LINES ── -->
-<div class="lasers" aria-hidden="true">
-  <div class="laser lz1"></div>
-  <div class="laser lz2"></div>
-</div>
 
 <!-- ── NAV ── -->
 <nav id="mainNav">
