@@ -2846,7 +2846,14 @@ async function loadHistory(page=1){
 /* ── PDF EXPORT ── */
 async function exportPDF(filters={}){
   console.log('exportPDF() called', filters);
-  if(!checkPlan('pro')) return;
+  // Business, School a Pro majú prístup k exportu
+  const user = await _sb.auth.getUser();
+  if(!user.data.user) return;
+  const {data: profile} = await _sb.from('profiles').select('plan').eq('id', user.data.user.id).single();
+  if(!profile || !['pro', 'business', 'school'].includes(profile.plan)) {
+    alert('Export PDF vyžaduje Pro, Business alebo School plán.');
+    return;
+  }
 
   try {
 
@@ -2901,7 +2908,7 @@ async function exportPDF(filters={}){
   let y=margin;
 
   // ── Header bar
-  doc.setFillColor(79,142,247);
+  doc.setFillColor(18,18,26);
   doc.rect(0,0,pageW,22,'F');
 
   // Shield circle
@@ -2943,7 +2950,7 @@ async function exportPDF(filters={}){
   y+=7;
 
   doc.setFont('helvetica','bold');
-  doc.text('Celkovo analýz:',margin,y);
+  doc.text('Celkový počet analýz:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(data.length),margin+35,y);
   y+=4;
