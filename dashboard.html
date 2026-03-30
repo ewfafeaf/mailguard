@@ -2845,7 +2845,10 @@ async function loadHistory(page=1){
 
 /* ── PDF EXPORT ── */
 async function exportPDF(){
+  console.log('exportPDF() called');
   if(!checkPlan('pro')) return;
+
+  try {
 
   // Load full history (no limit)
   const{data,error}=await _sb
@@ -3046,6 +3049,11 @@ async function exportPDF(){
   const dateTag=new Date().toISOString().slice(0,10);
   doc.save(`mailguard-report-${dateTag}.pdf`);
   showToast('PDF stiahnuté','success');
+
+  } catch(err) {
+    console.error('Export PDF error:', err);
+    alert('Chyba pri exporte PDF: ' + err.message);
+  }
 }
 
 /* ── GOOGLE SAFE BROWSING ── */
