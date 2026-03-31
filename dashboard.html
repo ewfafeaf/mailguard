@@ -975,13 +975,19 @@ body::before{content:'';position:fixed;inset:0;
 .hist-cal-nav:hover{color:var(--text);background:var(--surface3)}
 .hist-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
 .hist-cal-dow{font-size:.6rem;font-weight:700;color:var(--muted);padding:3px 0;letter-spacing:.05em}
-.hist-cal-day{font-size:.72rem;padding:4px 2px;border-radius:5px;color:var(--muted);
-  cursor:default;position:relative;line-height:1;transition:background .15s,color .15s}
+.hist-cal-day{font-size:.72rem;padding:5px 2px;border-radius:5px;color:var(--muted);
+  cursor:pointer;position:relative;line-height:1;transition:background .15s,color .15s,transform .12s;
+  border:none;background:none;font-family:inherit;width:100%}
+.hist-cal-day:hover{background:rgba(79,142,247,.15);color:var(--text);transform:scale(1.12)}
 .hist-cal-day.has-data{color:var(--text);font-weight:600}
-.hist-cal-day.has-data::after{content:'';position:absolute;bottom:1px;left:50%;
-  transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--accent)}
+.hist-cal-day.has-data::after{content:'';position:absolute;bottom:2px;left:50%;
+  transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent)}
 .hist-cal-day.today{background:rgba(79,142,247,.18);color:var(--accent);font-weight:800}
-.hist-cal-day.other-month{opacity:.25}
+.hist-cal-day.today:hover{background:rgba(79,142,247,.28)}
+.hist-cal-day.selected{background:linear-gradient(135deg,#4f8ef7,#7c5ff7) !important;
+  color:#fff !important;font-weight:700;transform:scale(1.12)}
+.hist-cal-day.selected::after{background:#fff !important}
+.hist-cal-day.other-month{opacity:.25;pointer-events:none}
 
 /* quick stats */
 .hist-stat{display:flex;justify-content:space-between;align-items:center;
@@ -3297,6 +3303,7 @@ async function loadStats(){
 /* ── HISTORY ── */
 let _historyPage=1;
 let _histFilter='all';
+let _histDateFilter=null;
 let _histCalYear=new Date().getFullYear();
 let _histCalMonth=new Date().getMonth();
 let _histCalDates=new Set();
@@ -3309,6 +3316,8 @@ function histSetFilter(f){
     const el=document.getElementById('hf'+k.charAt(0).toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('active',k===f);
   });
+  // Zruš výber dňa v kalendári
+  document.querySelectorAll('.hist-cal-day').forEach(d=>d.classList.remove('selected'));
   loadHistory(1);
 }
 
@@ -3432,10 +3441,91 @@ function renderHistCalendar(){
     const date=new Date(_histCalYear,_histCalMonth,day);
     const isToday=date.toDateString()===today.toDateString();
     const hasData=_histCalDates.has(date.toDateString());
-    html+=`<div class="hist-cal-day${isToday?' today':''}${hasData?' has-data':''}">${day}</div>`;
+    const cls=[
+      'hist-cal-day',
+      isToday?'today':'',
+      hasData?'has-data':'',
+    ].filter(Boolean).join(' ');
+    html+=`<button class="${cls}" onclick="filterByDate(${_histCalYear},${_histCalMonth},${day})">${day}</button>`;
   }
 
   el('histCalGrid').innerHTML=html;
+}
+
+function filterByDate(year, month, day){
+  // Zvýrazni vybraný deň
+  document.querySelectorAll('.hist-cal-day').forEach(d=>d.classList.remove('selected'));
+  // Nájdi a označ tlačidlo pre daný deň
+  const grid=document.getElementById('histCalGrid');
+  if(grid){
+    [...grid.querySelectorAll('.hist-cal-day')].find(b=>b.textContent.trim()===String(day)&&!b.classList.contains('other-month'))
+      ?.classList.add('selected');
+  }
+  // Deaktivuj filter skratky
+  ['All','Today','Week','Month'].forEach(k=>{
+    const el=document.getElementById('hf'+k);
+    if(el) el.classList.remove('active');
+  });
+  // Filtruj históriu pre tento deň
+  const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  _histFilter='date';
+  _historyPage=1;
+  loadHistoryByDate(dateStr);
+}
+
+async function loadHistoryByDate(dateStr){
+  const container=document.getElementById('historyContent');
+  container.innerHTML='<div class="history-empty">Načítavam…</div>';
+
+  const dayStart=dateStr+'T00:00:00.000Z';
+  // Convert local date to UTC range covering the full local day
+  const localFrom=new Date(dateStr+'T00:00:00');
+  const localTo=new Date(dateStr+'T23:59:59');
+
+  const{data,error}=await _sb.from('analyses')
+    .select('*')
+    .eq('user_id',_currentUser.id)
+    .gte('created_at',localFrom.toISOString())
+    .lte('created_at',localTo.toISOString())
+    .order('created_at',{ascending:false});
+
+  if(error||!data||data.length===0){
+    container.innerHTML=`<div class="history-empty">Žiadne analýzy pre ${dateStr}.</div>`;
+    return;
+  }
+
+  const typeMap={url:['URL','url'],email:['Email','email'],web:['Web','web'],pdf:['Súbor','pdf'],headers:['Hlavičky','headers']};
+  const verdictLabel={safe:'Bezpečné',low:'Nízke',medium:'Stredné',high:'Hrozba'};
+
+  const rows=data.map(r=>{
+    const d=new Date(r.created_at);
+    const dateTop=d.toLocaleDateString('sk-SK');
+    const dateBot=d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+    const[typeLabel,typeCls]=typeMap[r.type]||['Iné','email'];
+    const level=r.verdict||'safe';
+    const vl=verdictLabel[level]||'—';
+    const score=r.score??'?';
+    const scoreNum=parseInt(score)||0;
+    const scoreCls=scoreNum<20?'level-safe':scoreNum<45?'level-low':scoreNum<70?'level-medium':'level-high';
+    return`<tr>
+      <td><div class="hist-date-cell">${dateTop}<br><span style="font-size:.68rem">${dateBot}</span></div></td>
+      <td><span class="badge badge-${typeCls}">${typeLabel}</span></td>
+      <td><div class="hist-input-cell" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,55))}${(r.input||'').length>55?'…':''}</div></td>
+      <td style="text-align:center"><span class="hist-score-circle ${scoreCls}">${score}</span></td>
+      <td><span class="badge badge-${level}">${vl}</span></td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML=`<table class="hist-table">
+    <thead><tr>
+      <th>Dátum</th><th>Typ</th><th>Vstup</th><th style="text-align:center">Skóre</th><th>Verdikt</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div style="text-align:center;padding:10px 0">
+    <button class="hist-filter-btn" style="display:inline-block;padding:7px 18px"
+      onclick="histSetFilter('all')">← Zobraziť všetko</button>
+  </div>`;
 }
 
 function histCalPrev(){
