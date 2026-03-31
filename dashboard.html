@@ -693,11 +693,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .quick-action-icon{font-size:1.5rem}
 
 /* ── CHART CARD ── */
-.chart-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
+.chart-card{width:100%;max-width:100%;background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
   border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:20px;
   box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
 .chart-card-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.mini-chart-wrapper{position:relative;width:100%;height:140px;margin-bottom:16px;
+  background:rgba(10,14,26,.4);border-radius:10px;padding:16px 12px;overflow:hidden}
+.mini-chart-wrapper canvas{width:100% !important;height:100% !important;max-width:100%}
+.compact-chart{background:rgba(18,18,26,.6);border:1px solid rgba(79,142,247,.12);
+  border-radius:12px;padding:18px;backdrop-filter:blur(10px);width:100%;box-sizing:border-box}
 
 /* ── THREAT FEED ── */
 .threat-feed{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);
@@ -1151,7 +1156,9 @@ body::before{content:'';position:fixed;inset:0;
         <!-- Row 4: Chart full-width -->
         <div class="chart-card" style="grid-column:1/-1">
           <div class="chart-card-label">📈 Aktivita (7 dní)</div>
-          <canvas id="activityChart" height="140"></canvas>
+          <div class="mini-chart-wrapper">
+            <canvas id="activityChart"></canvas>
+          </div>
         </div>
 
         <!-- Row 5: Quick actions + Threat map -->
@@ -3551,11 +3558,20 @@ async function loadNovaExtras(){
     _activityChart=new Chart(ctx,{
       type:'line',
       data:{labels,datasets:[{data:chartData,fill:true,backgroundColor:grad,
-        borderColor:'#4f8ef7',borderWidth:2,tension:.4,
-        pointBackgroundColor:'#4f8ef7',pointBorderColor:'#fff',pointBorderWidth:2,
+        borderColor:'#4f8ef7',borderWidth:2.5,tension:.4,
+        pointBackgroundColor:'#4f8ef7',pointBorderColor:'rgba(15,17,23,1)',pointBorderWidth:2,
         pointRadius:4,pointHoverRadius:6}]},
-      options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} analýz`}}},
-        scales:{y:{display:false,min:0},x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}}},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{
+          backgroundColor:'rgba(18,18,26,.98)',titleColor:'#eeeef5',bodyColor:'#8888aa',
+          borderColor:'rgba(79,142,247,.4)',borderWidth:1,padding:12,displayColors:false,
+          callbacks:{label:c=>`${c.raw} analýz`}}},
+        scales:{
+          y:{display:false,min:0},
+          x:{grid:{display:false},ticks:{color:'#8888aa',font:{size:11,weight:'500'},padding:8}}},
+        interaction:{intersect:false,mode:'index'},
         animation:{duration:800}}
     });
   }
