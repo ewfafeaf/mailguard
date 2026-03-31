@@ -598,13 +598,27 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .modal-close:hover{color:#fff}
 .modal-wrap{position:relative}
 /* nav user state */
-.nav-user{display:flex;align-items:center;gap:10px}
-.nav-user-email{font-size:.82rem;color:rgba(255,255,255,.6);max-width:160px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn-signout{background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.7);
-  padding:5px 14px;border-radius:99px;font-size:.8rem;font-weight:500;cursor:pointer;
-  font-family:inherit;transition:all .18s}
-.btn-signout:hover{border-color:rgba(255,255,255,.45);color:#fff}
+.user-menu{position:relative}
+.user-avatar{width:40px;height:40px;border-radius:50%;
+  background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#4f8ef7;transition:all .2s}
+.user-avatar:hover{background:rgba(79,142,247,.25);border-color:#4f8ef7}
+.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:240px;
+  background:rgba(18,18,26,.98);border:1px solid rgba(79,142,247,.2);
+  border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);
+  backdrop-filter:blur(10px);
+  opacity:0;visibility:hidden;transform:translateY(-10px);
+  transition:all .2s;z-index:1000}
+.user-dropdown.active{opacity:1;visibility:visible;transform:translateY(0)}
+.user-dropdown-email{padding:12px 16px;font-size:.85rem;color:#8888aa;word-break:break-all}
+.user-dropdown-divider{height:1px;background:rgba(79,142,247,.1);margin:4px 0}
+.user-dropdown-item{width:100%;padding:12px 16px;display:flex;align-items:center;
+  gap:12px;font-size:.9rem;color:#eeeef5;background:transparent;border:none;
+  text-decoration:none;cursor:pointer;transition:background .15s;font-family:inherit}
+.user-dropdown-item:hover{background:rgba(79,142,247,.1)}
+.user-dropdown-item:last-child{border-radius:0 0 12px 12px;color:#ef4444}
+.user-dropdown-item svg{flex-shrink:0}
 
 /* ── ORBS / GLOW (rovnaké ako dashboard) ── */
 body::before{content:'';position:fixed;top:-80%;left:-80%;width:260%;height:260%;
@@ -1840,11 +1854,34 @@ function updateNavAuth(user){
   const dashLink=document.getElementById('navDashboardLink');
   if(user){
     navRight.innerHTML=`
-      <div class="nav-user">
-        <span class="nav-user-email">${escHtml(user.email)}</span>
-        <button class="btn-signout" onclick="doSignOut()">Odhlásiť sa</button>
+      <div class="user-menu">
+        <button class="user-avatar" onclick="toggleUserDropdown()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-email" id="userDropdownEmail">${escHtml(user.email)}</div>
+          <div class="user-dropdown-divider"></div>
+          <a href="dashboard.html" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Dashboard
+          </a>
+          <button class="user-dropdown-item" onclick="doSignOut()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Log out
+          </button>
+        </div>
       </div>`;
-    if(dashLink) dashLink.style.display='';
+    if(dashLink) dashLink.style.display='none';
   } else {
     navRight.innerHTML=`
       <button class="btn-signin" onclick="openModal('login')">Prihlásiť sa</button>
@@ -1852,6 +1889,17 @@ function updateNavAuth(user){
     if(dashLink) dashLink.style.display='none';
   }
 }
+
+function toggleUserDropdown(){
+  const dropdown=document.getElementById('userDropdown');
+  if(dropdown) dropdown.classList.toggle('active');
+}
+
+document.addEventListener('click',e=>{
+  const menu=document.querySelector('.user-menu');
+  const dropdown=document.getElementById('userDropdown');
+  if(menu&&!menu.contains(e.target)) dropdown?.classList.remove('active');
+});
 
 // Listen for auth state changes
 _sb.auth.onAuthStateChange((_event, session)=>{
