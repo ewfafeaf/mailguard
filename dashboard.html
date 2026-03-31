@@ -891,6 +891,71 @@ body::before{content:'';position:fixed;inset:0;
   .stats-grid{grid-template-columns:1fr}
   .main{padding:16px}
 }
+
+/* ── ANALYZE SECTION LAYOUT ── */
+.az-layout{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+@media(max-width:1000px){.az-layout{grid-template-columns:1fr}}
+.az-left{display:flex;flex-direction:column;gap:16px}
+.az-right{display:flex;flex-direction:column;gap:14px;position:sticky;top:16px}
+
+/* panel base */
+.az-panel{background:rgba(18,18,26,.75);backdrop-filter:blur(14px);
+  border:1px solid var(--border);border-radius:var(--radius);padding:18px;
+  box-shadow:0 4px 24px rgba(0,0,0,.35)}
+.az-panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.az-panel-title{font-size:.72rem;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted)}
+.az-panel-badge{background:var(--surface3);color:var(--muted);
+  font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+
+/* quick stats */
+.az-stat-item{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.az-stat-item:last-of-type{border-bottom:none;padding-bottom:0}
+.az-stat-label{font-size:.82rem;color:var(--muted)}
+.az-stat-val{font-size:1.15rem;font-weight:800;color:var(--text)}
+.az-stat-val.blue{color:var(--accent)}
+.az-stat-val.green{color:var(--green)}
+.az-limit-wrap{padding-top:12px;border-top:1px solid rgba(255,255,255,.04);margin-top:4px}
+.az-limit-row{display:flex;justify-content:space-between;
+  font-size:.78rem;color:var(--muted);margin-bottom:7px}
+.az-limit-row span:last-child{font-weight:700;color:var(--text)}
+.az-progress{height:6px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.az-progress-fill{height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .5s ease,background .3s}
+
+/* recent scans */
+.az-scan-row{display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);cursor:default}
+.az-scan-row:last-child{border-bottom:none;padding-bottom:0}
+.az-scan-icon{width:28px;height:28px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.az-scan-icon.url{background:rgba(79,142,247,.12)}
+.az-scan-icon.email{background:rgba(124,95,247,.12)}
+.az-scan-icon.web{background:rgba(0,212,255,.10)}
+.az-scan-meta{flex:1;min-width:0}
+.az-scan-input{font-size:.8rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.az-scan-time{font-size:.7rem;color:var(--muted);margin-top:1px}
+.az-scan-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0}
+.az-scan-badge.safe{background:rgba(34,197,94,.15);color:var(--green)}
+.az-scan-badge.low{background:rgba(245,158,11,.12);color:var(--yellow)}
+.az-scan-badge.medium{background:rgba(249,115,22,.12);color:var(--orange)}
+.az-scan-badge.high{background:rgba(239,68,68,.12);color:var(--red)}
+.az-empty{font-size:.83rem;color:var(--muted);text-align:center;padding:18px 0}
+
+/* tips */
+.az-tips-panel{background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(124,95,247,.08));
+  border-color:rgba(79,142,247,.2)}
+.az-tip-icon{font-size:1.4rem;margin-bottom:8px}
+.az-tip-text{font-size:.83rem;color:var(--text);line-height:1.65;min-height:64px;
+  transition:opacity .35s ease}
+.az-tip-text.fade{opacity:0}
+.az-tip-label{font-size:.68rem;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.az-tip-dots{display:flex;gap:5px;margin-top:12px}
+.az-tip-dot{width:6px;height:6px;border-radius:50%;background:var(--surface3);transition:background .3s}
+.az-tip-dot.active{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -1242,17 +1307,71 @@ body::before{content:'';position:fixed;inset:0;
 
     <!-- Section: Nová analýza -->
     <div id="sectionAnalyze" class="dash-section" style="display:none">
-      <div class="dg-input-card" style="max-width:860px">
-        <div class="dg-input-heading">Začni novú analýzu</div>
-        <div class="dg-input-sub">Vlož URL adresu alebo text emailu — MailGuard automaticky rozpozná typ a spustí analýzu.</div>
-        <textarea id="dashInput" class="hdr-textarea" rows="5"
-          placeholder="Vlož URL alebo text emailu…&#10;&#10;Príklady:&#10;https://suspicious-site.com&#10;alebo celý text phishingového emailu"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:12px">
-          <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">🔍 Analyzovať</button>
+      <div class="az-layout">
+
+        <!-- LEFT: Input + Result + Recent Scans -->
+        <div class="az-left">
+
+          <!-- Input card -->
+          <div class="dg-input-card">
+            <div class="dg-input-heading">Začni novú analýzu</div>
+            <div class="dg-input-sub">Vlož URL adresu alebo text emailu — MailGuard automaticky rozpozná typ a spustí analýzu.</div>
+            <textarea id="dashInput" class="hdr-textarea" rows="5"
+              placeholder="Vlož URL alebo text emailu…&#10;&#10;Príklady:&#10;https://suspicious-site.com&#10;alebo celý text phishingového emailu"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+              <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">🔍 Analyzovať</button>
+            </div>
+            <div id="novaResultWrap" style="display:none;margin-top:18px">
+              <div id="dashResult"></div>
+              <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
+            </div>
+          </div>
+
+          <!-- Recent Scans -->
+          <div class="az-panel">
+            <div class="az-panel-hdr">
+              <span class="az-panel-title">Recent Scans</span>
+              <span class="az-panel-badge" id="azRecentCount">5</span>
+            </div>
+            <div id="azRecentList"><div class="az-empty">Načítavam…</div></div>
+          </div>
+
         </div>
-        <div id="novaResultWrap" style="display:none;margin-top:18px">
-          <div id="dashResult"></div>
-          <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
+
+        <!-- RIGHT: Quick Stats + Tips -->
+        <div class="az-right">
+
+          <!-- Quick Stats -->
+          <div class="az-panel">
+            <div class="az-panel-hdr">
+              <span class="az-panel-title">Quick Stats</span>
+            </div>
+            <div class="az-stat-item">
+              <span class="az-stat-label">Dnes</span>
+              <span class="az-stat-val blue" id="azToday">—</span>
+            </div>
+            <div class="az-stat-item">
+              <span class="az-stat-label">Tento týždeň</span>
+              <span class="az-stat-val" id="azWeek">—</span>
+            </div>
+            <div class="az-limit-wrap">
+              <div class="az-limit-row">
+                <span>Denný limit</span>
+                <span id="azLimitLabel">—</span>
+              </div>
+              <div class="az-progress">
+                <div class="az-progress-fill" id="azLimitFill" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips & Tricks -->
+          <div class="az-panel az-tips-panel">
+            <div class="az-tip-label">💡 Vedeli ste, že…</div>
+            <div class="az-tip-text" id="azTipText"></div>
+            <div class="az-tip-dots" id="azTipDots"></div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -1851,7 +1970,8 @@ function showSection(s){
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
   const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
-  if(s==='nova')    loadNovaExtras();
+  if(s==='nova')     loadNovaExtras();
+  if(s==='analyze')  loadAnalyzeSection();
   if(s==='historia') loadHistory();
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
@@ -3555,6 +3675,7 @@ async function dashAnalyze(){
   await saveAnalysis(val,gsbMatches);
   saveInd.style.display='block';
   loadStats();
+  loadAnalyzeSection();
 }
 
 /* ══════════════════════════════════════════
@@ -3650,6 +3771,122 @@ async function loadNovaExtras(){
     `<span style="color:var(--text);font-size:.83rem">${escHtml(inputShort)}</span>`+
     `<span style="color:${vColor};font-weight:600;font-size:.82rem">— ${escHtml(verdictLabel)}</span>`;
   actWrap.style.display='block';
+}
+
+/* ══════════════════════════════════════════
+   ANALYZE SECTION — Quick Stats + Recent + Tips
+══════════════════════════════════════════ */
+const _AZ_TIPS=[
+  'Pozor na URL s číselnými znakmi namiesto písmen — g00gle.com nie je google.com.',
+  'Phishingové emaily vytvárajú umelú naliehavosť: "Váš účet bude zablokovaný o 24 hodín."',
+  'Skontrolujte skutočného odosielateľa — zobrazené meno a skutočná adresa sa môžu líšiť.',
+  'Nikdy nezadávajte heslo cez odkaz z emailu — vždy choďte priamo na stránku.',
+  'Legitímne banky ani školy nikdy nežiadajú heslo emailom alebo cez SMS.',
+  'Podozrivo krátke domény a hodne pomlčiek sú varovným signálom (login-paypal-secure.com).',
+  'PDF a Word dokumenty môžu obsahovať makrá — vždy ich analyzujte pred otvorením.',
+  'HTTPS neznamená automaticky bezpečnosť — iba šifruje prenos, nie obsah webu.',
+];
+
+let _azTipIndex=0;
+let _azTipTimer=null;
+
+async function loadAnalyzeSection(){
+  if(!_currentUser) return;
+
+  // ── Quick Stats ──
+  const now=new Date();
+  const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-now.getDay());weekStart.setHours(0,0,0,0);
+
+  const [{data:todayData},{data:weekData}]=await Promise.all([
+    _sb.from('analyses').select('id').eq('user_id',_currentUser.id).gte('created_at',todayStart.toISOString()),
+    _sb.from('analyses').select('id').eq('user_id',_currentUser.id).gte('created_at',weekStart.toISOString()),
+  ]);
+
+  const todayCount=todayData?todayData.length:0;
+  const weekCount=weekData?weekData.length:0;
+  const el_today=document.getElementById('azToday');
+  const el_week=document.getElementById('azWeek');
+  if(el_today) el_today.textContent=todayCount;
+  if(el_week)  el_week.textContent=weekCount;
+
+  const limitLabel=document.getElementById('azLimitLabel');
+  const limitFill=document.getElementById('azLimitFill');
+  const isFree=_currentPlan==='free';
+  if(isFree){
+    const limit=FREE_DAILY_LIMIT;
+    const pct=Math.min(todayCount/limit*100,100);
+    if(limitLabel) limitLabel.textContent=`${todayCount} / ${limit}`;
+    if(limitFill){
+      limitFill.style.width=pct+'%';
+      limitFill.style.background=pct>=100?'var(--red)':pct>=66?'var(--orange)':'linear-gradient(90deg,var(--accent),var(--accent2))';
+    }
+  } else {
+    if(limitLabel) limitLabel.innerHTML='<span style="color:var(--teal)">Neobmedzené ✨</span>';
+    if(limitFill){ limitFill.style.width='100%';limitFill.style.background='linear-gradient(90deg,var(--teal),var(--green))'; }
+  }
+
+  // ── Recent Scans ──
+  const {data:recent}=await _sb.from('analyses')
+    .select('type,input,verdict,created_at')
+    .eq('user_id',_currentUser.id)
+    .order('created_at',{ascending:false})
+    .limit(5);
+
+  const listEl=document.getElementById('azRecentList');
+  const countEl=document.getElementById('azRecentCount');
+  if(listEl){
+    if(!recent||recent.length===0){
+      listEl.innerHTML='<div class="az-empty">Zatiaľ žiadne analýzy.</div>';
+      if(countEl) countEl.textContent='0';
+    } else {
+      if(countEl) countEl.textContent=recent.length;
+      const typeIcon={url:'🔗',email:'✉️',web:'🌐',pdf:'📄',headers:'📋'};
+      const typeCls={url:'url',email:'email',web:'web',pdf:'url',headers:'email'};
+      const verdictLabel={safe:'Bezpečné',low:'Nízke',medium:'Stredné',high:'Hrozba'};
+      listEl.innerHTML=recent.map(r=>{
+        const icon=typeIcon[r.type]||'🔍';
+        const cls=typeCls[r.type]||'url';
+        const vl=verdictLabel[r.verdict]||'—';
+        const t=new Date(r.created_at);
+        const timeStr=t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})+
+          ' · '+t.toLocaleDateString('sk-SK',{day:'numeric',month:'short'});
+        const inputShort=(r.input||'').slice(0,48)+((r.input||'').length>48?'…':'');
+        return`<div class="az-scan-row">
+          <div class="az-scan-icon ${cls}">${icon}</div>
+          <div class="az-scan-meta">
+            <div class="az-scan-input" title="${escHtml(r.input||'')}">${escHtml(inputShort)}</div>
+            <div class="az-scan-time">${timeStr}</div>
+          </div>
+          <span class="az-scan-badge ${r.verdict||'safe'}">${vl}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── Rotating Tips ──
+  const tips=_AZ_TIPS;
+  _azTipIndex=Math.floor(Math.random()*tips.length);
+  const tipEl=document.getElementById('azTipText');
+  const dotsEl=document.getElementById('azTipDots');
+  if(!tipEl||!dotsEl) return;
+
+  // Build dots
+  dotsEl.innerHTML=tips.map((_,i)=>`<span class="az-tip-dot${i===_azTipIndex?' active':''}"></span>`).join('');
+  tipEl.textContent=tips[_azTipIndex];
+
+  function rotateTip(){
+    tipEl.classList.add('fade');
+    setTimeout(()=>{
+      _azTipIndex=(_azTipIndex+1)%tips.length;
+      tipEl.textContent=tips[_azTipIndex];
+      tipEl.classList.remove('fade');
+      dotsEl.querySelectorAll('.az-tip-dot').forEach((d,i)=>d.classList.toggle('active',i===_azTipIndex));
+    },350);
+  }
+
+  if(_azTipTimer) clearInterval(_azTipTimer);
+  _azTipTimer=setInterval(rotateTip,5000);
 }
 
 /* ══════════════════════════════════════════
