@@ -109,44 +109,46 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 /* ═══════════════════════════════════════
    MODERN SIDEBAR
    ═══════════════════════════════════════ */
-.modern-sidebar{position:fixed;left:0;top:0;height:100vh;width:240px;
+.modern-sidebar{position:fixed;left:0;top:0;height:100vh;width:200px;
   background:rgba(15,17,27,.95);backdrop-filter:blur(20px);
   border-right:1px solid rgba(79,142,247,.1);
-  display:flex;flex-direction:column;padding:20px 12px;z-index:100}
-.sidebar-logo{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:28px}
-.logo-icon{width:36px;height:36px;
+  display:flex;flex-direction:column;padding:16px 10px;z-index:100}
+.sidebar-logo{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:24px}
+.logo-icon{width:32px;height:32px;
   background:linear-gradient(135deg,rgba(79,142,247,.2),rgba(124,95,247,.2));
   border-radius:8px;display:flex;align-items:center;justify-content:center;
   border:1px solid rgba(79,142,247,.3)}
-.logo-icon svg{width:20px;height:20px}
-.logo-text{font-size:.9rem;font-weight:800;letter-spacing:.05em;color:#eeeef5}
-.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;
+.logo-icon svg{width:18px;height:18px}
+.logo-text{font-size:.85rem;font-weight:800;letter-spacing:.05em;color:#eeeef5}
+.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 12px;
   background:transparent;border:none;border-radius:8px;color:#8888aa;
-  font-size:.88rem;font-weight:500;cursor:pointer;transition:all .2s;
+  font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s;
   width:100%;text-align:left;font-family:inherit}
 .nav-item:hover{background:rgba(79,142,247,.1);color:#eeeef5}
 .nav-item.active{background:linear-gradient(90deg,rgba(79,142,247,.15),rgba(124,95,247,.15));
-  color:#4f8ef7;border-left:3px solid #4f8ef7}
-.nav-item svg{width:18px;height:18px;flex-shrink:0}
-.sidebar-user{display:flex;align-items:center;gap:10px;padding:10px;
-  background:rgba(79,142,247,.08);border-radius:10px;
-  border:1px solid rgba(79,142,247,.15);margin-top:auto;margin-bottom:10px}
-.user-avatar-small{width:36px;height:36px;
+  color:#4f8ef7;border-left:3px solid #4f8ef7;padding-left:9px}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.nav-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user{display:flex;align-items:center;gap:8px;padding:8px;
+  background:rgba(79,142,247,.08);border-radius:8px;
+  border:1px solid rgba(79,142,247,.15);margin-top:auto;margin-bottom:8px}
+.user-avatar-small{width:32px;height:32px;
   background:linear-gradient(135deg,#4f8ef7,#7c5ff7);
   border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0}
-.user-avatar-small svg{width:16px;height:16px}
+.user-avatar-small svg{width:14px;height:14px}
 .user-info-small{flex:1;min-width:0}
-.user-name{font-size:.85rem;font-weight:600;color:#eeeef5;
+.user-name{font-size:.8rem;font-weight:600;color:#eeeef5;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.user-status{font-size:.72rem;color:#8888aa;display:flex;align-items:center;gap:6px;margin-top:2px}
-.status-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse-dot 2s infinite}
+.user-status{font-size:.7rem;color:#8888aa;display:flex;align-items:center;gap:4px;margin-top:2px}
+.status-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;flex-shrink:0;animation:pulse-dot 2s infinite}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
-.sidebar-logout{display:flex;align-items:center;gap:10px;padding:10px 14px;
+.sidebar-logout{display:flex;align-items:center;gap:8px;padding:9px 12px;
   background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;
-  color:#ef4444;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s;
+  color:#ef4444;font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s;
   width:100%;font-family:inherit}
-.sidebar-logout svg{width:16px;height:16px}
+.sidebar-logout svg{width:14px;height:14px;flex-shrink:0}
+.sidebar-logout span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sidebar-logout:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
 
 /* ── SIDEBAR USAGE BAR (zachované pre funkčnosť) ── */
@@ -167,11 +169,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 /* ═══════════════════════════════════════
    MODERN TOP BAR
    ═══════════════════════════════════════ */
-.modern-topbar{position:fixed;left:240px;right:0;top:0;height:70px;
+.modern-topbar{position:fixed;left:200px;right:0;top:0;height:70px;
   background:rgba(18,18,26,.8);backdrop-filter:blur(20px);
   border-bottom:1px solid rgba(79,142,247,.1);
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 28px;z-index:90}
+  padding:0 24px;z-index:90}
 .topbar-datetime{display:flex;align-items:center;gap:12px;font-size:.9rem;color:#8888aa}
 .topbar-datetime .separator{color:rgba(136,136,170,.3)}
 .topbar-search{flex:1;max-width:500px;margin:0 40px;position:relative;
@@ -224,14 +226,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .dropdown-item:last-child:hover{background:rgba(239,68,68,.1)}
 
 /* Main content posun */
-.main{margin-left:240px;margin-top:70px;padding:28px;
+.main{margin-left:200px;margin-top:70px;padding:24px;
   min-height:calc(100vh - 70px);position:relative;overflow:hidden}
 
 @media(max-width:1024px){
   .modern-sidebar{transform:translateX(-100%);transition:transform .3s}
   .modern-sidebar.mobile-open{transform:translateX(0)}
   .modern-topbar{left:0}
-  .main{margin-left:0;width:100%}
+  .main{margin-left:0;width:100%;padding:16px}
 }
 
 /* ── WEB SCANNER ── */
