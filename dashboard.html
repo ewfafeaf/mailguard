@@ -1242,46 +1242,18 @@ body::before{content:'';position:fixed;inset:0;
 
     <!-- Section: Nová analýza -->
     <div id="sectionAnalyze" class="dash-section" style="display:none">
-      <div class="dg-input-card" style="grid-column:1/-1;max-width:860px">
-
-        <!-- Tabs -->
-        <div class="atab-row">
-          <button class="atab active" id="atabText" onclick="switchAnalysisTab('text')">✉️ Email / URL</button>
-          <button class="atab" id="atabHeaders" onclick="switchAnalysisTab('headers')">📋 Email hlavičky</button>
+      <div class="dg-input-card" style="max-width:860px">
+        <div class="dg-input-heading">Začni novú analýzu</div>
+        <div class="dg-input-sub">Vlož URL adresu alebo text emailu — MailGuard automaticky rozpozná typ a spustí analýzu.</div>
+        <textarea id="dashInput" class="hdr-textarea" rows="5"
+          placeholder="Vlož URL alebo text emailu…&#10;&#10;Príklady:&#10;https://suspicious-site.com&#10;alebo celý text phishingového emailu"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">🔍 Analyzovať</button>
         </div>
-
-        <!-- Pane: Email / URL -->
-        <div id="atPaneText">
-          <div class="dg-input-heading">Začni novú analýzu</div>
-          <div class="dg-input-sub">Vlož URL adresu alebo text emailu — MailGuard automaticky rozpozná typ a spustí analýzu.</div>
-          <div class="analysis-input-row">
-            <textarea id="dashInput" class="hdr-textarea" rows="5"
-              placeholder="Vlož URL alebo text emailu…&#10;&#10;Príklady:&#10;https://suspicious-site.com&#10;alebo celý text phishingového emailu"></textarea>
-          </div>
-          <div style="display:flex;justify-content:flex-end;margin-top:12px">
-            <button class="analysis-btn" id="dashBtn" onclick="dashAnalyze()">🔍 Analyzovať</button>
-          </div>
-        </div>
-
-        <!-- Pane: Email hlavičky -->
-        <div id="atPaneHeaders" style="display:none">
-          <div class="dg-input-heading">Analýza emailových hlavičiek</div>
-          <div class="dg-input-sub">Vlož raw hlavičky emailu — MailGuard skontroluje SPF, DKIM, DMARC a odhalí spoofing.
-            <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
-          </div>
-          <textarea class="hdr-textarea" id="novaHdrInput" rows="6"
-            placeholder="Vlož sem raw email hlavičky&#10;&#10;Príklad:&#10;From: support@example.com&#10;DKIM-Signature: v=1; a=rsa-sha256; d=example.com;&#10;Authentication-Results: mx.google.com; spf=pass; dkim=fail"></textarea>
-          <div style="display:flex;justify-content:flex-end;margin-top:12px">
-            <button class="analysis-btn" onclick="novaAnalyzeHeaders()">🔍 Analyzovať hlavičky</button>
-          </div>
-        </div>
-
-        <!-- Shared result area -->
         <div id="novaResultWrap" style="display:none;margin-top:18px">
           <div id="dashResult"></div>
           <div class="save-indicator" id="saveIndicator">✓ Analýza uložená do histórie</div>
         </div>
-
       </div>
     </div>
 
