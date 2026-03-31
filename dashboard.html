@@ -956,6 +956,66 @@ body::before{content:'';position:fixed;inset:0;
 .az-tip-dots{display:flex;gap:5px;margin-top:12px}
 .az-tip-dot{width:6px;height:6px;border-radius:50%;background:var(--surface3);transition:background .3s}
 .az-tip-dot.active{background:var(--accent)}
+
+/* ── HISTÓRIA LAYOUT ── */
+.hist-layout{display:grid;grid-template-columns:1fr 270px;gap:16px;align-items:start}
+@media(max-width:1000px){.hist-layout{grid-template-columns:1fr}}
+.hist-right{display:flex;flex-direction:column;gap:14px;position:sticky;top:16px}
+.hist-panel{background:rgba(18,18,26,.75);backdrop-filter:blur(14px);
+  border:1px solid var(--border);border-radius:var(--radius);padding:18px;
+  box-shadow:0 4px 24px rgba(0,0,0,.35)}
+.hist-panel-title{font-size:.7rem;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+
+/* calendar */
+.hist-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hist-cal-month{font-size:.88rem;font-weight:700;color:var(--text)}
+.hist-cal-nav{background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:1rem;padding:2px 6px;border-radius:6px;transition:color .2s,background .2s}
+.hist-cal-nav:hover{color:var(--text);background:var(--surface3)}
+.hist-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.hist-cal-dow{font-size:.6rem;font-weight:700;color:var(--muted);padding:3px 0;letter-spacing:.05em}
+.hist-cal-day{font-size:.72rem;padding:4px 2px;border-radius:5px;color:var(--muted);
+  cursor:default;position:relative;line-height:1;transition:background .15s,color .15s}
+.hist-cal-day.has-data{color:var(--text);font-weight:600}
+.hist-cal-day.has-data::after{content:'';position:absolute;bottom:1px;left:50%;
+  transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--accent)}
+.hist-cal-day.today{background:rgba(79,142,247,.18);color:var(--accent);font-weight:800}
+.hist-cal-day.other-month{opacity:.25}
+
+/* quick stats */
+.hist-stat{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.83rem}
+.hist-stat:last-child{border-bottom:none;padding-bottom:0}
+.hist-stat-label{color:var(--muted)}
+.hist-stat-val{font-weight:800;color:var(--text)}
+
+/* filter shortcuts */
+.hist-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.hist-filter-btn{padding:7px 0;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;color:var(--muted);font-size:.75rem;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .2s;text-align:center}
+.hist-filter-btn:hover{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+.hist-filter-btn.active{background:rgba(79,142,247,.12);color:var(--accent);
+  border-color:rgba(79,142,247,.35);font-weight:700}
+
+/* admin panel table */
+.hist-table-wrap{background:rgba(13,13,20,.6);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden}
+.hist-table{width:100%;border-collapse:collapse}
+.hist-table th{padding:10px 14px;text-align:left;font-size:.68rem;font-weight:800;
+  color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);background:rgba(255,255,255,.015)}
+.hist-table td{padding:11px 14px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.03);
+  vertical-align:middle}
+.hist-table tr:last-child td{border-bottom:none}
+.hist-table tbody tr{transition:background .15s}
+.hist-table tbody tr:hover td{background:rgba(79,142,247,.04)}
+.hist-score-circle{width:32px;height:32px;border-radius:50%;display:inline-flex;
+  align-items:center;justify-content:center;font-weight:800;font-size:.75rem}
+.hist-input-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--muted);font-size:.79rem}
+.hist-date-cell{color:var(--muted);font-size:.74rem;white-space:nowrap;line-height:1.5}
 </style>
 </head>
 <body>
@@ -1378,13 +1438,56 @@ body::before{content:'';position:fixed;inset:0;
 
     <!-- Section: Historia -->
     <div id="sectionHistoria" class="dash-section" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
         <div class="dash-section-title" style="margin-bottom:0"><div class="dot"></div>História analýz</div>
-        <button class="analysis-btn" style="height:38px;padding:0 16px;font-size:.82rem;display:flex;align-items:center;gap:6px"
+        <button class="analysis-btn" style="height:36px;padding:0 16px;font-size:.82rem;display:flex;align-items:center;gap:6px"
           onclick="openExportModal()">📄 Export PDF</button>
       </div>
-      <div class="history-card">
-        <div id="historyContent"><div class="history-empty">Načítavam históriu…</div></div>
+
+      <div class="hist-layout">
+
+        <!-- LEFT: Table -->
+        <div>
+          <div class="hist-table-wrap">
+            <div id="historyContent"><div class="history-empty">Načítavam históriu…</div></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Calendar + Stats + Filters -->
+        <div class="hist-right">
+
+          <!-- Mini Calendar -->
+          <div class="hist-panel">
+            <div class="hist-cal-header">
+              <button class="hist-cal-nav" onclick="histCalPrev()">‹</button>
+              <span class="hist-cal-month" id="histCalMonth">—</span>
+              <button class="hist-cal-nav" onclick="histCalNext()">›</button>
+            </div>
+            <div class="hist-cal-grid" id="histCalGrid"></div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="hist-panel">
+            <div class="hist-panel-title">Štatistiky</div>
+            <div class="hist-stat"><span class="hist-stat-label">Dnes</span><span class="hist-stat-val" id="hstatToday">—</span></div>
+            <div class="hist-stat"><span class="hist-stat-label">Tento týždeň</span><span class="hist-stat-val" id="hstatWeek">—</span></div>
+            <div class="hist-stat"><span class="hist-stat-label">Tento mesiac</span><span class="hist-stat-val" id="hstatMonth">—</span></div>
+          </div>
+
+          <!-- Filter Shortcuts -->
+          <div class="hist-panel">
+            <div class="hist-panel-title">Filtrovať</div>
+            <div class="hist-filter-row">
+              <button class="hist-filter-btn active" id="hfAll"   onclick="histSetFilter('all')">Všetko</button>
+              <button class="hist-filter-btn"        id="hfToday" onclick="histSetFilter('today')">Dnes</button>
+              <button class="hist-filter-btn"        id="hfWeek"  onclick="histSetFilter('week')">Týždeň</button>
+              <button class="hist-filter-btn"        id="hfMonth" onclick="histSetFilter('month')">Mesiac</button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
 
@@ -1972,7 +2075,7 @@ function showSection(s){
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
   if(s==='nova')     loadNovaExtras();
   if(s==='analyze')  loadAnalyzeSection();
-  if(s==='historia') loadHistory();
+  if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats(); }
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
   if(s==='team')   { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeam(); }
@@ -3193,47 +3296,79 @@ async function loadStats(){
 
 /* ── HISTORY ── */
 let _historyPage=1;
+let _histFilter='all';
+let _histCalYear=new Date().getFullYear();
+let _histCalMonth=new Date().getMonth();
+let _histCalDates=new Set();
 const _HISTORY_PER_PAGE=20;
+
+function histSetFilter(f){
+  _histFilter=f;
+  _historyPage=1;
+  ['all','today','week','month'].forEach(k=>{
+    const el=document.getElementById('hf'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(el) el.classList.toggle('active',k===f);
+  });
+  loadHistory(1);
+}
 
 async function loadHistory(page=1){
   _historyPage=page;
-  const start=(page-1)*_HISTORY_PER_PAGE;
-  const end=start+_HISTORY_PER_PAGE-1;
+  if(!_currentUser) return;
 
   const container=document.getElementById('historyContent');
   container.innerHTML='<div class="history-empty">Načítavam…</div>';
 
-  const{data,error,count}=await _sb
-    .from('analyses')
-    .select('*',{count:'exact'})
-    .eq('user_id',_currentUser.id)
-    .order('created_at',{ascending:false})
-    .range(start,end);
+  // Build time filter
+  let query=_sb.from('analyses').select('*',{count:'exact'}).eq('user_id',_currentUser.id);
+  const now=new Date();
+  if(_histFilter==='today'){
+    const s=new Date(now);s.setHours(0,0,0,0);
+    query=query.gte('created_at',s.toISOString());
+  } else if(_histFilter==='week'){
+    const s=new Date(now);s.setDate(now.getDate()-7);
+    query=query.gte('created_at',s.toISOString());
+  } else if(_histFilter==='month'){
+    const s=new Date(now);s.setDate(now.getDate()-30);
+    query=query.gte('created_at',s.toISOString());
+  }
+
+  const start=(page-1)*_HISTORY_PER_PAGE;
+  const end=start+_HISTORY_PER_PAGE-1;
+  const{data,error,count}=await query.order('created_at',{ascending:false}).range(start,end);
 
   if(error){
     container.innerHTML='<div class="history-empty">Chyba načítania histórie.</div>';
     return;
   }
   if(!data||data.length===0){
-    container.innerHTML='<div class="history-empty">Zatiaľ žiadne analýzy. Spusti svoju prvú analýzu! 🔍</div>';
+    container.innerHTML='<div class="history-empty">Zatiaľ žiadne analýzy pre zvolený filter. 🔍</div>';
     return;
   }
 
+  // Collect dates for calendar dots
+  _histCalDates=new Set(data.map(r=>new Date(r.created_at).toDateString()));
+  renderHistCalendar();
+
+  const typeMap={url:['URL','url'],email:['Email','email'],web:['Web','web'],pdf:['Súbor','pdf'],headers:['Hlavičky','headers']};
+  const verdictLabel={safe:'Bezpečné',low:'Nízke',medium:'Stredné',high:'Hrozba'};
+
   const rows=data.map(r=>{
     const d=new Date(r.created_at);
-    const dateStr=d.toLocaleDateString('sk-SK')+' '+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
-    const typeMap={url:['URL','url'],email:['Email','email'],web:['Web','web'],pdf:['Súbor','pdf'],headers:['Hlavičky','headers']};
+    const dateTop=d.toLocaleDateString('sk-SK');
+    const dateBot=d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
     const [typeLabel,typeCls]=typeMap[r.type]||['Iné','email'];
-    const typeBadge=`<span class="badge badge-${typeCls}">${typeLabel}</span>`;
     const level=r.verdict||'safe';
-    const levelLabel={safe:'Bezpečné',low:'Nízke riziko',medium:'Stredné riziko',high:'Vysoké riziko'}[level]||'—';
+    const vl=verdictLabel[level]||'—';
     const score=r.score??'?';
+    const scoreNum=parseInt(score)||0;
+    const scoreCls=scoreNum===0?'level-safe':scoreNum<20?'level-safe':scoreNum<45?'level-low':scoreNum<70?'level-medium':'level-high';
     return`<tr>
-      <td><span class="history-date">${dateStr}</span></td>
-      <td>${typeBadge}</td>
-      <td><div class="history-input-text" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,60))}${(r.input||'').length>60?'…':''}</div></td>
-      <td><span class="score-pill level-${level}">${score}</span></td>
-      <td><span class="badge badge-${level}">${levelLabel}</span></td>
+      <td><div class="hist-date-cell">${dateTop}<br><span style="font-size:.68rem">${dateBot}</span></div></td>
+      <td><span class="badge badge-${typeCls}">${typeLabel}</span></td>
+      <td><div class="hist-input-cell" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,55))}${(r.input||'').length>55?'…':''}</div></td>
+      <td style="text-align:center"><span class="hist-score-circle ${scoreCls}">${score}</span></td>
+      <td><span class="badge badge-${level}">${vl}</span></td>
     </tr>`;
   }).join('');
 
@@ -3245,12 +3380,73 @@ async function loadHistory(page=1){
       <button onclick="loadHistory(${page+1})" ${page===totalPages?'disabled':''}>Ďalšia →</button>
     </div>`:'';
 
-  container.innerHTML=`<table class="history-table">
+  container.innerHTML=`<table class="hist-table">
     <thead><tr>
-      <th>Dátum</th><th>Typ</th><th>Vstup</th><th>Skóre</th><th>Verdikt</th>
+      <th>Dátum</th><th>Typ</th><th>Vstup</th><th style="text-align:center">Skóre</th><th>Verdikt</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>${pagination}`;
+
+  // Load sidebar stats
+  loadHistStats();
+}
+
+async function loadHistStats(){
+  if(!_currentUser) return;
+  const now=new Date();
+  const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-7);
+  const monthStart=new Date(now);monthStart.setDate(now.getDate()-30);
+  const uid=_currentUser.id;
+  const[{data:td},{data:wk},{data:mo}]=await Promise.all([
+    _sb.from('analyses').select('id').eq('user_id',uid).gte('created_at',todayStart.toISOString()),
+    _sb.from('analyses').select('id').eq('user_id',uid).gte('created_at',weekStart.toISOString()),
+    _sb.from('analyses').select('id').eq('user_id',uid).gte('created_at',monthStart.toISOString()),
+  ]);
+  const el=id=>document.getElementById(id);
+  if(el('hstatToday')) el('hstatToday').textContent=td?td.length:0;
+  if(el('hstatWeek'))  el('hstatWeek').textContent=wk?wk.length:0;
+  if(el('hstatMonth')) el('hstatMonth').textContent=mo?mo.length:0;
+}
+
+function renderHistCalendar(){
+  const monthNames=['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
+  const el=id=>document.getElementById(id);
+  if(!el('histCalGrid')) return;
+
+  el('histCalMonth').textContent=`${monthNames[_histCalMonth]} ${_histCalYear}`;
+
+  const first=new Date(_histCalYear,_histCalMonth,1);
+  const last=new Date(_histCalYear,_histCalMonth+1,0);
+  const today=new Date();
+  // Start on Monday (0=Mon…6=Sun)
+  let startDow=first.getDay();if(startDow===0)startDow=7;startDow--;
+
+  const dow=['Po','Ut','St','Št','Pi','So','Ne'];
+  let html=dow.map(d=>`<div class="hist-cal-dow">${d}</div>`).join('');
+
+  // Blanks before first
+  for(let i=0;i<startDow;i++) html+=`<div class="hist-cal-day other-month"></div>`;
+
+  for(let day=1;day<=last.getDate();day++){
+    const date=new Date(_histCalYear,_histCalMonth,day);
+    const isToday=date.toDateString()===today.toDateString();
+    const hasData=_histCalDates.has(date.toDateString());
+    html+=`<div class="hist-cal-day${isToday?' today':''}${hasData?' has-data':''}">${day}</div>`;
+  }
+
+  el('histCalGrid').innerHTML=html;
+}
+
+function histCalPrev(){
+  _histCalMonth--;
+  if(_histCalMonth<0){_histCalMonth=11;_histCalYear--;}
+  renderHistCalendar();
+}
+function histCalNext(){
+  _histCalMonth++;
+  if(_histCalMonth>11){_histCalMonth=0;_histCalYear++;}
+  renderHistCalendar();
 }
 
 /* ── PDF EXPORT ── */
@@ -3335,7 +3531,7 @@ async function exportPDF(filters={}){
   doc.setFont('helvetica','normal');
   doc.setFontSize(9);
   doc.setTextColor(200,220,255);
-  doc.text('Bezpecnostny report',margin+13,18.5);
+  doc.text('Security Report',margin+13,18.5);
 
   y=30;
 
@@ -3348,19 +3544,19 @@ async function exportPDF(filters={}){
   doc.setFont('helvetica','bold');
   doc.setFontSize(10);
   doc.setTextColor(30,30,50);
-  doc.text('Pouzivatel:',margin,y);
+  doc.text('User:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(name)+' ('+String(email)+')',margin+28,y);
   y+=7;
 
   doc.setFont('helvetica','bold');
-  doc.text('Datum exportu:',margin,y);
+  doc.text('Export Date:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(exportDate)+' '+String(exportTime),margin+35,y);
   y+=7;
 
   doc.setFont('helvetica','bold');
-  doc.text('Celkovy pocet analyz:',margin,y);
+  doc.text('Total Analyses:',margin,y);
   doc.setFont('helvetica','normal');
   doc.text(String(data.length),margin+35,y);
   y+=4;
@@ -3379,10 +3575,10 @@ async function exportPDF(filters={}){
     : 0;
 
   const boxes=[
-    {label:'Celkovo analyz',val:String(data.length),col:[79,142,247]},
-    {label:'Bezpecne',val:String(safe),col:[34,197,94]},
-    {label:'Rizikove',val:String(danger),col:[239,68,68]},
-    {label:'Priemerne skore',val:String(avgScore),col:[245,158,11]},
+    {label:'Total Analyses',val:String(data.length),col:[79,142,247]},
+    {label:'Safe',val:String(safe),col:[34,197,94]},
+    {label:'Threats',val:String(danger),col:[239,68,68]},
+    {label:'Average Score',val:String(avgScore),col:[245,158,11]},
   ];
   const boxW=(pageW-margin*2-9)/4;
   boxes.forEach((b,i)=>{
@@ -3407,12 +3603,12 @@ async function exportPDF(filters={}){
   doc.setFont('helvetica','bold');
   doc.setFontSize(10);
   doc.setTextColor(30,30,50);
-  doc.text('Historia analyz',margin,y);
+  doc.text('Analysis History',margin,y);
   y+=4;
 
   // ── Table
-  const verdictMap={safe:'Bezpecne',low:'Nizke riziko',medium:'Stredne riziko',high:'Vysoke riziko'};
-  const typeMap={email:'Email',url:'URL',web:'Web'};
+  const verdictMap={safe:'Safe',low:'Low Risk',medium:'Medium Risk',high:'High Risk'};
+  const typeMap={email:'Email',url:'URL',web:'Web',pdf:'File',headers:'Headers'};
 
   const tableRows=data.map(r=>{
     let dateStr='-';
@@ -3434,15 +3630,15 @@ async function exportPDF(filters={}){
   });
 
   const verdictColors={
-    'Bezpecne':[34,197,94],
-    'Nizke riziko':[245,158,11],
-    'Stredne riziko':[249,115,22],
-    'Vysoke riziko':[239,68,68],
+    'Safe':[34,197,94],
+    'Low Risk':[245,158,11],
+    'Medium Risk':[249,115,22],
+    'High Risk':[239,68,68],
   };
 
   doc.autoTable({
     startY:y,
-    head:[['Datum','Typ','Vstup','Skore','Verdikt']],
+    head:[['Date','Type','Input','Score','Verdict']],
     body:tableRows,
     margin:{left:margin,right:margin},
     styles:{fontSize:7.5,cellPadding:3,overflow:'linebreak',textColor:[30,30,50]},
@@ -3490,8 +3686,8 @@ async function exportPDF(filters={}){
     doc.setFont('helvetica','normal');
     doc.setFontSize(7);
     doc.setTextColor(150,155,175);
-    doc.text('MailGuard - Bezpecnostny report',margin,pageH-5.5);
-    doc.text('Strana '+p+' / '+pageCount,pageW-margin,pageH-5.5,{align:'right'});
+    doc.text('MailGuard - Security Report',margin,pageH-5.5);
+    doc.text('Page '+p+' / '+pageCount,pageW-margin,pageH-5.5,{align:'right'});
     doc.text(String(exportDate||''),pageW/2,pageH-5.5,{align:'center'});
   }
 
