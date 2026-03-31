@@ -322,20 +322,59 @@ textarea{min-height:150px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── HOW IT WORKS ── */
-#how{padding:80px 0}
-.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;position:relative}
-.steps-grid::before{content:'';position:absolute;top:36px;left:calc(16.67% + 20px);
-  right:calc(16.67% + 20px);height:1px;
-  background:linear-gradient(90deg,transparent,var(--accent),var(--teal),transparent);opacity:.4}
-.step-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:32px 24px;text-align:center;transition:border-color .3s,transform .3s}
-.step-card:hover{border-color:var(--accent);transform:translateY(-4px)}
-.step-num{width:54px;height:54px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:900;
-  margin:0 auto 18px;box-shadow:0 0 22px rgba(79,142,247,.35)}
-.step-title{font-size:1.05rem;font-weight:700;margin-bottom:10px}
-.step-desc{font-size:.875rem;color:var(--muted);line-height:1.65}
+.how-it-works{padding:120px 20px;position:relative;z-index:2}
+.how-container{max-width:1400px;margin:0 auto;text-align:center}
+.how-badge{display:inline-block;padding:8px 20px;background:rgba(79,142,247,.15);
+  border:1px solid rgba(79,142,247,.3);border-radius:20px;font-size:.75rem;font-weight:700;
+  letter-spacing:.1em;color:#4f8ef7;text-transform:uppercase;margin-bottom:24px}
+.how-title{font-size:3.5rem;font-weight:800;margin-bottom:16px;line-height:1.2}
+.gradient-text{background:linear-gradient(90deg,#4f8ef7,#7c5ff7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.how-subtitle{font-size:1.15rem;color:#8888aa;margin-bottom:80px;max-width:600px;margin-left:auto;margin-right:auto}
+.how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:40px;margin-top:60px}
+.step-card{background:rgba(18,18,26,.6);border:1px solid rgba(79,142,247,.15);border-radius:20px;
+  padding:40px 32px;backdrop-filter:blur(10px);transition:all .3s;height:100%}
+.step-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-8px);box-shadow:0 20px 60px rgba(79,142,247,.15)}
+.step-visual{height:240px;margin-bottom:32px;display:flex;align-items:center;justify-content:center;position:relative;flex-direction:column;gap:10px}
+.step-input-demo{background:rgba(10,14,26,.8);border:1px solid rgba(79,142,247,.3);border-radius:12px;
+  padding:16px;width:100%;display:flex;align-items:center;gap:12px}
+.demo-icon{font-size:1.5rem}
+.demo-input{flex:1;background:transparent;border:none;color:#eeeef5;font-size:.95rem;outline:none}
+.demo-badge{background:rgba(34,197,94,.2);color:#22c55e;padding:4px 12px;border-radius:6px;font-size:.7rem;font-weight:700}
+.demo-list{width:100%;display:flex;flex-direction:column;gap:8px}
+.demo-item{background:rgba(10,14,26,.6);border:1px solid rgba(79,142,247,.2);border-radius:8px;
+  padding:12px;display:flex;justify-content:space-between;align-items:center;font-size:.85rem}
+.demo-tag{color:#8888aa;font-size:.75rem}
+.vulnerability-list{width:100%;display:flex;flex-direction:column;gap:12px}
+.vuln-item{background:rgba(10,14,26,.8);border:1px solid;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px}
+.vuln-item.critical{border-color:rgba(239,68,68,.3)}
+.vuln-item.high{border-color:rgba(249,115,22,.3)}
+.vuln-item.medium{border-color:rgba(245,158,11,.3)}
+.vuln-icon{font-size:1.2rem}
+.vuln-info{flex:1;text-align:left}
+.vuln-name{font-weight:600;font-size:.9rem;color:#eeeef5}
+.vuln-cat{font-size:.7rem;color:#8888aa;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.vuln-severity{padding:4px 12px;border-radius:6px;font-size:.75rem;font-weight:700}
+.vuln-severity.critical{background:rgba(239,68,68,.2);color:#ef4444}
+.vuln-severity.high{background:rgba(249,115,22,.2);color:#f97316}
+.vuln-severity.medium{background:rgba(245,158,11,.2);color:#f59e0b}
+.code-fix{background:rgba(10,14,26,.9);border:1px solid rgba(79,142,247,.2);border-radius:12px;
+  padding:20px;font-family:'Monaco','Courier New',monospace;text-align:left;width:100%}
+.code-line{display:flex;align-items:center;gap:12px;padding:8px;border-radius:6px;font-size:.85rem;margin:8px 0}
+.code-line.bad{background:rgba(239,68,68,.1)}
+.code-line.good{background:rgba(34,197,94,.1)}
+.code-symbol{font-weight:700;font-size:1.1rem}
+.code-line.bad .code-symbol{color:#ef4444}
+.code-line.good .code-symbol{color:#22c55e}
+.code-text{color:#eeeef5}
+.fix-badge{background:rgba(34,197,94,.2);color:#22c55e;padding:6px 14px;border-radius:8px;
+  font-size:.65rem;font-weight:700;display:inline-block;margin:12px 0;letter-spacing:.05em}
+.step-label{font-size:.7rem;font-weight:700;color:#8888aa;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.step-title{font-size:1.5rem;font-weight:700;margin-bottom:12px}
+.step-desc{font-size:.95rem;color:#8888aa;line-height:1.6}
+@media(max-width:768px){
+  .how-title{font-size:2.5rem}
+  .how-steps{grid-template-columns:1fr}
+}
 
 /* ── FEATURES ── */
 #features{padding:80px 0}
@@ -759,28 +798,76 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
 
 
 <!-- ── HOW IT WORKS ── -->
-<section id="how">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-tag">Postup</div>
-      <h2 class="section-title">Ako to <span class="hl">funguje</span></h2>
-      <p class="section-desc">Tri jednoduché kroky – žiadna registrácia, žiadne technické znalosti.</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <h3 class="step-title">Vlož obsah</h3>
-        <p class="step-desc">Skopíruj text podozrivého emailu, URL adresu z emailu alebo webovú stránku, ktorú chceš skontrolovať.</p>
+<section class="how-it-works" id="how">
+  <div class="how-container">
+    <div class="how-badge">POSTUP</div>
+    <h2 class="how-title">Ako to <span class="gradient-text">funguje</span></h2>
+    <p class="how-subtitle">Tri jednoduche kroky — ziadna registracia, ziadne technicke znalosti.</p>
+
+    <div class="how-steps">
+      <!-- STEP 1 -->
+      <div class="how-step">
+        <div class="step-card">
+          <div class="step-visual">
+            <div class="step-input-demo">
+              <div class="demo-icon">🔍</div>
+              <input type="text" value="yoursite.com" readonly class="demo-input"/>
+              <div class="demo-badge">ACTIVE</div>
+            </div>
+            <div class="demo-list">
+              <div class="demo-item"><span>/api/v1/users</span><span class="demo-tag">Auth...</span></div>
+              <div class="demo-item"><span>/checkout/session</span><span class="demo-tag">Inputs...</span></div>
+              <div class="demo-item"><span>/dashboard/team</span><span class="demo-tag">Headers...</span></div>
+            </div>
+          </div>
+          <div class="step-label">STEP 01</div>
+          <h3 class="step-title">Vloz obsah</h3>
+          <p class="step-desc">Skopiruj text podozriveho emailu, URL adresu z emailu alebo webovu stranku, ktoru chces skontrolovat.</p>
+        </div>
       </div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <h3 class="step-title">Spusť analýzu</h3>
-        <p class="step-desc">MailGuard okamžite skontroluje obsah voči databáze phishingových vzorov, blacklistom a bezpečnostným pravidlám.</p>
+
+      <!-- STEP 2 -->
+      <div class="how-step">
+        <div class="step-card">
+          <div class="step-visual">
+            <div class="vulnerability-list">
+              <div class="vuln-item critical">
+                <div class="vuln-icon">🔴</div>
+                <div class="vuln-info"><div class="vuln-name">Phishing Detection</div><div class="vuln-cat">DOMAIN</div></div>
+                <div class="vuln-severity critical">Critical</div>
+              </div>
+              <div class="vuln-item high">
+                <div class="vuln-icon">🟠</div>
+                <div class="vuln-info"><div class="vuln-name">Suspicious Links</div><div class="vuln-cat">ANALYSIS</div></div>
+                <div class="vuln-severity high">High</div>
+              </div>
+              <div class="vuln-item medium">
+                <div class="vuln-icon">🟡</div>
+                <div class="vuln-info"><div class="vuln-name">Missing HTTPS</div><div class="vuln-cat">SECURITY</div></div>
+                <div class="vuln-severity medium">Med</div>
+              </div>
+            </div>
+          </div>
+          <div class="step-label">STEP 02</div>
+          <h3 class="step-title">Spust analyzu</h3>
+          <p class="step-desc">MailGuard okamzite skontroluje obsah voci databaze phishingovych vzorov, blacklistom a bezpecnostnym pravidlam.</p>
+        </div>
       </div>
-      <div class="step-card">
-        <div class="step-num">3</div>
-        <h3 class="step-title">Pochop výsledok</h3>
-        <p class="step-desc">Dostaneš skóre, zoznam nálezov s vysvetlením a konkrétne odporúčania, čo robiť ďalej.</p>
+
+      <!-- STEP 3 -->
+      <div class="how-step">
+        <div class="step-card">
+          <div class="step-visual">
+            <div class="code-fix">
+              <div class="code-line bad"><span class="code-symbol">-</span><span class="code-text">const key = "sk_123";</span></div>
+              <div class="fix-badge">FIXED BY AI</div>
+              <div class="code-line good"><span class="code-symbol">+</span><span class="code-text">const key = env.KEY;</span></div>
+            </div>
+          </div>
+          <div class="step-label">STEP 03</div>
+          <h3 class="step-title">Pochop vysledok</h3>
+          <p class="step-desc">Dostanes skore, zoznam nalezov s vysvetlenim a konkretne odporucania, co robit dalej.</p>
+        </div>
       </div>
     </div>
   </div>
