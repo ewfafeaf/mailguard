@@ -103,62 +103,51 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 
 /* ── BACKGROUND ORBS removed — mesh gradient handles background ── */
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:200;
-  background:#000;border-bottom:1px solid rgba(255,255,255,.09);
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-  padding:0 28px;height:var(--nav-h)}
-.nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
-.nav-logo img{height:48px;width:auto;display:block}
-.nav-left{display:flex;align-items:center;gap:8px}
-.nav-right{display:flex;align-items:center;gap:8px;justify-self:end}
-.nav-user-email{font-size:.8rem;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn-signout{background:transparent;border:1px solid var(--border2);color:var(--muted);
-  padding:5px 12px;border-radius:8px;font-size:.8rem;font-weight:500;cursor:pointer;
-  font-family:inherit;transition:all .18s}
-.btn-signout:hover{color:var(--text);border-color:var(--accent)}
-
 /* ── LAYOUT ── */
-.layout{display:flex;padding-top:var(--nav-h);min-height:100vh;position:relative;z-index:1}
+.layout{display:flex;min-height:100vh;position:relative;z-index:1}
 
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar-w);flex-shrink:0;
-  background:#000;border-right:1px solid rgba(79,142,247,.1);
-  position:fixed;top:var(--nav-h);bottom:0;left:0;
-  display:flex;flex-direction:column;padding:0 0 16px;overflow-y:auto;z-index:100}
-.sidebar-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;
-  color:rgba(255,255,255,.55);font-size:.82rem;font-weight:500;cursor:pointer;
-  text-decoration:none;transition:background .2s,color .2s,border-color .2s;border:none;background:none;font-family:inherit;width:100%;text-align:left}
-.sidebar-item:hover{background:rgba(255,255,255,.06);color:var(--text)}
-.sidebar-item.active{background:rgba(79,142,247,.1);color:var(--accent);
-  border-left:2px solid #4f8ef7;padding-left:8px}
-.sidebar-item .icon{font-size:.9rem;flex-shrink:0;width:16px;text-align:center}
-.sidebar-divider{height:1px;background:rgba(255,255,255,.06);margin:8px 8px}
-.sidebar-signout{margin-top:auto}
-.sidebar-nav{padding:0 10px;display:flex;flex-direction:column;gap:2px}
+/* ═══════════════════════════════════════
+   MODERN SIDEBAR
+   ═══════════════════════════════════════ */
+.modern-sidebar{position:fixed;left:0;top:0;height:100vh;width:280px;
+  background:rgba(15,17,27,.95);backdrop-filter:blur(20px);
+  border-right:1px solid rgba(79,142,247,.1);
+  display:flex;flex-direction:column;padding:24px 16px;z-index:100}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:32px}
+.logo-icon{width:40px;height:40px;
+  background:linear-gradient(135deg,rgba(79,142,247,.2),rgba(124,95,247,.2));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(79,142,247,.3)}
+.logo-text{font-size:1rem;font-weight:800;letter-spacing:.05em;color:#eeeef5}
+.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:6px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:transparent;border:none;border-radius:10px;color:#8888aa;
+  font-size:.95rem;font-weight:500;cursor:pointer;transition:all .2s;
+  width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:rgba(79,142,247,.1);color:#eeeef5}
+.nav-item.active{background:linear-gradient(90deg,rgba(79,142,247,.15),rgba(124,95,247,.15));
+  color:#4f8ef7;border-left:3px solid #4f8ef7}
+.nav-item svg{flex-shrink:0}
+.sidebar-user{display:flex;align-items:center;gap:12px;padding:12px;
+  background:rgba(79,142,247,.08);border-radius:12px;
+  border:1px solid rgba(79,142,247,.15);margin-top:auto;margin-bottom:12px}
+.user-avatar-small{width:40px;height:40px;
+  background:linear-gradient(135deg,#4f8ef7,#7c5ff7);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0}
+.user-info-small{flex:1;min-width:0}
+.user-name{font-size:.9rem;font-weight:600;color:#eeeef5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-status{font-size:.75rem;color:#8888aa;display:flex;align-items:center;gap:6px;margin-top:2px}
+.status-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+.sidebar-logout{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;
+  color:#ef4444;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s;
+  width:100%;font-family:inherit}
+.sidebar-logout:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
 
-/* ── SIDEBAR USER PANEL ── */
-.sidebar-user-compact{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;
-  border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .18s;
-  margin-bottom:0;flex-shrink:0}
-.sidebar-user-compact:hover{background:rgba(255,255,255,.04)}
-.sidebar-user-top{display:flex;align-items:center;gap:8px;width:100%}
-.sidebar-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;
-  background:linear-gradient(135deg,var(--accent),var(--accent2))}
-.sidebar-user-email{font-size:.75rem;color:var(--muted);flex:1;min-width:0;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}
-.sidebar-plan-badge{background:rgba(79,142,247,.15);color:#4f8ef7;font-size:.75rem;
-  padding:4px 10px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0;
-  align-self:flex-start;margin-left:40px}
-.sidebar-user-plans{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;
-  border-radius:8px;background:rgba(255,255,255,.03);cursor:pointer;
-  font-size:.82rem;font-weight:500;color:rgba(255,255,255,.55);
-  text-decoration:none;transition:background .18s,color .18s;border:none;font-family:inherit}
-.sidebar-user-plans:hover{background:rgba(255,255,255,.07);color:var(--text)}
-
-/* ── SIDEBAR USAGE BAR ── */
-.sidebar-usage{padding:6px 10px 14px;display:flex;flex-direction:column;gap:6px}
+/* ── SIDEBAR USAGE BAR (zachované pre funkčnosť) ── */
+.sidebar-usage{padding:6px 16px 14px;display:flex;flex-direction:column;gap:6px}
 .sidebar-usage-row{display:flex;align-items:center;justify-content:space-between}
 .sidebar-usage-label{font-size:.75rem;color:var(--muted)}
 .sidebar-usage-count{font-size:.75rem;font-weight:700;color:var(--text)}
@@ -166,10 +155,81 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 .sidebar-usage-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
 .sidebar-upgrade{display:block;margin:0 10px 4px;padding:7px 0;border-radius:8px;
   background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;
-  font-size:.78rem;font-weight:700;text-align:center;text-decoration:none;
-  cursor:pointer;border:none;font-family:inherit;width:calc(100% - 20px);
-  transition:opacity .18s}
+  font-size:.78rem;font-weight:700;text-align:center;cursor:pointer;border:none;
+  font-family:inherit;width:calc(100% - 20px);transition:opacity .18s}
 .sidebar-upgrade:hover{opacity:.85}
+.sidebar-plan-badge{background:rgba(79,142,247,.15);color:#4f8ef7;font-size:.75rem;
+  padding:4px 10px;border-radius:4px;font-weight:600;white-space:nowrap}
+
+/* ═══════════════════════════════════════
+   MODERN TOP BAR
+   ═══════════════════════════════════════ */
+.modern-topbar{position:fixed;left:280px;right:0;top:0;height:70px;
+  background:rgba(18,18,26,.8);backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(79,142,247,.1);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;z-index:90}
+.topbar-datetime{display:flex;align-items:center;gap:12px;font-size:.9rem;color:#8888aa}
+.topbar-datetime .separator{color:rgba(136,136,170,.3)}
+.topbar-search{flex:1;max-width:500px;margin:0 40px;position:relative;
+  display:flex;align-items:center;gap:12px;
+  background:rgba(34,34,58,.6);border:1px solid rgba(79,142,247,.15);
+  border-radius:10px;padding:10px 16px}
+.topbar-search svg{color:#8888aa;flex-shrink:0}
+.topbar-search input{flex:1;background:transparent;border:none;color:#eeeef5;
+  font-size:.9rem;outline:none;font-family:inherit}
+.topbar-search input::placeholder{color:#8888aa}
+.topbar-actions{display:flex;align-items:center;gap:16px;position:relative}
+.topbar-icon-btn{position:relative;width:40px;height:40px;
+  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  color:#8888aa;cursor:pointer;transition:all .2s}
+.topbar-icon-btn:hover{background:rgba(79,142,247,.15);color:#4f8ef7}
+.notification-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;
+  background:#ef4444;border-radius:50%;font-size:.7rem;font-weight:700;color:white;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(18,18,26,1)}
+.topbar-user{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;
+  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
+  border-radius:10px;color:#eeeef5;font-size:.9rem;font-weight:500;
+  cursor:pointer;transition:all .2s;font-family:inherit}
+.topbar-user:hover{background:rgba(79,142,247,.15)}
+.topbar-user-avatar{width:32px;height:32px;
+  background:linear-gradient(135deg,#4f8ef7,#7c5ff7);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;color:white}
+.user-dropdown-menu{position:absolute;top:calc(100% + 12px);right:0;width:280px;
+  background:rgba(18,18,26,.98);border:1px solid rgba(79,142,247,.2);
+  border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.5);
+  backdrop-filter:blur(20px);opacity:0;visibility:hidden;transform:translateY(-10px);
+  transition:all .2s;z-index:1000}
+.user-dropdown-menu.active{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-header{display:flex;align-items:center;gap:12px;padding:16px}
+.dropdown-user-avatar{width:48px;height:48px;
+  background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;font-weight:700;color:white;flex-shrink:0}
+.dropdown-user-info{flex:1;min-width:0}
+.dropdown-user-name{font-size:.95rem;font-weight:600;color:#eeeef5}
+.dropdown-user-email{font-size:.8rem;color:#8888aa;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dropdown-divider{height:1px;background:rgba(79,142,247,.1);margin:8px 0}
+.dropdown-item{width:100%;display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:transparent;border:none;color:#eeeef5;font-size:.9rem;cursor:pointer;
+  transition:all .15s;text-align:left;font-family:inherit}
+.dropdown-item:hover{background:rgba(79,142,247,.1)}
+.dropdown-item:last-child{color:#ef4444;border-radius:0 0 14px 14px}
+.dropdown-item:last-child:hover{background:rgba(239,68,68,.1)}
+
+/* Main content posun */
+.main{margin-left:280px;margin-top:70px;padding:32px;
+  min-height:calc(100vh - 70px);position:relative;overflow:hidden}
+
+@media(max-width:1024px){
+  .modern-sidebar{transform:translateX(-100%);transition:transform .3s}
+  .modern-sidebar.mobile-open{transform:translateX(0)}
+  .modern-topbar{left:0}
+  .main{margin-left:0}
+}
 
 /* ── WEB SCANNER ── */
 .ws-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
@@ -782,78 +842,171 @@ body::before{content:'';position:fixed;inset:0;
   <p>Načítavam…</p>
 </div>
 
-<!-- Background -->
-<!-- Nav -->
-<nav>
-  <div class="nav-left"></div>
-  <a href="index.html" class="nav-logo">
-    <img src="mailguard.png" alt="MailGuard"/>
-  </a>
-  <div class="nav-right">
-    <button class="btn-signout" onclick="signOut()">Odhlásiť sa</button>
+<!-- Modern Sidebar -->
+<aside class="modern-sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#4f8ef7" stroke-width="2" fill="none"/>
+        <path d="M9 12l2 2 4-4" stroke="#4f8ef7" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+    <div class="logo-text">MAILGUARD</div>
   </div>
-</nav>
+
+  <nav class="sidebar-nav">
+    <button class="nav-item active" id="navAnalyza" onclick="showSection('nova')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <span>Nova analyza</span>
+    </button>
+    <button class="nav-item" id="navHistoria" onclick="showSection('historia')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-5 5"/>
+      </svg>
+      <span>Historia</span>
+    </button>
+    <button class="nav-item" id="navWebskener" onclick="showSection('webskener')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+      <span>Web skener</span>
+    </button>
+    <button class="nav-item" id="navFiles" onclick="showSection('files')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span>Analyza suborov</span>
+    </button>
+    <button class="nav-item" id="navHeaders" onclick="showSection('headers')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+      </svg>
+      <span>Analyza hlaviciek</span>
+    </button>
+    <button class="nav-item" id="navTeam" onclick="showSection('team')" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span>Tim</span>
+    </button>
+    <button class="nav-item" id="navPlans" onclick="showSection('plans')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      <span>Plany</span>
+    </button>
+    <button class="nav-item" id="navNastavenia" onclick="showSection('nastavenia')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M1 12h6m6 0h6"/>
+      </svg>
+      <span>Nastavenia</span>
+    </button>
+    <button class="nav-item" id="navPodpora" onclick="showSection('podpora')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span>Podpora</span>
+    </button>
+  </nav>
+
+  <!-- Usage bar -->
+  <div class="sidebar-usage" style="padding:12px 0 8px">
+    <div class="sidebar-usage-row">
+      <span class="sidebar-usage-label">Analyzy dnes</span>
+      <span class="sidebar-usage-count" id="usageCount">—/3</span>
+    </div>
+    <div class="sidebar-usage-bar">
+      <div class="sidebar-usage-fill" id="usageFill" style="width:0%"></div>
+    </div>
+    <span class="sidebar-plan-badge" id="sidebarPlan" style="margin-top:8px">Free</span>
+    <div style="font-size:.65rem;color:var(--muted);margin-top:4px" id="sidebarTotalLabel"></div>
+  </div>
+
+  <!-- User panel -->
+  <div class="sidebar-user">
+    <div class="user-avatar-small">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div class="user-info-small">
+      <div class="user-name" id="sidebarUserName">—</div>
+      <div class="user-status"><span class="status-dot"></span>Online</div>
+    </div>
+  </div>
+
+  <button class="sidebar-logout" onclick="signOut()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+    <span>Logout</span>
+  </button>
+</aside>
+
+<!-- Modern Top Bar -->
+<header class="modern-topbar">
+  <div class="topbar-datetime">
+    <span id="currentDate">—</span>
+    <span class="separator">|</span>
+    <span id="currentTime">—</span>
+  </div>
+  <div class="topbar-search">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" placeholder="Search..."/>
+  </div>
+  <div class="topbar-actions">
+    <button class="topbar-icon-btn" onclick="toggleNotifications()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="notification-badge">3</span>
+    </button>
+    <button class="topbar-user" onclick="toggleUserDropdown()">
+      <div class="topbar-user-avatar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <span id="topbarUserName">—</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </button>
+    <div class="user-dropdown-menu" id="userDropdownMenu">
+      <div class="dropdown-header">
+        <div class="dropdown-user-avatar" id="dropdownUserAvatar">?</div>
+        <div class="dropdown-user-info">
+          <div class="dropdown-user-name" id="dropdownUserName">—</div>
+          <div class="dropdown-user-email" id="dropdownUserEmail">—</div>
+        </div>
+      </div>
+      <div class="dropdown-divider"></div>
+      <button class="dropdown-item" onclick="showSection('nastavenia')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6"/>
+        </svg>
+        Settings
+      </button>
+      <button class="dropdown-item" onclick="signOut()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Log out
+      </button>
+    </div>
+  </div>
+</header>
 
 <!-- Layout -->
 <div class="layout">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <!-- User panel compact -->
-    <div class="sidebar-user-compact" onclick="showSection('nastavenia')" style="padding:12px 10px">
-      <div class="sidebar-user-top">
-        <div class="sidebar-avatar" id="sidebarAvatar">??</div>
-        <span class="sidebar-user-email" id="sidebarName">—</span>
-      </div>
-      <span class="sidebar-plan-badge" id="sidebarPlan">Free</span>
-      <div style="font-size:.65rem;color:var(--muted);margin-left:40px;margin-top:3px" id="sidebarTotalLabel"></div>
-    </div>
-    <!-- Usage / upgrade -->
-    <div class="sidebar-usage">
-      <div class="sidebar-usage-row">
-        <span class="sidebar-usage-label">Analýzy dnes</span>
-        <span class="sidebar-usage-count" id="usageCount">—/3</span>
-      </div>
-      <div class="sidebar-usage-bar">
-        <div class="sidebar-usage-fill" id="usageFill" style="width:0%"></div>
-      </div>
-    </div>
-    <button class="sidebar-upgrade" onclick="showSection('plans')">⚡ Upgrade na Pro</button>
-    <div class="sidebar-divider" style="margin-top:10px;margin-bottom:10px"></div>
-    <div class="sidebar-nav">
-      <a class="sidebar-item active" id="navAnalyza" onclick="showSection('nova')">
-        <span class="icon">◉</span><span>Nová analýza</span>
-      </a>
-      <a class="sidebar-item" id="navHistoria" onclick="showSection('historia')">
-        <span class="icon">▤</span><span>História</span>
-      </a>
-      <a class="sidebar-item" id="navWebskener" onclick="showSection('webskener')">
-        <span class="icon">◬</span><span>Web skener</span>
-      </a>
-      <a class="sidebar-item" id="navFiles" onclick="showSection('files')">
-        <span class="icon">◫</span><span>Analýza súborov</span>
-      </a>
-      <a class="sidebar-item" id="navHeaders" onclick="showSection('headers')">
-        <span class="icon">◐</span><span>Analýza hlavičiek</span>
-      </a>
-      <a class="sidebar-item" id="navTeam" onclick="showSection('team')" style="display:none">
-        <span class="icon">▣</span><span>Správa tímu</span>
-      </a>
-      <div class="sidebar-divider"></div>
-      <a class="sidebar-item" id="navPlans" onclick="showSection('plans')">
-        <span class="icon">◆</span><span>Plány</span>
-      </a>
-      <a class="sidebar-item" id="navNastavenia" onclick="showSection('nastavenia')">
-        <span class="icon">◈</span><span>Nastavenia</span>
-      </a>
-      <a class="sidebar-item" id="navPodpora" onclick="showSection('podpora')">
-        <span class="icon">◕</span><span>Podpora & Feedback</span>
-      </a>
-      <div class="sidebar-divider"></div>
-      <button class="sidebar-item sidebar-signout" onclick="signOut()">
-        <span class="icon">◁</span><span>Odhlásiť sa</span>
-      </button>
-    </div>
-  </aside>
 
   <!-- Main -->
   <div class="particles" id="particles"></div>
@@ -1312,11 +1465,15 @@ _sb.auth.onAuthStateChange((event,session)=>{
 async function initDashboard(){
   const email=_currentUser.email||'';
   const name=email.split('@')[0]||'používateľ';
+  const initials=name.charAt(0).toUpperCase();
   document.getElementById('welcomeName').textContent=name;
   document.getElementById('settingsEmail').textContent=email;
-  // sidebar user panel
-  document.getElementById('sidebarName').textContent=name;
-  document.getElementById('sidebarAvatar').textContent=(email.slice(0,2)||'??').toUpperCase();
+  // new sidebar + topbar user info
+  document.getElementById('sidebarUserName').textContent=name;
+  document.getElementById('topbarUserName').textContent=name;
+  document.getElementById('dropdownUserName').textContent=name;
+  document.getElementById('dropdownUserEmail').textContent=email;
+  document.getElementById('dropdownUserAvatar').textContent=initials;
   // GSB card: admin only
   if(email==='memedumpster@centrum.sk'){
     document.getElementById('gsbCard').style.display='';
@@ -1520,6 +1677,33 @@ async function handlePaymentReturn(){
     showToast('Platba bola zrušená.', '');
   }
 }
+
+// ── TOPBAR: Date & Time ──
+function updateDateTime(){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+  const d=document.getElementById('currentDate');
+  const t=document.getElementById('currentTime');
+  if(d) d.textContent=dateStr;
+  if(t) t.textContent=timeStr;
+}
+setInterval(updateDateTime,1000);
+updateDateTime();
+
+// ── TOPBAR: User dropdown ──
+function toggleUserDropdown(){
+  document.getElementById('userDropdownMenu')?.classList.toggle('active');
+}
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('userDropdownMenu');
+  const btn=document.querySelector('.topbar-user');
+  if(menu&&btn&&!menu.contains(e.target)&&!btn.contains(e.target))
+    menu.classList.remove('active');
+});
+
+/// ── TOPBAR: Notifications (placeholder) ──
+function toggleNotifications(){ /* TODO */ }
 
 async function signOut(){
   await _sb.auth.signOut();
