@@ -858,8 +858,21 @@ body::before{content:'';position:fixed;inset:0;
   50%    {opacity:1;transform:scale(1.15)}
 }
 
+/* ── CHART WRAPPERS ── */
+.chart-wrapper-large{position:relative;width:100%;height:240px;
+  background:rgba(10,14,26,.4);border-radius:10px;padding:16px;margin-top:12px}
+.chart-wrapper-medium{position:relative;width:100%;height:200px;
+  background:rgba(10,14,26,.4);border-radius:10px;padding:14px;margin-top:12px}
+.chart-wrapper-large canvas,.chart-wrapper-medium canvas{width:100% !important;height:100% !important}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.chart-legend{display:flex;gap:12px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#8888aa;font-weight:500}
+.legend-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+
 /* ── TWO COLUMN LAYOUT ── */
-.dashboard-columns{display:grid;grid-template-columns:1fr 420px;gap:20px}
+.dashboard-columns{display:grid;grid-template-columns:1fr 380px;gap:20px}
+.dashboard-right .section-card:first-child{margin-bottom:16px}
+.dashboard-right .compact-chart{margin-bottom:0}
 .section-card{background:rgba(18,18,26,.6);border:1px solid rgba(79,142,247,.12);
   border-radius:12px;padding:20px;backdrop-filter:blur(10px);margin-bottom:20px}
 .section-title{font-size:.75rem;font-weight:700;color:#8888aa;margin-bottom:16px;
@@ -892,7 +905,7 @@ body::before{content:'';position:fixed;inset:0;
 <aside class="modern-sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#4f8ef7" stroke-width="2" fill="none"/>
         <path d="M9 12l2 2 4-4" stroke="#4f8ef7" stroke-width="2" fill="none"/>
       </svg>
@@ -901,57 +914,65 @@ body::before{content:'';position:fixed;inset:0;
   </div>
 
   <nav class="sidebar-nav">
-    <button class="nav-item active" id="navAnalyza" onclick="showSection('nova')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button class="nav-item active" id="navDashboard" onclick="showSection('nova')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-item" id="navAnalyza" onclick="showSection('nova')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
       </svg>
-      <span>Nova analyza</span>
+      <span>Nová analýza</span>
     </button>
     <button class="nav-item" id="navHistoria" onclick="showSection('historia')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-5 5"/>
       </svg>
-      <span>Historia</span>
+      <span>História</span>
     </button>
     <button class="nav-item" id="navWebskener" onclick="showSection('webskener')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
       <span>Web skener</span>
     </button>
     <button class="nav-item" id="navFiles" onclick="showSection('files')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
       </svg>
-      <span>Analyza suborov</span>
+      <span>Analýza súborov</span>
     </button>
     <button class="nav-item" id="navHeaders" onclick="showSection('headers')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
       </svg>
-      <span>Analyza hlaviciek</span>
+      <span>Analýza hlavičiek</span>
     </button>
     <button class="nav-item" id="navTeam" onclick="showSection('team')" style="display:none">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
       </svg>
-      <span>Tim</span>
+      <span>Tím</span>
     </button>
     <button class="nav-item" id="navPlans" onclick="showSection('plans')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
       </svg>
-      <span>Plany</span>
+      <span>Plány</span>
     </button>
     <button class="nav-item" id="navNastavenia" onclick="showSection('nastavenia')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M1 12h6m6 0h6"/>
+        <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24M4.93 19.07l4.24-4.24m5.66-5.66 4.24-4.24"/>
       </svg>
       <span>Nastavenia</span>
     </button>
     <button class="nav-item" id="navPodpora" onclick="showSection('podpora')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
       <span>Podpora</span>
@@ -1153,11 +1174,48 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
-        <!-- Row 4: Chart full-width -->
+        <!-- Row 4: Charts -->
         <div class="chart-card" style="grid-column:1/-1">
           <div class="chart-card-label">📈 Aktivita (7 dní)</div>
           <div class="mini-chart-wrapper">
             <canvas id="activityChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Row 4b: Two admin-panel charts -->
+        <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- Growth Chart -->
+          <div class="section-card" style="margin-bottom:0">
+            <div class="section-header">
+              <h3 class="section-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-5 5"/>
+                </svg>
+                RAST ANALÝZ (30 DNÍ)
+              </h3>
+            </div>
+            <div class="chart-wrapper-large">
+              <canvas id="growthChart"></canvas>
+            </div>
+          </div>
+          <!-- Resource Chart -->
+          <div class="section-card" style="margin-bottom:0">
+            <div class="section-header">
+              <h3 class="section-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                </svg>
+                VYUŽITIE ZDROJOV
+              </h3>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-dot" style="background:#4f8ef7"></span>Email</span>
+                <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>URL</span>
+                <span class="legend-item"><span class="legend-dot" style="background:#22c55e"></span>Súbory</span>
+              </div>
+            </div>
+            <div class="chart-wrapper-medium">
+              <canvas id="resourceChart"></canvas>
+            </div>
           </div>
         </div>
 
@@ -1798,11 +1856,11 @@ function showSection(s){
       el.style.display='none';
     }
   });
-  ['navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans'].forEach(id=>{
+  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans'};
+  const map={nova:'navDashboard',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
   const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
@@ -4946,6 +5004,76 @@ async function confirmExport(){
   closeExportModal();
   await exportPDF({timeFilter,dateFrom,dateTo,types,verdicts});
 }
+
+// ── GROWTH CHART ──
+function initGrowthChart(){
+  const canvas=document.getElementById('growthChart');
+  if(!canvas||typeof Chart==='undefined') return;
+  const ctx=canvas.getContext('2d');
+  const g1=ctx.createLinearGradient(0,0,0,240);
+  g1.addColorStop(0,'rgba(79,142,247,.4)');g1.addColorStop(1,'rgba(79,142,247,.01)');
+  const g2=ctx.createLinearGradient(0,0,0,240);
+  g2.addColorStop(0,'rgba(124,95,247,.3)');g2.addColorStop(1,'rgba(124,95,247,.01)');
+  new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'],
+      datasets:[
+        {label:'Nové analýzy',data:[5,10,8,15,12,18,15,20,17,23],
+          borderColor:'#4f8ef7',backgroundColor:g1,borderWidth:2.5,fill:true,tension:.4,
+          pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:'#4f8ef7',pointHoverBorderColor:'#0f1117',pointHoverBorderWidth:2},
+        {label:'Opakované',data:[3,7,6,10,9,14,12,16,14,18],
+          borderColor:'#7c5ff7',backgroundColor:g2,borderWidth:2.5,fill:true,tension:.4,
+          pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:'#7c5ff7',pointHoverBorderColor:'#0f1117',pointHoverBorderWidth:2}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',align:'end',labels:{color:'#8888aa',font:{size:11,weight:'500'},usePointStyle:true,pointStyle:'circle',padding:15,boxWidth:8,boxHeight:8}},
+        tooltip:{backgroundColor:'rgba(18,18,26,.98)',titleColor:'#eeeef5',bodyColor:'#8888aa',borderColor:'rgba(79,142,247,.4)',borderWidth:1,padding:12,displayColors:true,usePointStyle:true}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#8888aa',font:{size:11},padding:10}},
+        y:{grid:{color:'rgba(79,142,247,.08)'},ticks:{color:'#8888aa',font:{size:11},padding:10,stepSize:5}}
+      },
+      interaction:{intersect:false,mode:'index'}
+    }
+  });
+}
+
+// ── RESOURCE CHART ──
+function initResourceChart(){
+  const canvas=document.getElementById('resourceChart');
+  if(!canvas||typeof Chart==='undefined') return;
+  new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:['Email','URL','Web','PDF','Headers','API','Iné'],
+      datasets:[
+        {label:'Email analýzy',data:[400,180,300,150,120,200,80],backgroundColor:'#4f8ef7'},
+        {label:'URL analýzy',data:[200,250,140,80,60,100,40],backgroundColor:'#f59e0b'},
+        {label:'Súbory',data:[150,100,180,200,90,70,30],backgroundColor:'#22c55e'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'rgba(18,18,26,.98)',titleColor:'#eeeef5',bodyColor:'#8888aa',borderColor:'rgba(79,142,247,.4)',borderWidth:1,padding:12}
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{color:'#8888aa',font:{size:10}}},
+        y:{stacked:true,grid:{color:'rgba(79,142,247,.08)'},ticks:{color:'#8888aa',font:{size:11}}}
+      }
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  initGrowthChart();
+  initResourceChart();
+});
 </script>
 
 <!-- Export Filter Modal -->
