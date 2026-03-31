@@ -231,7 +231,61 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
   .main{margin-left:0;width:100%;padding:16px}
 }
 
-/* ── WEB SCANNER ── */
+/* ── WEB SCANNER FEATURE CARDS ── */
+.ws-feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+@media(max-width:900px){.ws-feature-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.ws-feature-grid{grid-template-columns:1fr}}
+.ws-fc{background:rgba(18,18,26,.75);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;
+  transition:border-color .2s,transform .2s,box-shadow .2s}
+.ws-fc:hover{border-color:rgba(79,142,247,.35);transform:translateY(-3px);
+  box-shadow:0 8px 28px rgba(79,142,247,.1)}
+.ws-fc-icon{font-size:1.5rem;margin-bottom:10px}
+.ws-fc-title{font-size:.82rem;font-weight:800;color:var(--text);margin-bottom:5px;letter-spacing:-.01em}
+.ws-fc-desc{font-size:.75rem;color:var(--muted);line-height:1.55}
+
+/* ── WEB SCANNER FANCY INPUT ── */
+.ws-fancy-wrap{position:relative;margin-bottom:20px;
+  background:rgba(18,18,26,.75);border-radius:14px;
+  padding:2px;animation:wsBorderGlow 4s ease-in-out infinite}
+@keyframes wsBorderGlow{
+  0%,100%{box-shadow:0 0 0 1px rgba(0,212,255,.25),0 0 30px rgba(0,212,255,.08)}
+  50%    {box-shadow:0 0 0 1px rgba(79,142,247,.5),0 0 50px rgba(79,142,247,.18)}}
+.ws-fancy-inner{display:flex;align-items:center;background:rgba(13,13,20,.9);
+  border-radius:12px;overflow:hidden;border:1px solid rgba(79,142,247,.2)}
+.ws-fancy-icon{padding:0 14px;font-size:1.1rem;flex-shrink:0;color:var(--muted)}
+.ws-fancy-input{flex:1;background:transparent;border:none;outline:none;
+  padding:16px 0;font-size:.95rem;color:var(--text);font-family:inherit}
+.ws-fancy-input::placeholder{color:var(--muted);transition:opacity .3s}
+.ws-scan-btn{margin:6px;padding:10px 22px;border:none;border-radius:9px;
+  background:linear-gradient(90deg,var(--teal),var(--accent));color:#000;
+  font-weight:800;font-size:.88rem;cursor:pointer;font-family:inherit;
+  white-space:nowrap;transition:opacity .2s,transform .15s;letter-spacing:.01em}
+.ws-scan-btn:hover{opacity:.88;transform:scale(1.03)}
+.ws-scan-btn:active{transform:scale(.97)}
+
+/* ── UPGRADE MODAL ── */
+.ws-upgrade-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;
+  justify-content:center;padding:20px;animation:fadeIn .2s ease}
+.ws-upgrade-box{background:var(--surface);border:1px solid var(--border2);
+  border-radius:20px;padding:36px 32px;max-width:420px;width:100%;
+  box-shadow:0 24px 64px rgba(0,0,0,.6),0 0 0 1px rgba(79,142,247,.1)}
+.ws-upgrade-lock{font-size:2.4rem;margin-bottom:14px;text-align:center}
+.ws-upgrade-title{font-size:1.2rem;font-weight:800;text-align:center;margin-bottom:6px}
+.ws-upgrade-sub{font-size:.86rem;color:var(--muted);text-align:center;
+  line-height:1.6;margin-bottom:20px}
+.ws-upgrade-benefits{list-style:none;display:grid;gap:8px;margin-bottom:24px;
+  background:rgba(79,142,247,.05);border:1px solid rgba(79,142,247,.1);
+  border-radius:10px;padding:14px 16px}
+.ws-upgrade-benefits li{font-size:.84rem;color:var(--text);
+  display:flex;align-items:center;gap:8px}
+.ws-upgrade-benefits li::before{content:'✓';color:var(--teal);font-weight:800;flex-shrink:0}
+.ws-upgrade-btns{display:flex;gap:10px}
+.ws-upgrade-btns button{flex:1;padding:12px;border-radius:10px;font-family:inherit;
+  font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+
+/* ── WEB SCANNER (keep existing) ── */
 .ws-input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
 .ws-input-row input{flex:1;min-width:200px}
 .ws-score-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;
@@ -1599,16 +1653,42 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Web skener -->
     <div id="sectionWebskener" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Web skener</div>
-      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
-        Skontroluj bezpečnosť webstránky — HTTPS, bezpečnostné hlavičky, GSB reputácia a Mozilla Observatory skóre.
-        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+
+      <!-- Feature cards — viditeľné pre všetkých -->
+      <div class="ws-feature-grid">
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🔒</div>
+          <div class="ws-fc-title">SSL / HTTPS</div>
+          <div class="ws-fc-desc">Overíme platnosť certifikátu, silu šifrovania a správnu konfiguráciu HTTPS.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🌐</div>
+          <div class="ws-fc-title">WHOIS & Doména</div>
+          <div class="ws-fc-desc">Vek domény, registrátor, história vlastníctva a varovné signály nových domén.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🛡️</div>
+          <div class="ws-fc-title">Google Safe Browsing</div>
+          <div class="ws-fc-desc">Kontrola URL voči databáze phishingu, malwaru a nežiaduceho softvéru Google.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">📡</div>
+          <div class="ws-fc-title">HTTP Hlavičky</div>
+          <div class="ws-fc-desc">CSP, HSTS, X-Frame-Options, Referrer-Policy a ďalšie bezpečnostné hlavičky.</div>
+        </div>
       </div>
-      <div class="ws-input-row">
-        <input type="text" id="wsInput" class="analysis-input"
-          placeholder="https://priklad.sk alebo priklad.sk"
-          onkeydown="if(event.key==='Enter')webScan()"/>
-        <button class="analysis-btn" id="wsBtn" onclick="webScan()">🌐 Skenovať</button>
+
+      <!-- Fancy animated input — pre všetkých -->
+      <div class="ws-fancy-wrap">
+        <div class="ws-fancy-inner">
+          <span class="ws-fancy-icon">🔍</span>
+          <input type="text" id="wsInput" class="ws-fancy-input"
+            placeholder="https://example.com"
+            onkeydown="if(event.key==='Enter')startWebScan()"/>
+          <button class="ws-scan-btn" id="wsBtn" onclick="startWebScan()">Skenovať →</button>
+        </div>
       </div>
+
       <div id="wsResult" style="display:none"></div>
     </div>
 
@@ -2084,7 +2164,8 @@ function showSection(s){
   if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats(); }
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
-  if(s==='team')   { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeam(); }
+  if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeam(); }
+  if(s==='webskener') initWsPlaceholders();
   if(s==='files'   && !checkPlan('pro')) showUpgradeModal('files');
   if(s==='headers' && !checkPlan('pro')) showUpgradeModal('headers');
 }
@@ -2232,6 +2313,76 @@ function startDashCountdown(){
 /* ══════════════════════════════════════════
    WEB SCANNER
 ══════════════════════════════════════════ */
+/* ── showUpgradeModal (used throughout) ── */
+function showUpgradeModal(context){
+  showPlanModal('pro');
+}
+
+/* ── Web Scanner: startWebScan + upgrade modal ── */
+const _WS_PLACEHOLDERS=[
+  'https://example.com',
+  'https://suspicious-site.tk',
+  'google.com',
+  'https://login.paypal-secure.xyz',
+  'microsoft.com',
+];
+let _wsPlaceholderTimer=null;
+
+function initWsPlaceholders(){
+  const inp=document.getElementById('wsInput');
+  if(!inp||_wsPlaceholderTimer) return;
+  let i=0;
+  _wsPlaceholderTimer=setInterval(()=>{
+    if(document.activeElement===inp) return;
+    i=(i+1)%_WS_PLACEHOLDERS.length;
+    inp.style.transition='opacity .3s';
+    inp.style.opacity='0';
+    setTimeout(()=>{ inp.placeholder=_WS_PLACEHOLDERS[i]; inp.style.opacity='1'; },300);
+  },2800);
+}
+
+function showWsUpgradeModal(){
+  let m=document.getElementById('wsUpgradeModal');
+  if(m){ m.style.display='flex'; return; }
+  m=document.createElement('div');
+  m.id='wsUpgradeModal';
+  m.className='ws-upgrade-backdrop';
+  m.innerHTML=`
+    <div class="ws-upgrade-box">
+      <div class="ws-upgrade-lock">🔒</div>
+      <div class="ws-upgrade-title">Web Skener vyžaduje Pro plán</div>
+      <div class="ws-upgrade-sub">Odomkni plnú bezpečnostnú analýzu webstránok s&nbsp;MailGuard&nbsp;Pro.</div>
+      <ul class="ws-upgrade-benefits">
+        <li>Neobmedzené skenovanie webstránok</li>
+        <li>SSL / HTTPS analýza a hodnotenie</li>
+        <li>WHOIS — vek domény a história</li>
+        <li>Google Safe Browsing kontrola</li>
+        <li>Analýza HTTP bezpečnostných hlavičiek</li>
+        <li>Export výsledkov do PDF</li>
+      </ul>
+      <div class="ws-upgrade-btns">
+        <button onclick="document.getElementById('wsUpgradeModal').style.display='none'"
+          style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted)">
+          Zavrieť
+        </button>
+        <button onclick="document.getElementById('wsUpgradeModal').style.display='none';showSection('plans')"
+          style="background:linear-gradient(90deg,var(--teal),var(--accent));color:#000;border:none">
+          ⚡ Upgrade na Pro
+        </button>
+      </div>
+    </div>`;
+  m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
+  document.body.appendChild(m);
+}
+
+function startWebScan(){
+  if(_currentPlan==='free'){
+    showWsUpgradeModal();
+    return;
+  }
+  webScan();
+}
+
 async function webScan(){
   if(!checkPlan('pro')) return;
 
