@@ -554,6 +554,30 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .btn-plan-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .btn-plan-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;box-shadow:0 4px 18px rgba(79,142,247,.3);transition:opacity .2s}
 .btn-plan-primary:hover{opacity:.9}
+/* expandable feature items */
+.pricing-features{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:24px;padding:0}
+.feature-item{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#eeeef5;line-height:1.45}
+.feature-item.disabled{opacity:.38;color:var(--muted)}
+.check-icon.green{color:#10b981;flex-shrink:0}
+.x-icon{color:var(--muted);flex-shrink:0}
+.feature-item.expandable{flex-direction:column;align-items:flex-start}
+.feature-main{display:flex;align-items:center;width:100%;cursor:pointer;gap:8px;transition:color .2s;border:none;background:none;padding:0;font:inherit;color:inherit;text-align:left}
+.feature-main:hover{color:#4f8ef7}
+.expand-arrow{margin-left:auto;transition:transform .3s;color:#8888aa;flex-shrink:0}
+.feature-item.expandable.expanded .expand-arrow{transform:rotate(180deg)}
+.feature-details{display:none;flex-direction:column;gap:6px;margin-top:10px;margin-left:22px;padding-left:12px;border-left:2px solid rgba(79,142,247,.2);width:100%}
+.feature-item.expandable.expanded .feature-details{display:flex}
+.detail-item{display:flex;align-items:flex-start;gap:6px;font-size:.79rem;color:#8888aa}
+.detail-bullet{color:#4f8ef7;font-weight:700;flex-shrink:0;margin-top:1px}
+/* plan audience + description */
+.plan-audience{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.audience-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
+  border-radius:6px;font-size:.72rem;font-weight:600;color:#4f8ef7}
+.audience-tag svg{opacity:.8;flex-shrink:0}
+.plan-description{font-size:.8rem;color:#8888aa;line-height:1.6;margin-bottom:16px;
+  padding:12px 14px;background:rgba(18,18,26,.4);
+  border-left:3px solid rgba(79,142,247,.4);border-radius:0 6px 6px 0}
 
 /* ── COUNTDOWN ── */
 .countdown-wrap{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
