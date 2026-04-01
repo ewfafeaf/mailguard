@@ -507,8 +507,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .cta-box-sub{font-size:1rem;color:var(--muted);margin-bottom:32px}
 
 /* ── PRICING ── */
-.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:start;max-width:1600px;margin:0 auto;padding:60px 32px}
-.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;transition:border-color .3s,transform .3s;position:relative}
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;align-items:start;max-width:1800px;margin:0 auto;padding:60px 40px}
+.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 26px;min-height:700px;transition:border-color .3s,transform .3s;position:relative}
 .pricing-card:hover{transform:translateY(-4px)}
 .pricing-card.popular{border-color:var(--accent);box-shadow:0 0 40px rgba(79,142,247,.18);background:linear-gradient(160deg,var(--surface),rgba(79,142,247,.06))}
 .pricing-badge{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em}
@@ -564,8 +564,9 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .cd-lbl{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .cd-sep{color:var(--muted);font-weight:700;margin-bottom:6px}
 
+@media(max-width:1600px){.pricing-grid{max-width:1400px;gap:24px}}
 @media(max-width:1400px){.pricing-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.pricing-grid{grid-template-columns:1fr;padding:32px 16px}.pricing-card{padding:24px 20px}}
+@media(max-width:768px){.pricing-grid{grid-template-columns:1fr;padding:32px 16px}.pricing-card{padding:24px 20px;min-height:auto}}
 
 /* ── HERO RESULTS ── */
 .hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
