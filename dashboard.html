@@ -671,11 +671,66 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .loading-screen p{color:var(--muted);font-size:.9rem}
 
 /* ── SETTINGS CARDS ── */
-.settings-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
-  border-radius:var(--radius);padding:24px;margin-bottom:16px;
-  box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
-  transition:all .3s ease}
-.settings-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
+.settings-section{display:flex;flex-direction:column;gap:20px;max-width:860px}
+.settings-card{background:rgba(18,18,26,.75);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:16px;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.35);transition:border-color .2s,transform .2s,box-shadow .2s}
+.settings-card:hover{border-color:rgba(79,142,247,.3);transform:translateY(-2px);
+  box-shadow:0 8px 28px rgba(79,142,247,.08)}
+.settings-card.danger-card{border-color:rgba(239,68,68,.25)}
+.settings-card.danger-card:hover{border-color:rgba(239,68,68,.45);box-shadow:0 8px 28px rgba(239,68,68,.08)}
+.sc-header{display:flex;align-items:center;gap:16px;padding:22px 24px;
+  border-bottom:1px solid rgba(79,142,247,.08);background:rgba(255,255,255,.015)}
+.danger-card .sc-header{border-bottom-color:rgba(239,68,68,.1)}
+.sc-icon{width:52px;height:52px;border-radius:12px;background:rgba(79,142,247,.1);
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.danger-card .sc-icon{background:rgba(239,68,68,.1)}
+.sc-title{font-size:1rem;font-weight:800;color:var(--text);margin:0 0 3px}
+.sc-subtitle{font-size:.8rem;color:var(--muted);margin:0;line-height:1.45}
+.sc-content{padding:22px 24px}
+.sc-info-row{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sc-info-row:last-child{border-bottom:none;padding-bottom:0}
+.sc-info-label{font-size:.84rem;color:var(--muted)}
+.sc-info-val{font-size:.9rem;font-weight:600;color:var(--text)}
+.sc-plan-badge{padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:6px;font-size:.75rem;font-weight:700;color:#fff}
+.sc-input-group{margin-bottom:18px}
+.sc-input-group label{display:block;font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:7px}
+.settings-input{width:100%;padding:11px 14px;background:rgba(34,34,58,.6);
+  border:1px solid rgba(79,142,247,.2);border-radius:9px;color:var(--text);
+  font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;
+  box-sizing:border-box}
+.settings-input:focus{border-color:rgba(79,142,247,.5);box-shadow:0 0 0 3px rgba(79,142,247,.1)}
+.settings-input::placeholder{color:var(--muted)}
+.pw-reqs{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.pw-req{font-size:.78rem;color:var(--red);display:flex;align-items:center;gap:6px;
+  transition:color .2s}
+.pw-req.valid{color:var(--green)}
+.sc-input-with-icon{position:relative}
+.sc-input-with-icon .settings-input{padding-right:160px}
+.sc-key-status{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;
+  pointer-events:none}
+.sc-key-status.ok{color:var(--green)}
+.sc-key-status.none{color:var(--muted)}
+.sc-card-info{font-size:.84rem;color:var(--muted);line-height:1.65;margin-bottom:18px}
+.sc-card-info a{color:var(--accent);text-decoration:none;font-weight:600}
+.sc-card-info a:hover{text-decoration:underline}
+.sc-action-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;
+  border:none;border-radius:9px;font-weight:700;font-size:.88rem;cursor:pointer;
+  font-family:inherit;transition:opacity .2s,transform .15s,box-shadow .2s}
+.sc-action-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.sc-action-btn.primary:hover{opacity:.88;transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(79,142,247,.35)}
+.sc-action-btn.danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  color:var(--red)}
+.sc-action-btn.danger:hover{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)}
+.sc-danger-warn{padding:14px 16px;background:rgba(239,68,68,.08);
+  border:1px solid rgba(239,68,68,.25);border-radius:9px;
+  color:#fca5a5;font-size:.84rem;line-height:1.6;margin-bottom:16px}
+.sc-msg{font-size:.82rem;margin-top:10px;min-height:18px}
+/* keep legacy names for Podpora section */
 .settings-section-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .settings-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .settings-field label{font-size:.82rem;font-weight:600;color:var(--muted)}
@@ -1641,61 +1696,148 @@ body::before{content:'';position:fixed;inset:0;
     <div id="sectionNastavenia" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot"></div>Nastavenia účtu</div>
 
-      <!-- Current account info -->
-      <div class="settings-card">
-        <div class="settings-section-title">👤 Aktuálny účet</div>
-        <div style="font-size:.82rem;color:var(--muted)">Prihlásený ako:</div>
-        <div class="settings-current-email" id="settingsEmail">—</div>
-      </div>
+      <div class="settings-section">
 
-      <!-- Change email -->
-      <div class="settings-card">
-        <div class="settings-section-title">✉️ Zmena emailu</div>
-        <div class="settings-field">
-          <label>Nový email</label>
-          <input type="email" id="newEmail" placeholder="novy@email.sk" autocomplete="email"/>
+        <!-- Aktuálny účet -->
+        <div class="settings-card">
+          <div class="sc-header">
+            <div class="sc-icon">👤</div>
+            <div>
+              <h3 class="sc-title">Aktuálny účet</h3>
+              <p class="sc-subtitle">Informácie o tvojom účte a pláne</p>
+            </div>
+          </div>
+          <div class="sc-content">
+            <div class="sc-info-row">
+              <span class="sc-info-label">Prihlásený ako</span>
+              <span class="sc-info-val" id="settingsEmail">—</span>
+            </div>
+            <div class="sc-info-row">
+              <span class="sc-info-label">Aktuálny plán</span>
+              <span class="sc-info-val"><span class="sc-plan-badge" id="settingsPlanBadge">Free Plan</span></span>
+            </div>
+          </div>
         </div>
-        <button class="settings-btn" id="changeEmailBtn" onclick="changeEmail()">Zmeniť email</button>
-        <div class="settings-msg" id="emailMsg"></div>
-      </div>
 
-      <!-- Change password -->
-      <div class="settings-card">
-        <div class="settings-section-title">🔑 Zmena hesla</div>
-        <div class="settings-field">
-          <label>Nové heslo</label>
-          <input type="password" id="newPassword" placeholder="Minimálne 8 znakov" autocomplete="new-password" oninput="dashLivePasswordCheck()"/>
+        <!-- Zmena emailu -->
+        <div class="settings-card">
+          <div class="sc-header">
+            <div class="sc-icon">📧</div>
+            <div>
+              <h3 class="sc-title">Zmena emailu</h3>
+              <p class="sc-subtitle">Aktualizuj svoju prihlasovаciu email adresu</p>
+            </div>
+          </div>
+          <div class="sc-content">
+            <div class="sc-input-group">
+              <label>Nový email</label>
+              <input type="email" id="newEmail" class="settings-input"
+                placeholder="novy@email.sk" autocomplete="email"/>
+            </div>
+            <button class="sc-action-btn primary" id="changeEmailBtn" onclick="changeEmail()">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              Zmeniť email
+            </button>
+            <div class="sc-msg" id="emailMsg"></div>
+          </div>
         </div>
-        <div class="pw-hints" id="dashPwHints">
-          <div id="d-hint-len"   class="pw-hint">❌ Minimálne 8 znakov</div>
-          <div id="d-hint-upper" class="pw-hint">❌ Aspoň 1 veľké písmeno</div>
-          <div id="d-hint-num"   class="pw-hint">❌ Aspoň 1 číslo</div>
-        </div>
-        <button class="settings-btn" id="changePasswordBtn" onclick="changePassword()">Zmeniť heslo</button>
-        <div class="settings-msg" id="passwordMsg"></div>
-      </div>
 
-      <!-- GSB API KEY (admin only) -->
-      <div class="settings-card" id="gsbCard" style="display:none">
-        <div class="settings-section-title">🛡️ Google Safe Browsing API</div>
-        <div style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px">
-          Kontroluje URL oproti databáze známych hrozieb. API kľúč získaš zadarmo na
-          <a href="https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com" target="_blank" rel="noopener" style="color:var(--accent)">Google Cloud Console</a>.
+        <!-- Zmena hesla -->
+        <div class="settings-card">
+          <div class="sc-header">
+            <div class="sc-icon">🔐</div>
+            <div>
+              <h3 class="sc-title">Zmena hesla</h3>
+              <p class="sc-subtitle">Aktualizuj svoje prihlasovacie heslo</p>
+            </div>
+          </div>
+          <div class="sc-content">
+            <div class="sc-input-group">
+              <label>Nové heslo</label>
+              <input type="password" id="newPassword" class="settings-input"
+                placeholder="Minimálne 8 znakov" autocomplete="new-password"
+                oninput="dashLivePasswordCheck()"/>
+              <div class="pw-reqs" id="dashPwHints">
+                <span class="pw-req" id="d-hint-len">✗ Minimálne 8 znakov</span>
+                <span class="pw-req" id="d-hint-upper">✗ Aspoň 1 veľké písmeno</span>
+                <span class="pw-req" id="d-hint-num">✗ Aspoň 1 číslo</span>
+              </div>
+            </div>
+            <div class="sc-input-group">
+              <label>Potvrď nové heslo</label>
+              <input type="password" id="confirmPassword" class="settings-input"
+                placeholder="Zopakuj heslo" autocomplete="new-password"/>
+            </div>
+            <button class="sc-action-btn primary" id="changePasswordBtn" onclick="changePassword()">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Zmeniť heslo
+            </button>
+            <div class="sc-msg" id="passwordMsg"></div>
+          </div>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <input type="password" id="gsbKeyInput" class="analysis-input" style="flex:1;min-width:200px;height:44px" placeholder="AIza…"/>
-          <button class="analysis-btn" style="height:44px;padding:0 20px" onclick="saveGsbKey()">Uložiť</button>
-        </div>
-        <div id="gsbKeyStatus" style="font-size:.8rem;color:var(--muted);margin-top:8px"></div>
-      </div>
 
-      <!-- Danger zone -->
-      <div class="settings-card danger-zone">
-        <div class="settings-section-title danger-title">⚠️ Nebezpečná zóna</div>
-        <div style="font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:16px">
-          Zmazaním účtu stratíš všetky uložené analýzy a históriu. Táto akcia je nevratná.
+        <!-- Google Safe Browsing API -->
+        <div class="settings-card" id="gsbCard" style="display:none">
+          <div class="sc-header">
+            <div class="sc-icon">🛡️</div>
+            <div>
+              <h3 class="sc-title">Google Safe Browsing API</h3>
+              <p class="sc-subtitle">Kontroluje URL oproti databáze známych hrozieb</p>
+            </div>
+          </div>
+          <div class="sc-content">
+            <p class="sc-card-info">
+              API kľúč môžeš získať zadarmo na
+              <a href="https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com"
+                target="_blank" rel="noopener">Google Cloud Console</a>.
+            </p>
+            <div class="sc-input-group">
+              <label>API kľúč</label>
+              <div class="sc-input-with-icon">
+                <input type="password" id="gsbKeyInput" class="settings-input"
+                  placeholder="AIza…"/>
+                <span class="sc-key-status none" id="gsbKeyStatus">Nie je nastavený</span>
+              </div>
+            </div>
+            <button class="sc-action-btn primary" onclick="saveGsbKey()">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Uložiť kľúč
+            </button>
+          </div>
         </div>
-        <button class="settings-btn settings-btn-danger" onclick="confirmDeleteAccount()">🗑️ Zmazať účet</button>
+
+        <!-- Nebezpečná zóna -->
+        <div class="settings-card danger-card">
+          <div class="sc-header">
+            <div class="sc-icon">⚠️</div>
+            <div>
+              <h3 class="sc-title">Nebezpečná zóna</h3>
+              <p class="sc-subtitle">Zmazaním účtu stratíš všetky analýzy a históriu</p>
+            </div>
+          </div>
+          <div class="sc-content">
+            <div class="sc-danger-warn">
+              Táto akcia je <strong>nevratná</strong>. Všetky tvoje dáta, analýzy a história budú permanentne a okamžite odstránené.
+            </div>
+            <button class="sc-action-btn danger" onclick="confirmDeleteAccount()">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+              Zmazať účet
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -2068,9 +2210,11 @@ async function loadProfile(){
   _currentPlan=data?.plan||'free';
   const planLabel=PLAN_LABELS[_currentPlan]||'Free Plan';
   document.getElementById('sidebarPlan').textContent=planLabel;
-  // update new sidebar user plan badge
   const planEl=document.getElementById('sidebarUserPlan');
   if(planEl) planEl.textContent=planLabel;
+  // settings plan badge
+  const settingsBadge=document.getElementById('settingsPlanBadge');
+  if(settingsBadge) settingsBadge.textContent=planLabel;
   // Zobraz sidebar položku tímu len pre school/business
   const navTeam=document.getElementById('navTeam');
   if(navTeam) navTeam.style.display=checkPlanSilent('school')?'flex':'none';
@@ -2190,10 +2334,27 @@ async function loadDailyUsage(){
 function saveGsbKey(){
   const key=document.getElementById('gsbKeyInput').value.trim();
   const status=document.getElementById('gsbKeyStatus');
-  if(!key){localStorage.removeItem('gsb_api_key');status.textContent='API kľúč bol odstránený.';status.style.color='var(--muted)';return;}
+  if(!key){
+    localStorage.removeItem('gsb_api_key');
+    if(status){status.textContent='Nie je nastavený';status.className='sc-key-status none';}
+    showToast('API kľúč bol odstránený','');
+    return;
+  }
   localStorage.setItem('gsb_api_key',key);
-  status.textContent='✓ API kľúč uložený.';
-  status.style.color='var(--green)';
+  if(status){status.textContent='✓ Uložený';status.className='sc-key-status ok';}
+  showToast('GSB API kľúč uložený','success');
+}
+
+// Pre-fill GSB key status on section open
+function refreshGsbKeyStatus(){
+  const key=localStorage.getItem('gsb_api_key')||'';
+  const status=document.getElementById('gsbKeyStatus');
+  const input=document.getElementById('gsbKeyInput');
+  if(input&&key) input.value=key;
+  if(status){
+    if(key){status.textContent='✓ Uložený';status.className='sc-key-status ok';}
+    else{status.textContent='Nie je nastavený';status.className='sc-key-status none';}
+  }
 }
 
 /* ── STRIPE UPGRADE ── */
@@ -2319,8 +2480,9 @@ function showSection(s){
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
   const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
-  if(s==='nova')     loadNovaExtras();
-  if(s==='analyze')  loadAnalyzeSection();
+  if(s==='nova')       loadNovaExtras();
+  if(s==='analyze')    loadAnalyzeSection();
+  if(s==='nastavenia') refreshGsbKeyStatus();
   if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats(); }
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
@@ -5788,8 +5950,9 @@ function dashLivePasswordCheck(){
   const okNum  =/[0-9]/.test(pass);
   const set=(id,ok,label)=>{
     const el=document.getElementById(id);
-    el.style.color=ok?'#22c55e':'#ef4444';
-    el.textContent=(ok?'✅':'❌')+' '+label;
+    if(!el) return;
+    el.classList.toggle('valid',ok);
+    el.textContent=(ok?'✓':'✗')+' '+label;
   };
   set('d-hint-len',  okLen,  'Minimálne 8 znakov');
   set('d-hint-upper',okUpper,'Aspoň 1 veľké písmeno');
@@ -5797,17 +5960,21 @@ function dashLivePasswordCheck(){
 }
 
 async function changePassword(){
-  const pass = document.getElementById('newPassword').value;
-  const msg  = document.getElementById('passwordMsg');
-  const btn  = document.getElementById('changePasswordBtn');
-  if(!pass){ msg.textContent='Zadaj nové heslo.'; msg.style.color='var(--red)'; return; }
+  const pass    = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword')?.value;
+  const msg     = document.getElementById('passwordMsg');
+  const btn     = document.getElementById('changePasswordBtn');
+  msg.style.color='var(--red)';
+  if(!pass){ msg.textContent='Zadaj nové heslo.'; return; }
   if(pass.length<8||!/[A-Z]/.test(pass)||!/[0-9]/.test(pass)){
-    msg.textContent='Heslo musí mať aspoň 8 znakov, 1 veľké písmeno a 1 číslo.'; msg.style.color='var(--red)';
-    dashLivePasswordCheck();
-    return;
+    msg.textContent='Heslo musí mať aspoň 8 znakov, 1 veľké písmeno a 1 číslo.';
+    dashLivePasswordCheck(); return;
+  }
+  if(confirm!==undefined&&confirm!==pass){
+    msg.textContent='Heslá sa nezhodujú.'; return;
   }
   btn.disabled=true; btn.textContent='Mením…';
-  const {error} = await _sb.auth.updateUser({ password: pass });
+  const {error}=await _sb.auth.updateUser({password:pass});
   btn.disabled=false; btn.textContent='Zmeniť heslo';
   if(error){
     msg.textContent=error.message; msg.style.color='var(--red)';
@@ -5815,6 +5982,7 @@ async function changePassword(){
   } else {
     msg.textContent='Heslo bolo zmenené.'; msg.style.color='var(--green)';
     document.getElementById('newPassword').value='';
+    if(confirm!==undefined) document.getElementById('confirmPassword').value='';
     dashLivePasswordCheck();
     showToast('Heslo bolo úspešne zmenené','success');
   }
