@@ -507,29 +507,29 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .cta-box-sub{font-size:1rem;color:var(--muted);margin-bottom:32px}
 
 /* ── PRICING ── */
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:32px;align-items:start;max-width:1400px;margin:0 auto;padding:0 40px}
-.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 28px;transition:border-color .3s,transform .3s;position:relative}
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:start;max-width:1600px;margin:0 auto;padding:60px 32px}
+.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;transition:border-color .3s,transform .3s;position:relative}
 .pricing-card:hover{transform:translateY(-4px)}
 .pricing-card.popular{border-color:var(--accent);box-shadow:0 0 40px rgba(79,142,247,.18);background:linear-gradient(160deg,var(--surface),rgba(79,142,247,.06))}
 .pricing-badge{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em}
-.pricing-plan{font-size:1rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}
-.pricing-price{font-size:3rem;font-weight:900;letter-spacing:-1.5px;line-height:1;margin-bottom:3px}
-.pricing-price sup{font-size:1.2rem;vertical-align:super;font-weight:700}
-.pricing-period{font-size:.9rem;color:var(--muted);margin-bottom:8px}
-.pricing-alt{font-size:.8rem;color:rgba(255,255,255,.35);margin-bottom:20px}
+.pricing-plan{font-size:.9rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}
+.pricing-price{font-size:2.8rem;font-weight:900;letter-spacing:-1.5px;line-height:1;margin-bottom:3px}
+.pricing-price sup{font-size:1.1rem;vertical-align:super;font-weight:700}
+.pricing-period{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+.pricing-alt{font-size:.76rem;color:rgba(255,255,255,.35);margin-bottom:20px}
 .divider{height:1px;background:var(--border);margin:20px 0}
 .pricing-features{list-style:none;display:flex;flex-direction:column;gap:4px;margin-bottom:28px;padding:0}
 .pricing-features li{font-size:.88rem;color:var(--muted);display:flex;align-items:flex-start;gap:8px;line-height:1.45}
 .pricing-features li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0;margin-top:1px}
 .pricing-features li.off{opacity:.38}
 .pricing-features li.off::before{content:'✕';color:var(--muted)}
-.btn-plan{width:100%;padding:15px;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.btn-plan{width:100%;padding:13px;border-radius:10px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
 .btn-plan-ghost{background:transparent;border:1px solid var(--border2);color:var(--text);transition:border-color .2s,color .2s}
 .btn-plan-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .btn-plan-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;box-shadow:0 4px 18px rgba(79,142,247,.3);transition:opacity .2s}
 .btn-plan-primary:hover{opacity:.9}
 /* expandable feature items */
-.feature-item{display:flex;align-items:center;gap:8px;font-size:.9rem;color:#eeeef5;line-height:1.45;padding:6px 0}
+.feature-item{display:flex;align-items:center;gap:8px;font-size:.87rem;color:#eeeef5;line-height:1.45;padding:5px 0}
 .feature-item.disabled{opacity:.38;color:var(--muted)}
 .check-icon.green{color:#10b981;flex-shrink:0}
 .x-icon{color:var(--muted);flex-shrink:0}
@@ -544,12 +544,12 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .detail-bullet{color:#4f8ef7;font-weight:700;flex-shrink:0;margin-top:1px}
 /* plan audience + description */
 .plan-audience{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.audience-tag{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;
+.audience-tag{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;
   background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
-  border-radius:6px;font-size:.8rem;font-weight:600;color:#4f8ef7}
+  border-radius:6px;font-size:.76rem;font-weight:600;color:#4f8ef7}
 .audience-tag svg{opacity:.8;flex-shrink:0}
-.plan-description{font-size:.88rem;color:#8888aa;line-height:1.6;margin-bottom:18px;
-  padding:14px 16px;background:rgba(18,18,26,.4);
+.plan-description{font-size:.82rem;color:#8888aa;line-height:1.6;margin-bottom:16px;
+  padding:12px 14px;background:rgba(18,18,26,.4);
   border-left:3px solid rgba(79,142,247,.4);border-radius:0 6px 6px 0}
 
 /* ── COUNTDOWN ── */
@@ -564,8 +564,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .cd-lbl{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .cd-sep{color:var(--muted);font-weight:700;margin-bottom:6px}
 
-@media(max-width:1200px){.pricing-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.pricing-grid{grid-template-columns:1fr;padding:0 20px}.pricing-card{padding:24px 20px}}
+@media(max-width:1400px){.pricing-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.pricing-grid{grid-template-columns:1fr;padding:32px 16px}.pricing-card{padding:24px 20px}}
 
 /* ── HERO RESULTS ── */
 .hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
