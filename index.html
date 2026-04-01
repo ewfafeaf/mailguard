@@ -402,6 +402,7 @@ textarea{min-height:150px}
 
 /* ── PRICING ── */
 #pricing{padding:80px 0}
+#pricing .container{max-width:1400px}
 .divider{height:1px;background:var(--border);margin:20px 0}
 
 /* ── FAQ ── */
@@ -507,8 +508,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .cta-box-sub{font-size:1rem;color:var(--muted);margin-bottom:32px}
 
 /* ── PRICING ── */
-.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;align-items:start;max-width:1950px;margin:0 auto;padding:60px 45px}
-.pricing-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);border-radius:14px;padding:34px 30px;min-height:730px;box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);transition:all .3s ease;position:relative}
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+.pricing-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);border-radius:14px;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);transition:all .3s ease;position:relative}
 .pricing-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
 .pricing-card.popular{border-color:var(--accent);box-shadow:0 0 40px rgba(79,142,247,.18);background:linear-gradient(160deg,var(--surface),rgba(79,142,247,.06))}
 .pricing-badge{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em}
@@ -565,7 +566,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .cd-sep{color:var(--muted);font-weight:700;margin-bottom:6px}
 
 @media(max-width:1100px){.pricing-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.pricing-grid{grid-template-columns:1fr;padding:32px 16px}.pricing-card{padding:24px 20px}}
+@media(max-width:600px){.pricing-grid{grid-template-columns:1fr}.pricing-card{padding:24px 20px}}
 
 /* ── HERO RESULTS ── */
 .hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
