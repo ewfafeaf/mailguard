@@ -823,6 +823,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .settings-current-email{font-size:1rem;font-weight:600;margin-top:4px;color:var(--text)}
 .danger-zone{border-color:rgba(239,68,68,.25)!important}
 .danger-title{color:var(--red)!important}
+/* ── LOGO LINK ── */
+.logo-link{display:block;text-decoration:none;color:inherit;transition:opacity .2s}
+.logo-link:hover{opacity:.75}
+
 /* ── PLANS SECTION ── */
 .plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start;margin-top:4px}
 .plan-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
@@ -851,6 +855,21 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .plan-btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;box-shadow:0 4px 18px rgba(79,142,247,.3);transition:opacity .2s}
 .plan-btn-primary:hover{opacity:.9}
 .plan-btn-current{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.3);cursor:default}
+/* ── PLAN FEATURE ITEMS (new expandable structure) ── */
+.plan-features{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;padding:0;list-style:none}
+.feature-item{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#eeeef5;line-height:1.45}
+.feature-item.disabled{opacity:.38;color:var(--muted)}
+.check-icon.green{color:#10b981;flex-shrink:0}
+.x-icon{color:var(--muted);flex-shrink:0}
+.feature-item.expandable{flex-direction:column;align-items:flex-start}
+.feature-main{display:flex;align-items:center;width:100%;cursor:pointer;gap:8px;transition:color .2s;border:none;background:none;padding:0;font:inherit;color:inherit;text-align:left}
+.feature-main:hover{color:#4f8ef7}
+.expand-arrow{margin-left:auto;transition:transform .3s;color:#8888aa;flex-shrink:0}
+.feature-item.expandable.expanded .expand-arrow{transform:rotate(180deg)}
+.feature-details{display:none;flex-direction:column;gap:6px;margin-top:10px;margin-left:22px;padding-left:12px;border-left:2px solid rgba(79,142,247,.2);width:100%}
+.feature-item.expandable.expanded .feature-details{display:flex}
+.detail-item{display:flex;align-items:flex-start;gap:6px;font-size:.79rem;color:#8888aa}
+.detail-bullet{color:#4f8ef7;font-weight:700;flex-shrink:0;margin-top:1px}
 /* countdown */
 .countdown-wrap{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
 .countdown-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
@@ -1304,15 +1323,17 @@ body::before{content:'';position:fixed;inset:0;
 
 <!-- Modern Sidebar -->
 <aside class="modern-sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#4f8ef7" stroke-width="2" fill="none"/>
-        <path d="M9 12l2 2 4-4" stroke="#4f8ef7" stroke-width="2" fill="none"/>
-      </svg>
+  <a href="index.html" class="logo-link">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#4f8ef7" stroke-width="2" fill="none"/>
+          <path d="M9 12l2 2 4-4" stroke="#4f8ef7" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <div class="logo-text">MAILGUARD</div>
     </div>
-    <div class="logo-text">MAILGUARD</div>
-  </div>
+  </a>
 
   <nav class="sidebar-nav">
 
@@ -2663,6 +2684,20 @@ function showSection(s){
 ══════════════════════════════════════════ */
 function renderPlans(){
   const current = _currentPlan || 'free';
+
+  // SVG helpers
+  const ck=`<svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>`;
+  const xk=`<svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>`;
+  const ar=`<svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>`;
+
+  // Feature item builders
+  const fi =(t)=>`<div class="feature-item">${ck}<span>${t}</span></div>`;
+  const fid=(t)=>`<div class="feature-item disabled">${xk}<span>${t}</span></div>`;
+  const fie=(t,ds)=>`<div class="feature-item expandable">
+    <button class="feature-main" onclick="toggleFeature(this)">${ck}<span>${t}</span>${ar}</button>
+    <div class="feature-details">${ds.map(d=>`<div class="detail-item"><span class="detail-bullet">→</span><span>${d}</span></div>`).join('')}</div>
+  </div>`;
+
   document.getElementById('plansGrid').innerHTML = `
 
     <!-- FREE -->
@@ -2673,15 +2708,15 @@ function renderPlans(){
       <div class="plan-period">navždy zadarmo</div>
       <div class="plan-alt">&nbsp;</div>
       <div class="plan-divider"></div>
-      <ul class="plan-features">
-        <li>3 analýzy denne</li>
-        <li>Email + URL skener</li>
-        <li>Základné výsledky</li>
-        <li>1 používateľ, 1 účet</li>
-        <li class="off">História analýz</li>
-        <li class="off">Export do PDF</li>
-        <li class="off">API prístup</li>
-      </ul>
+      <div class="plan-features">
+        ${fi('3 analýzy denne')}
+        ${fie('Email + URL skener',['Základná analýza emailov','Kontrola URL odkazov','Google Safe Browsing'])}
+        ${fi('Základné výsledky')}
+        ${fi('1 používateľ, 1 účet')}
+        ${fid('História analýz')}
+        ${fid('Export do PDF')}
+        ${fid('API prístup')}
+      </div>
       ${current==='free'
         ? '<button class="plan-btn plan-btn-current" disabled>Aktuálny plán</button>'
         : '<button class="plan-btn plan-btn-ghost" onclick="showToast(\'Zaregistruj sa zadarmo na hlavnej stránke\')">Začať zadarmo</button>'}
@@ -2710,15 +2745,18 @@ function renderPlans(){
       <div class="plan-period">/ mesiac</div>
       <div class="plan-alt">alebo 79€ / rok (ušetri 41%)</div>
       <div class="plan-divider"></div>
-      <ul class="plan-features">
-        <li>Neobmedzené analýzy</li>
-        <li>Plné výsledky + detaily</li>
-        <li>História analýz</li>
-        <li>Export do PDF</li>
-        <li class="off">Multi-používateľský účet</li>
-        <li class="off">API prístup</li>
-        <li class="off">Dashboard správcu</li>
-      </ul>
+      <div class="plan-features">
+        ${fi('Neobmedzené analýzy')}
+        ${fi('Plné výsledky + detaily')}
+        ${fie('Web skener',['SSL/HTTPS analýza','Security Headers check','Google Safe Browsing API','Mozilla Observatory skóre'])}
+        ${fie('Analýza súborov',['PDF, DOC, DOCX, XLS, XLSX','Makrá a vložené skripty','URL extrakcia z dokumentov','VirusTotal multi-engine scan'])}
+        ${fie('Analýza emailových hlavičiek',['SPF verification','DKIM signature check','DMARC policy analysis','Email spoofing detection','PDF report generator'])}
+        ${fi('História analýz')}
+        ${fi('Export do PDF')}
+        ${fid('Multi-používateľský účet')}
+        ${fid('API prístup')}
+        ${fid('Dashboard správcu')}
+      </div>
       ${current==='pro'
         ? '<button class="plan-btn plan-btn-current" disabled>Aktuálny plán</button>'
         : '<button class="plan-btn plan-btn-primary" onclick="upgradeToPro()">Vyskúšať Pro</button>'}
@@ -2732,15 +2770,15 @@ function renderPlans(){
       <div class="plan-period">/ rok</div>
       <div class="plan-alt">alebo 339€ jednorazovo</div>
       <div class="plan-divider"></div>
-      <ul class="plan-features">
-        <li>Všetko z Pro</li>
-        <li>Až 50 používateľov</li>
-        <li>Dashboard pre riaditeľa</li>
-        <li>Mesačné reporty</li>
-        <li>Osobná konzultácia</li>
-        <li>Overenie školskej domény</li>
-        <li class="off">API prístup</li>
-      </ul>
+      <div class="plan-features">
+        ${fi('Všetko z Pro')}
+        ${fi('Až 50 používateľov')}
+        ${fi('Dashboard pre riaditeľa')}
+        ${fi('Mesačné reporty')}
+        ${fi('Osobná konzultácia')}
+        ${fi('Overenie školskej domény')}
+        ${fid('API prístup')}
+      </div>
       ${current==='school'
         ? '<button class="plan-btn plan-btn-current" disabled>Aktuálny plán</button>'
         : '<button class="plan-btn plan-btn-ghost" onclick="showSection(\'podpora\')">Kontaktovať nás</button>'}
@@ -2754,23 +2792,26 @@ function renderPlans(){
       <div class="plan-period">/ rok</div>
       <div class="plan-alt">alebo 399€ jednorazovo</div>
       <div class="plan-divider"></div>
-      <ul class="plan-features">
-        <li>Všetko zo Školy</li>
-        <li>Až 100 používateľov</li>
-        <li>API prístup</li>
-        <li>Vlastný branding</li>
-        <li>SLA podpora</li>
-        <li>Overenie firemnej domény</li>
-        <li>Dedikovaný account manager</li>
-      </ul>
+      <div class="plan-features">
+        ${fi('Všetko zo Školy')}
+        ${fi('Až 100 používateľov')}
+        ${fi('API prístup')}
+        ${fi('Vlastný branding')}
+        ${fi('SLA podpora')}
+        ${fi('Overenie firemnej domény')}
+        ${fi('Dedikovaný account manager')}
+      </div>
       ${current==='business'
         ? '<button class="plan-btn plan-btn-current" disabled>Aktuálny plán</button>'
         : '<button class="plan-btn plan-btn-ghost" onclick="showSection(\'podpora\')">Kontaktovať nás</button>'}
     </div>
   `;
 
-  // Spusti countdown ak je PRO karta viditeľná
   if(current !== 'pro') startDashCountdown();
+}
+
+function toggleFeature(btn){
+  btn.closest('.feature-item').classList.toggle('expanded');
 }
 
 function startDashCountdown(){
