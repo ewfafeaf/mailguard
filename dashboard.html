@@ -827,6 +827,55 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .logo-link{display:block;text-decoration:none;color:inherit;transition:opacity .2s}
 .logo-link:hover{opacity:.75}
 
+/* ── TEAM SECTION ── */
+.team-management-section{display:grid;grid-template-columns:420px 1fr;gap:28px;align-items:start;max-width:1300px}
+.team-left-column,.team-right-column{display:flex;flex-direction:column;gap:20px}
+.team-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);border-radius:14px;padding:0;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.team-card .card-header{display:flex;align-items:flex-start;gap:14px;padding:22px 24px 0}
+.team-card .card-icon{width:44px;height:44px;background:linear-gradient(135deg,rgba(79,142,247,.2),rgba(124,95,247,.2));border:1px solid rgba(79,142,247,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.team-card .card-title{font-size:1rem;font-weight:700;color:#eeeef5;margin:0 0 4px}
+.team-card .card-subtitle{font-size:.8rem;color:#8888aa;line-height:1.5;margin:0}
+.team-card .card-content{padding:20px 24px 24px}
+/* limit info */
+.team-limit-info{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);border-radius:10px;margin-bottom:20px}
+.limit-progress{flex:1}
+.progress-bar{width:100%;height:6px;background:rgba(34,34,58,.8);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border-radius:3px;transition:width .4s}
+.limit-text{font-size:.8rem;color:#8888aa}
+.limit-text .current{font-weight:700;color:#4f8ef7;font-size:.95rem}
+/* role info */
+.role-info{margin-top:10px;padding:10px 14px;background:rgba(79,142,247,.07);border-left:3px solid rgba(79,142,247,.4);border-radius:0 6px 6px 0}
+.role-description{font-size:.82rem;color:#8888aa;line-height:1.5}
+/* member items */
+.team-members-list{display:flex;flex-direction:column;gap:10px}
+.member-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(34,34,58,.4);border:1px solid rgba(79,142,247,.1);border-radius:10px;transition:all .2s}
+.member-item:hover{background:rgba(34,34,58,.6);border-color:rgba(79,142,247,.3);transform:translateX(3px)}
+.member-avatar{width:44px;height:44px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1.05rem;flex-shrink:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:.9rem;font-weight:600;color:#eeeef5;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member-meta{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#8888aa;flex-wrap:wrap}
+.member-role-badge{padding:2px 7px;background:rgba(79,142,247,.15);border-radius:4px;color:#4f8ef7;font-weight:600}
+.member-role-badge.admin{background:rgba(245,158,11,.15);color:#f59e0b}
+.meta-sep{color:#555566}
+.member-action-btn{padding:7px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:7px;color:#ef4444;font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.member-action-btn:hover{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)}
+/* activity */
+.activity-list{display:flex;flex-direction:column;gap:10px}
+.activity-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(34,34,58,.4);border:1px solid rgba(79,142,247,.1);border-radius:10px;flex-wrap:wrap}
+.activity-user{display:flex;align-items:center;gap:10px;flex:1;min-width:160px}
+.activity-avatar{width:34px;height:34px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.9rem;flex-shrink:0}
+.activity-email{font-size:.88rem;font-weight:600;color:#eeeef5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.activity-stats{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#8888aa;flex-wrap:wrap}
+.stat-value{font-weight:700;color:#4f8ef7}
+.stat-sep{color:#555566}
+.stat-badge{padding:3px 9px;border-radius:12px;font-weight:600;font-size:.74rem;background:rgba(34,34,58,.6);color:var(--muted);border:1px solid rgba(79,142,247,.1)}
+.stat-badge.danger{background:rgba(239,68,68,.15);color:#ef4444}
+.stat-badge.safe{background:rgba(16,185,129,.12);color:#10b981}
+.link-btn{padding:6px 14px;background:transparent;border:1px solid rgba(79,142,247,.3);border-radius:7px;color:#4f8ef7;font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s}
+.link-btn:hover{background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.5)}
+/* team empty/loading */
+.team-empty{padding:32px 20px;text-align:center;color:#8888aa;font-size:.85rem}
+
 /* ── PLANS SECTION ── */
 .plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start;margin-top:4px}
 .plan-card{background:rgba(26,29,39,.7);backdrop-filter:blur(12px);border:1px solid rgba(79,142,247,.2);
@@ -2232,54 +2281,105 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Team -->
     <div id="sectionTeam" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:#3b82f6"></div>Správa tímu</div>
-      <div style="font-size:.86rem;color:var(--muted);margin-bottom:20px;line-height:1.55">
-        Pridaj členov tímu a spravuj ich prístup k MailGuard. Pozvánka bude odoslaná emailom.
-        <span id="teamPlanNote" style="color:var(--accent);font-weight:600"></span>
-      </div>
 
-      <!-- Pridať člena -->
-      <div class="hres" style="padding:18px;margin-bottom:18px">
-        <div style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px">Pozvať nového člena</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:1;min-width:180px">
-            <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Email</div>
-            <input id="teamInviteEmail" type="email" placeholder="meno@skola.sk"
-              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.86rem;box-sizing:border-box"/>
+      <div class="team-management-section">
+
+        <!-- LEFT: Pozvať člena -->
+        <div class="team-left-column">
+          <div class="team-card">
+            <div class="card-header">
+              <div class="card-icon">✉️</div>
+              <div>
+                <h3 class="card-title">Pozvať nového člena</h3>
+                <p class="card-subtitle">Pridaj členov tímu a spravuj ich prístup. Pozvánka bude odoslaná emailom.</p>
+              </div>
+            </div>
+            <div class="card-content">
+
+              <!-- Limit info -->
+              <div class="team-limit-info">
+                <div class="limit-progress">
+                  <div class="progress-bar"><div class="progress-fill" id="teamLimitFill" style="width:0%"></div></div>
+                  <div class="limit-text"><span class="current" id="teamCount">0</span> / <span id="teamLimitMax">50</span> členov</div>
+                </div>
+                <span class="sidebar-plan-badge" id="teamPlanNote">Free</span>
+              </div>
+
+              <!-- Email -->
+              <div class="sc-input-group">
+                <label>Email adresa</label>
+                <input type="email" id="memberEmail" class="settings-input" placeholder="ucitel@skola.sk" autocomplete="email"/>
+              </div>
+
+              <!-- Meno -->
+              <div class="sc-input-group">
+                <label>Meno a priezvisko</label>
+                <input type="text" id="memberName" class="settings-input" placeholder="Mgr. Ján Kováč" autocomplete="name"/>
+              </div>
+
+              <!-- Rola -->
+              <div class="sc-input-group">
+                <label>Rola</label>
+                <select id="memberRole" class="settings-input" onchange="updateRoleInfo(this.value)" style="cursor:pointer">
+                  <option value="member">👤 Člen – Základný prístup</option>
+                  <option value="admin">👑 Administrátor – Plný prístup</option>
+                  <option value="viewer">👁️ Pozorovateľ – Len zobrazenie</option>
+                </select>
+                <div class="role-info" id="roleInfo">
+                  <div class="role-description" id="roleDescription"><strong>Člen</strong> môže vykonávať analýzy, pristupovať k histórii a exportovať reporty.</div>
+                </div>
+              </div>
+
+              <button class="sc-action-btn primary" id="teamInviteBtn" onclick="teamInvite()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Pozvať člena
+              </button>
+              <div class="sc-msg" id="teamInviteMsg"></div>
+
+            </div>
           </div>
-          <div style="min-width:130px">
-            <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Rola</div>
-            <select id="teamInviteRole"
-              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.86rem">
-              <option value="member">Člen</option>
-              <option value="admin">Admin</option>
-            </select>
+        </div>
+
+        <!-- RIGHT: Členovia + Aktivita -->
+        <div class="team-right-column">
+
+          <!-- Členovia tímu -->
+          <div class="team-card">
+            <div class="card-header">
+              <div class="card-icon">👥</div>
+              <div>
+                <h3 class="card-title">Členovia tímu</h3>
+                <p class="card-subtitle">Spravuj prístup a oprávnenia členov</p>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="team-members-list" id="teamList">
+                <div class="team-empty">Načítavam…</div>
+              </div>
+            </div>
           </div>
-          <button class="analysis-btn" id="teamInviteBtn" onclick="teamInvite()" style="white-space:nowrap;padding:8px 18px">
-            ➕ Pozvať
-          </button>
-        </div>
-        <div id="teamInviteMsg" style="margin-top:10px;font-size:.83rem;display:none"></div>
-      </div>
 
-      <!-- Zoznam členov -->
-      <div class="hres" style="padding:0;overflow:hidden">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Členovia tímu</div>
-          <div id="teamCount" style="font-size:.79rem;color:var(--muted)"></div>
-        </div>
-        <div id="teamList" style="min-height:60px"></div>
-      </div>
+          <!-- Tímová aktivita -->
+          <div class="team-card">
+            <div class="card-header">
+              <div class="card-icon">📊</div>
+              <div>
+                <h3 class="card-title">Tímová aktivita</h3>
+                <p class="card-subtitle">Prehľad využívania MailGuard</p>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="activity-list" id="teamActivity">
+                <div class="team-empty">Načítavam…</div>
+              </div>
+            </div>
+          </div>
 
-      <!-- Tímová aktivita -->
-      <div class="hres" style="padding:0;overflow:hidden;margin-top:18px">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
-          <div style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Tímová aktivita</div>
         </div>
-        <div id="teamActivity" style="min-height:48px"></div>
       </div>
 
       <!-- Modal: história člena -->
-      <div id="teamHistoryModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
+      <div id="teamHistoryModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(700px,95vw);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
           <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
             <div id="teamHistoryModalTitle" style="font-weight:700;font-size:.95rem"></div>
@@ -5759,11 +5859,15 @@ function generatePoliceReport(){
 const TEAM_LIMIT = { school: 50, business: 100 };
 
 async function loadTeam(){
-  const listEl  = document.getElementById('teamList');
-  const countEl = document.getElementById('teamCount');
-  const noteEl  = document.getElementById('teamPlanNote');
-  const limit   = TEAM_LIMIT[_currentPlan] || 50;
-  noteEl.textContent = `Max ${limit} členov (${PLAN_LABELS[_currentPlan]}).`;
+  const listEl   = document.getElementById('teamList');
+  const countEl  = document.getElementById('teamCount');
+  const maxEl    = document.getElementById('teamLimitMax');
+  const fillEl   = document.getElementById('teamLimitFill');
+  const noteEl   = document.getElementById('teamPlanNote');
+  const limit    = TEAM_LIMIT[_currentPlan] || 50;
+
+  if(noteEl) noteEl.textContent = PLAN_LABELS[_currentPlan] || 'Free';
+  if(maxEl)  maxEl.textContent  = limit;
 
   listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)">
     <div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0 auto 10px"></div>Načítavam…</div>`;
@@ -5778,45 +5882,46 @@ async function loadTeam(){
     return;
   }
 
-  countEl.textContent=`${data.length} / ${limit}`;
+  if(countEl) countEl.textContent = data.length;
+  if(fillEl)  fillEl.style.width  = Math.min(100, Math.round(data.length/limit*100))+'%';
 
   if(!data.length){
     listEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-size:.85rem">
-      Zatiaľ žiadni členovia. Pozvite prvého kolegu vyššie.
+      Zatiaľ žiadni členovia. Pozvite prvého kolegu vľavo.
     </div>`;
+    loadTeamActivity([]);
     return;
   }
 
-  const rows=data.map(m=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:34px;height:34px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">
-          ${m.role==='admin'?'🛡️':'👤'}
-        </div>
-        <div>
-          <div style="font-size:.88rem;font-weight:600">${escHtml(m.member_email)}</div>
-          <div style="font-size:.76rem;color:var(--muted);margin-top:2px">
-            ${m.role==='admin'?'<span style="color:var(--accent);font-weight:600">Admin</span>':'Člen'}
-            · Pridaný ${new Date(m.created_at).toLocaleDateString('sk-SK')}
-          </div>
-        </div>
+  const roleLabels={admin:'Admin',member:'Člen',viewer:'Viewer'};
+  const roleBadgeColors={admin:'rgba(79,142,247,.2)','member':'rgba(124,95,247,.2)','viewer':'rgba(100,100,120,.2)'};
+  const roleTextColors={admin:'#4f8ef7','member':'#a78bfa','viewer':'var(--muted)'};
+
+  const rows=data.map(m=>{
+    const initials=(m.member_email||'?')[0].toUpperCase();
+    const roleLabel=roleLabels[m.role]||m.role;
+    const addedDate=new Date(m.created_at).toLocaleDateString('sk-SK');
+    return`<div class="member-item">
+      <div class="member-avatar">${initials}</div>
+      <div class="member-info">
+        <div class="member-name">${escHtml(m.member_email)}</div>
+        <div class="member-meta">Pridaný ${addedDate}</div>
       </div>
-      <button onclick="teamRemove('${m.id}','${escHtml(m.member_email)}')"
-        style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:.79rem;transition:all .15s"
-        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      <span class="member-role-badge" style="background:${roleBadgeColors[m.role]||'rgba(100,100,120,.2)'};color:${roleTextColors[m.role]||'var(--muted)'}">
+        ${roleLabel}
+      </span>
+      <button class="member-action-btn" onclick="teamRemove('${m.id}','${escHtml(m.member_email)}')">
         Odstrániť
       </button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   listEl.innerHTML=rows;
-  console.log('loadTeam calling activity with:', data);
   loadTeamActivity(data);
 }
 
 /* ── TEAM ACTIVITY ── */
 async function loadTeamActivity(members){
-  console.log('loadTeamActivity called with:', members);
   const actEl=document.getElementById('teamActivity');
 
   if(!members?.length){
@@ -5827,7 +5932,6 @@ async function loadTeamActivity(members){
   actEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)">
     <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam aktivitu…</div>`;
 
-  // Pre každého člena s member_user_id načítaj analýzy
   const rows=await Promise.all(members.map(async m=>{
     if(!m.member_user_id){
       return{email:m.member_email,total:0,threats:0,userId:null,notRegistered:true};
@@ -5840,35 +5944,26 @@ async function loadTeamActivity(members){
     return{email:m.member_email,total,threats,userId:m.member_user_id,notRegistered:false};
   }));
 
-  const html=rows.map(r=>`
-    <div style="padding:12px 18px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-size:.87rem;font-weight:600">${escHtml(r.email)}</div>
-          <div style="display:flex;gap:8px">
-            ${r.notRegistered
-              ? `<span style="font-size:.76rem;color:var(--muted);font-style:italic">Člen sa ešte nezaregistroval</span>`
-              : `<span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)">
-                  ${r.total} analýz
-                </span>
-                <span style="font-size:.76rem;padding:2px 9px;border-radius:20px;background:${r.threats>0?'rgba(239,68,68,.12)':'var(--surface2)'};color:${r.threats>0?'var(--red)':'var(--muted)'};border:1px solid ${r.threats>0?'rgba(239,68,68,.25)':'var(--border)'}"
-                  title="Analýzy s verdiktom medium alebo high">
-                  ${r.threats} hrozieb
-                </span>`
-            }
-          </div>
-        </div>
-        ${r.userId
-          ? `<button onclick="teamShowHistory('${r.userId}','${escHtml(r.email)}')"
-              style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:.79rem;transition:all .15s"
-              onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-              onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-              Zobraziť históriu
-            </button>`
-          : ''
-        }
+  const html=rows.map(r=>{
+    const initials=(r.email||'?')[0].toUpperCase();
+    const statsHtml=r.notRegistered
+      ? `<span class="stat-badge" style="font-style:italic;color:var(--muted)">Ešte nezaregistrovaný</span>`
+      : `<span class="stat-badge">${r.total} analýz</span>
+         <span class="stat-badge" style="background:${r.threats>0?'rgba(239,68,68,.12)':'rgba(34,34,58,.6)'};color:${r.threats>0?'var(--red)':'var(--muted)'};border-color:${r.threats>0?'rgba(239,68,68,.25)':'rgba(79,142,247,.1)'}">
+           ${r.threats} hrozieb
+         </span>`;
+    return`<div class="activity-item">
+      <div class="activity-user">
+        <div class="activity-avatar">${initials}</div>
+        <div class="activity-email">${escHtml(r.email)}</div>
       </div>
-    </div>`).join('');
+      <div class="activity-stats">${statsHtml}</div>
+      ${r.userId
+        ? `<button class="link-btn" onclick="teamShowHistory('${r.userId}','${escHtml(r.email)}')">Zobraziť históriu</button>`
+        : '<span></span>'
+      }
+    </div>`;
+  }).join('');
 
   actEl.innerHTML=html||`<div style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">Žiadna aktivita.</div>`;
 }
@@ -5926,9 +6021,21 @@ async function teamShowHistory(userId, email){
   </table>`;
 }
 
+function updateRoleInfo(role){
+  const descEl=document.getElementById('roleDescription');
+  if(!descEl) return;
+  const descs={
+    member:  'Člen môže vykonávať analýzy a prezerať výsledky. Nemá prístup k nastaveniam tímu.',
+    admin:   'Admin má plný prístup — môže pozývať a odstraňovať členov, meniť nastavenia tímu.',
+    viewer:  'Viewer môže iba prezerať výsledky analýz. Nemôže vykonávať vlastné analýzy.',
+  };
+  descEl.textContent=descs[role]||'';
+}
+
 async function teamInvite(){
-  const emailEl = document.getElementById('teamInviteEmail');
-  const roleEl  = document.getElementById('teamInviteRole');
+  const emailEl = document.getElementById('memberEmail');
+  const roleEl  = document.getElementById('memberRole');
+  const nameEl  = document.getElementById('memberName');
   const msgEl   = document.getElementById('teamInviteMsg');
   const btn     = document.getElementById('teamInviteBtn');
   const email   = emailEl.value.trim().toLowerCase();
@@ -5953,6 +6060,7 @@ async function teamInvite(){
   }
 
   btn.disabled=true; btn.textContent='Pozývam…';
+  const memberName=nameEl?.value.trim()||'';
 
   const {error}=await _sb.from('team_members').insert({
     owner_id:     _currentUser.id,
@@ -5960,7 +6068,7 @@ async function teamInvite(){
     role,
   });
 
-  btn.disabled=false; btn.textContent='➕ Pozvať';
+  btn.disabled=false; btn.textContent='Pozvať člena';
 
   if(error){
     _teamMsg(msgEl,'Chyba: '+error.message,'var(--red)'); return;
@@ -5995,6 +6103,7 @@ async function teamInvite(){
 
   _teamMsg(msgEl,`✅ ${email} bol(a) pridaný/á do tímu. Pozvánka odoslaná emailom.`,'var(--green)');
   emailEl.value='';
+  if(nameEl) nameEl.value='';
   loadTeam();
 }
 
