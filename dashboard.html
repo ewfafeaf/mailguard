@@ -870,6 +870,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .feature-item.expandable.expanded .feature-details{display:flex}
 .detail-item{display:flex;align-items:flex-start;gap:6px;font-size:.79rem;color:#8888aa}
 .detail-bullet{color:#4f8ef7;font-weight:700;flex-shrink:0;margin-top:1px}
+/* plan audience tags + description */
+.plan-audience{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.audience-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
+  border-radius:6px;font-size:.72rem;font-weight:600;color:#4f8ef7}
+.audience-tag svg{opacity:.8;flex-shrink:0}
+.plan-description{font-size:.8rem;color:#8888aa;line-height:1.6;margin-bottom:16px;
+  padding:12px 14px;background:rgba(18,18,26,.4);
+  border-left:3px solid rgba(79,142,247,.4);border-radius:0 6px 6px 0}
 /* countdown */
 .countdown-wrap{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
 .countdown-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
@@ -2766,6 +2775,11 @@ function renderPlans(){
     <div class="plan-card${current==='school'?' current':''}">
       ${current==='school'?'<div class="plan-badge badge-current">✓ Váš plán</div>':''}
       <div class="plan-name">Škola</div>
+      <div class="plan-audience">
+        <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>Riaditeľ + Učitelia</span>
+        <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/></svg>Centralizované riadenie</span>
+      </div>
+      <div class="plan-description">Komplexné riešenie pre správu kybernetickej bezpečnosti celej školy. Riaditeľ získa prehľad o aktivite všetkých učiteľov a študentov cez administrátorský dashboard.</div>
       <div class="plan-price"><sup>€</sup>249</div>
       <div class="plan-period">/ rok</div>
       <div class="plan-alt">alebo 339€ jednorazovo</div>
@@ -2773,7 +2787,7 @@ function renderPlans(){
       <div class="plan-features">
         ${fi('Všetko z Pro')}
         ${fi('Až 50 používateľov')}
-        ${fi('Dashboard pre riaditeľa')}
+        ${fie('Dashboard pre riaditeľa',['Prehľad aktivít všetkých používateľov','Štatistiky a reporty celej školy','Riadenie prístupov a oprávnení','Audit log všetkých akcií','Export hromadných reportov'])}
         ${fi('Mesačné reporty')}
         ${fi('Osobná konzultácia')}
         ${fi('Overenie školskej domény')}
@@ -2788,6 +2802,11 @@ function renderPlans(){
     <div class="plan-card${current==='business'?' current':''}">
       ${current==='business'?'<div class="plan-badge badge-current">✓ Váš plán</div>':''}
       <div class="plan-name">Firma</div>
+      <div class="plan-audience">
+        <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm8.5 9.5a.5.5 0 0 0-1 0V15H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5v-2.5z"/></svg>IT Manažér + Tím</span>
+        <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/></svg>Enterprise Grade</span>
+      </div>
+      <div class="plan-description">Pokročilé riešenie pre stredné a veľké firmy s rozšírenými bezpečnostnými požiadavkami. Dedikovaný account manager a API integrácia pre automatizáciu bezpečnostných procesov.</div>
       <div class="plan-price"><sup>€</sup>319</div>
       <div class="plan-period">/ rok</div>
       <div class="plan-alt">alebo 399€ jednorazovo</div>
@@ -2795,7 +2814,7 @@ function renderPlans(){
       <div class="plan-features">
         ${fi('Všetko zo Školy')}
         ${fi('Až 100 používateľov')}
-        ${fi('API prístup')}
+        ${fie('API prístup',['REST API s rate limitom 10 000/hod','Webhook integrácie','Automatizované skenovanie','Custom reporting endpoints','API dokumentácia + support'])}
         ${fi('Vlastný branding')}
         ${fi('SLA podpora')}
         ${fi('Overenie firemnej domény')}
