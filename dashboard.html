@@ -498,13 +498,48 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
   font-size:1.15rem;font-weight:800;flex-shrink:0;border:3px solid}
 .pdf-url-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem;word-break:break-all}
 .pdf-url-item:last-child{border-bottom:none}
-/* ── Drop Zone ── */
+/* ── Drop Zone (legacy, kept for fallback) ── */
 .drop-zone{border:2px dashed var(--border);border-radius:14px;padding:44px 20px;text-align:center;
   cursor:pointer;transition:border-color .2s,background .2s;background:var(--surface2)}
 .drop-zone:hover,.drop-zone.dz-over{border-color:var(--accent);background:rgba(79,142,247,.06)}
-.drop-zone-icon{font-size:2.4rem;margin-bottom:12px}
-.drop-zone-title{font-size:1rem;font-weight:700;margin-bottom:6px}
-.drop-zone-sub{font-size:.82rem;color:var(--muted)}
+
+/* ── FILE SCANNER FEATURE CARDS ── */
+.file-scanner-features{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+@media(max-width:900px){.file-scanner-features{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.file-scanner-features{grid-template-columns:1fr}}
+.scanner-feature-card{background:rgba(18,18,26,.75);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:18px 16px;
+  transition:border-color .2s,transform .2s,box-shadow .2s}
+.scanner-feature-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-3px);
+  box-shadow:0 8px 24px rgba(79,142,247,.12)}
+.feature-icon-text{font-size:1.5rem;margin-bottom:10px}
+.feature-card-title{font-size:.83rem;font-weight:800;color:var(--text);margin-bottom:5px}
+.feature-card-desc{font-size:.76rem;color:var(--muted);line-height:1.55}
+
+/* ── FILE UPLOAD AREA ── */
+.file-upload-area{position:relative;width:100%;max-width:740px;margin:0 auto 24px;
+  padding:64px 40px;text-align:center;cursor:pointer;
+  background:rgba(18,18,26,.6);backdrop-filter:blur(10px);
+  border:2px dashed rgba(79,142,247,.3);border-radius:16px;
+  transition:border-color .25s,background .25s,transform .25s,box-shadow .25s;
+  animation:fileAreaGlow 5s ease-in-out infinite}
+@keyframes fileAreaGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(79,142,247,.0),0 4px 24px rgba(0,0,0,.3)}
+  50%    {box-shadow:0 0 0 1px rgba(79,142,247,.15),0 4px 36px rgba(79,142,247,.12)}}
+.file-upload-area:hover{border-color:rgba(79,142,247,.6);background:rgba(18,18,26,.85);
+  transform:translateY(-3px);box-shadow:0 12px 36px rgba(79,142,247,.12)}
+.file-upload-area.dragover{border-color:#4f8ef7;border-style:solid;
+  background:rgba(79,142,247,.08);transform:translateY(-4px)}
+.upload-icon{width:72px;height:72px;margin:0 auto 20px;color:rgba(79,142,247,.55);
+  transition:color .3s,transform .3s;display:block}
+.file-upload-area:hover .upload-icon,.file-upload-area.dragover .upload-icon{
+  color:#4f8ef7;transform:scale(1.12) translateY(-4px)}
+.upload-text-main{font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.upload-text-sub{font-size:.86rem;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.upload-formats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.format-badge{padding:5px 11px;background:rgba(79,142,247,.1);
+  border:1px solid rgba(79,142,247,.25);border-radius:6px;
+  font-size:.7rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
 
 /* ── RESULT ── */
 .result-wrap{margin-top:20px;display:none}
@@ -1696,20 +1731,53 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Files -->
     <div id="sectionFiles" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov</div>
-      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
-        Nahraj PDF dokument a MailGuard skontroluje všetky URL, JavaScript a vložené súbory.
-        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+
+      <!-- Feature cards -->
+      <div class="file-scanner-features">
+        <div class="scanner-feature-card">
+          <div class="feature-icon-text">📄</div>
+          <div class="feature-card-title">Dokumenty</div>
+          <div class="feature-card-desc">PDF, DOC, DOCX — skenuje makrá, vložené skripty a škodlivé prílohy.</div>
+        </div>
+        <div class="scanner-feature-card">
+          <div class="feature-icon-text">📊</div>
+          <div class="feature-card-title">Tabuľky</div>
+          <div class="feature-card-desc">XLS, XLSX — analyzuje makrá, vzorce a vložené objekty.</div>
+        </div>
+        <div class="scanner-feature-card">
+          <div class="feature-icon-text">🔗</div>
+          <div class="feature-card-title">URL extrakcia</div>
+          <div class="feature-card-desc">Automaticky extrahuje a kontroluje všetky URL v dokumente.</div>
+        </div>
+        <div class="scanner-feature-card">
+          <div class="feature-icon-text">🔍</div>
+          <div class="feature-card-title">VirusTotal</div>
+          <div class="feature-card-desc">Multi-engine skenovanie cez 70+ antivírusových enginov.</div>
+        </div>
       </div>
 
-      <!-- Drop zone -->
-      <div class="drop-zone" id="fileDropZone"
-        onclick="document.getElementById('fileInput').click()"
-        ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
-        <div class="drop-zone-icon">📄</div>
-        <div class="drop-zone-title">Presuň súbor sem alebo klikni</div>
-        <div class="drop-zone-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB</div>
+      <!-- Upload area -->
+      <div class="file-upload-area" id="fileDropZone"
+        ondragenter="dzEnter(event)" ondragover="dzOver(event)"
+        ondragleave="dzLeave(event)" ondrop="dzDrop(event)"
+        onclick="document.getElementById('fileInput').click()">
         <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx"
-          style="display:none" onchange="analyzeFileFromInput(this)"/>
+          hidden onchange="analyzeFileFromInput(this)"/>
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+          <polyline points="13 2 13 9 20 9"/>
+          <line x1="12" y1="13" x2="12" y2="17"/>
+          <polyline points="9 15 12 18 15 15"/>
+        </svg>
+        <div class="upload-text-main">Presuň súbor sem alebo klikni pre výber</div>
+        <div class="upload-text-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB · <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán</span></div>
+        <div class="upload-formats">
+          <span class="format-badge">PDF</span>
+          <span class="format-badge">DOC</span>
+          <span class="format-badge">DOCX</span>
+          <span class="format-badge">XLS</span>
+          <span class="format-badge">XLSX</span>
+        </div>
       </div>
 
       <!-- Result -->
@@ -4330,18 +4398,55 @@ async function loadAnalyzeSection(){
    PDF / FILE ANALYSIS
 ══════════════════════════════════════════ */
 // Drag & drop handlers
-function dzOver(e){ e.preventDefault(); document.getElementById('fileDropZone').classList.add('dz-over'); }
-function dzLeave(e){ document.getElementById('fileDropZone').classList.remove('dz-over'); }
+function _dz(){ return document.getElementById('fileDropZone'); }
+function dzEnter(e){ e.preventDefault(); e.stopPropagation(); _dz().classList.add('dragover'); }
+function dzOver(e){  e.preventDefault(); e.stopPropagation(); _dz().classList.add('dragover'); }
+function dzLeave(e){ e.preventDefault(); e.stopPropagation();
+  // Only remove if truly leaving the drop zone (not entering a child)
+  if(!_dz().contains(e.relatedTarget)) _dz().classList.remove('dragover');
+}
 function dzDrop(e){
-  e.preventDefault();
-  dzLeave(e);
-  const file=e.dataTransfer.files[0];
+  e.preventDefault(); e.stopPropagation();
+  _dz().classList.remove('dragover');
+  const file=e.dataTransfer?.files?.[0];
   if(file) analyzeFile(file);
 }
 function analyzeFileFromInput(input){
   const file=input.files[0];
   input.value='';
   if(file) analyzeFile(file);
+}
+
+const _FILE_UPLOAD_HTML=`
+  <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+    <polyline points="13 2 13 9 20 9"/>
+    <line x1="12" y1="13" x2="12" y2="17"/>
+    <polyline points="9 15 12 18 15 15"/>
+  </svg>
+  <div class="upload-text-main">Presuň súbor sem alebo klikni pre výber</div>
+  <div class="upload-text-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB · <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán</span></div>
+  <div class="upload-formats">
+    <span class="format-badge">PDF</span>
+    <span class="format-badge">DOC</span>
+    <span class="format-badge">DOCX</span>
+    <span class="format-badge">XLS</span>
+    <span class="format-badge">XLSX</span>
+  </div>`;
+
+function _setDropZoneLoading(filename){
+  const dz=document.getElementById('fileDropZone');
+  if(!dz) return;
+  dz.innerHTML=`<input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" hidden onchange="analyzeFileFromInput(this)"/>
+    <div class="spinner" style="width:44px;height:44px;border-width:3px;margin:0 auto 18px"></div>
+    <div class="upload-text-main" style="font-size:1rem">Skenujem <span style="color:var(--accent)">${escHtml(filename)}</span></div>
+    <div class="upload-text-sub">Prosím čakajte…</div>`;
+}
+
+function _resetDropZone(){
+  const dz=document.getElementById('fileDropZone');
+  if(!dz) return;
+  dz.innerHTML=`<input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" hidden onchange="analyzeFileFromInput(this)"/>`+_FILE_UPLOAD_HTML;
 }
 
 async function analyzeFile(file){
@@ -4353,6 +4458,8 @@ async function analyzeFile(file){
     alert('Súbor je príliš veľký. Maximum je 10 MB.');
     return;
   }
+
+  _setDropZoneLoading(file.name);
 
   const filesResultWrap=document.getElementById('filesResultWrap');
   const fileResultEl=document.getElementById('fileResult');
@@ -4440,6 +4547,7 @@ async function analyzeFile(file){
   filesResultWrap.style.display='block';
   filesResultWrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 
+  _resetDropZone();
   await savePDFAnalysis(file.name, analysisData);
   saveInd.style.display='block';
   loadStats();
