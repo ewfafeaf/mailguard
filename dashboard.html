@@ -476,6 +476,57 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
   box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
   transition:all .3s ease}
 .analysis-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-2px)}
+
+/* ── HEADER ANALYSIS ── */
+.header-features-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:900px){.header-features-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.header-features-grid{grid-template-columns:1fr}}
+.header-feature-card{background:rgba(18,18,26,.75);backdrop-filter:blur(12px);
+  border:1px solid rgba(79,142,247,.15);border-radius:var(--radius);padding:18px 16px;
+  transition:border-color .2s,transform .2s,box-shadow .2s}
+.header-feature-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-3px);
+  box-shadow:0 8px 24px rgba(79,142,247,.12)}
+.header-input-wrapper{background:rgba(18,18,26,.8);border:1px solid rgba(79,142,247,.2);
+  border-radius:12px;overflow:hidden}
+.input-header-bar{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 16px;background:rgba(34,34,58,.6);border-bottom:1px solid rgba(79,142,247,.15)}
+.input-label{display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;color:var(--text)}
+.terminal-prompt{color:var(--accent);font-weight:800;font-family:'Courier New',monospace}
+.hdr-help-btn{display:flex;align-items:center;gap:6px;padding:5px 12px;
+  background:transparent;border:1px solid rgba(79,142,247,.3);border-radius:6px;
+  color:var(--accent);font-size:.76rem;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:background .2s,border-color .2s}
+.hdr-help-btn:hover{background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.5)}
+.terminal-textarea{width:100%;min-height:220px;max-height:420px;padding:18px 20px;
+  background:rgba(8,8,14,.85);border:none;outline:none;resize:vertical;box-sizing:border-box;
+  font-family:'Courier New',Courier,monospace;font-size:.82rem;line-height:1.7;
+  color:#7dd3fc;caret-color:#4f8ef7}
+.terminal-textarea::placeholder{color:rgba(125,211,252,.25)}
+.hdr-analyze-btn{display:flex;align-items:center;gap:8px;margin:14px 16px 14px auto;
+  padding:11px 22px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:9px;color:#fff;font-weight:700;font-size:.88rem;
+  cursor:pointer;font-family:inherit;transition:opacity .2s,transform .15s,box-shadow .2s}
+.hdr-analyze-btn:hover{opacity:.9;transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(79,142,247,.35)}
+/* Help modal */
+.hdr-help-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);
+  backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;
+  z-index:10000;padding:20px;animation:fadeIn .2s ease}
+.hdr-help-box{background:rgba(18,18,26,.98);border:1px solid rgba(79,142,247,.3);
+  border-radius:16px;padding:32px;max-width:540px;width:100%;
+  max-height:80vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,.55)}
+.hdr-help-box h3{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:22px}
+.hdr-help-section{margin-bottom:20px}
+.hdr-help-section h4{font-size:.82rem;font-weight:700;color:var(--accent);
+  margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.hdr-help-section ol{padding-left:20px;display:grid;gap:5px}
+.hdr-help-section li{font-size:.83rem;color:var(--muted);line-height:1.55}
+.hdr-help-close{width:100%;padding:12px;margin-top:8px;border:none;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit;
+  transition:opacity .2s}
+.hdr-help-close:hover{opacity:.88}
 .analysis-input-row{display:flex;gap:10px;margin-bottom:0}
 /* ── Analysis Tabs ── */
 .atab-row{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0}
@@ -1790,20 +1841,61 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Headers -->
     <div id="sectionHeaders" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Analýza emailových hlavičiek</div>
-      <div style="font-size:.86rem;color:var(--muted);margin-bottom:16px;line-height:1.55">
-        Vlož raw hlavičky emailu a MailGuard skontroluje SPF, DKIM, DMARC a odhalí možný email spoofing.
-        <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán.</span>
+
+      <!-- Feature cards -->
+      <div class="header-features-grid">
+        <div class="header-feature-card">
+          <div class="feature-icon-text">📧</div>
+          <div class="feature-card-title">SPF Check</div>
+          <div class="feature-card-desc">Overuje či email pochádza z autorizovaného servera podľa DNS záznamu domény.</div>
+        </div>
+        <div class="header-feature-card">
+          <div class="feature-icon-text">🔐</div>
+          <div class="feature-card-title">DKIM Verification</div>
+          <div class="feature-card-desc">Kontroluje digitálny podpis emailu a integritu obsahu počas prenosu.</div>
+        </div>
+        <div class="header-feature-card">
+          <div class="feature-icon-text">🛡️</div>
+          <div class="feature-card-title">DMARC Analysis</div>
+          <div class="feature-card-desc">Zabraňuje email spoofingu a phishingu na základe politiky domény odosielateľa.</div>
+        </div>
+        <div class="header-feature-card">
+          <div class="feature-icon-text">🚨</div>
+          <div class="feature-card-title">Spoofing Detection</div>
+          <div class="feature-card-desc">Deteguje podvrhnutie odosielateľa, Reply-To útoky a škodlivé hlavičky.</div>
+        </div>
       </div>
 
-      <div class="analysis-card">
-        <textarea class="hdr-textarea" id="hdrInput"
-          placeholder="Vlož sem raw email hlavičky&#10;&#10;Príklad:&#10;From: support@example.com&#10;Reply-To: attacker@evil.com&#10;Received: from mail.example.com...&#10;DKIM-Signature: v=1; a=rsa-sha256; d=example.com;&#10;Authentication-Results: mx.google.com; spf=pass; dkim=fail"></textarea>
-        <div style="margin-top:10px;display:flex;justify-content:flex-end">
-          <button class="analysis-btn" id="hdrBtn" onclick="analyzeEmailHeaders()">🔍 Analyzovať hlavičky</button>
+      <!-- Terminal input -->
+      <div class="header-input-wrapper">
+        <div class="input-header-bar">
+          <span class="input-label">
+            <span class="terminal-prompt">$</span> Vlož raw email hlavičky
+          </span>
+          <button class="hdr-help-btn" onclick="showHeaderHelp()">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+              <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+            </svg>
+            Kde nájdem hlavičku?
+          </button>
         </div>
-        <div id="hdrResultWrap" style="display:none;margin-top:16px">
+
+        <textarea class="terminal-textarea" id="hdrInput"
+          placeholder="From: support@example.com&#10;Reply-To: attacker@evil.com&#10;Received: from mail.example.com (mail.example.com [192.168.1.1])&#10;DKIM-Signature: v=1; a=rsa-sha256; d=example.com; s=default;&#10;Authentication-Results: mx.google.com;&#10;       spf=pass (google.com: domain of support@example.com);&#10;       dkim=fail header.i=@example.com;&#10;       dmarc=fail (p=NONE) header.from=example.com&#10;X-Originating-IP: 185.220.101.45&#10;Subject: Urgent: Verify your account"></textarea>
+
+        <div style="display:flex;justify-content:flex-end">
+          <button class="hdr-analyze-btn" id="hdrBtn" onclick="analyzeEmailHeaders()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            Analyzovať hlavičky
+          </button>
+        </div>
+
+        <div id="hdrResultWrap" style="display:none;padding:16px;border-top:1px solid var(--border)">
           <div id="hdrResult"></div>
-          <div class="save-indicator" id="hdrSaveIndicator">✓ Analýza uložená do histórie</div>
+          <div class="save-indicator" id="hdrSaveIndicator" style="margin-top:12px">✓ Analýza uložená do histórie</div>
         </div>
       </div>
     </div>
@@ -4702,6 +4794,54 @@ async function novaAnalyzeHeaders(){
     novaWrap.querySelector('#dashResult').innerHTML=document.getElementById('hdrResult').innerHTML;
     novaWrap.style.display='block';
   }
+}
+
+/* ══════════════════════════════════════════
+   EMAIL HEADER ANALYSIS — Help Modal
+══════════════════════════════════════════ */
+function showHeaderHelp(){
+  if(document.getElementById('hdrHelpModal')) return;
+  const m=document.createElement('div');
+  m.id='hdrHelpModal';
+  m.className='hdr-help-modal';
+  m.innerHTML=`
+    <div class="hdr-help-box">
+      <h3>📋 Kde nájdem email hlavičky?</h3>
+      <div class="hdr-help-section">
+        <h4>Gmail</h4>
+        <ol>
+          <li>Otvor email</li>
+          <li>Klikni na tri bodky <strong>⋮</strong> vpravo hore</li>
+          <li>Vyber <strong>"Zobraziť pôvodný email"</strong></li>
+          <li>Klikni <strong>"Kopírovať do schránky"</strong> a vlož sem</li>
+        </ol>
+      </div>
+      <div class="hdr-help-section">
+        <h4>Outlook (Desktop)</h4>
+        <ol>
+          <li>Otvor email, klikni na <strong>Súbor → Vlastnosti</strong></li>
+          <li>V sekcii <strong>"Internet headers"</strong> skopíruj celý text</li>
+        </ol>
+      </div>
+      <div class="hdr-help-section">
+        <h4>Outlook (Web)</h4>
+        <ol>
+          <li>Otvor email, klikni na <strong>⋯ → Zobraziť zdroj správy</strong></li>
+          <li>Skopíruj horné riadky pred telom emailu</li>
+        </ol>
+      </div>
+      <div class="hdr-help-section">
+        <h4>Apple Mail</h4>
+        <ol>
+          <li>Otvor email</li>
+          <li>V menu: <strong>Zobraziť → Správa → Všetky hlavičky</strong></li>
+          <li>Označ a skopíruj zobrazené hlavičky</li>
+        </ol>
+      </div>
+      <button class="hdr-help-close" onclick="document.getElementById('hdrHelpModal').remove()">Zavrieť</button>
+    </div>`;
+  m.addEventListener('click',e=>{ if(e.target===m) m.remove(); });
+  document.body.appendChild(m);
 }
 
 /* ══════════════════════════════════════════
