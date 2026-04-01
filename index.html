@@ -1060,15 +1060,22 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
         <div class="pricing-period">navždy zadarmo</div>
         <div class="pricing-alt">&nbsp;</div>
         <div class="divider"></div>
-        <ul class="pricing-features">
-          <li>3 analýzy denne</li>
-          <li>Email + URL skener</li>
-          <li>Základné výsledky</li>
-          <li>1 používateľ, 1 účet</li>
-          <li class="off">História analýz</li>
-          <li class="off">Export do PDF</li>
-          <li class="off">API prístup</li>
-        </ul>
+        <div class="pricing-features">
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>3 analýzy denne</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Email + URL skener</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Základná analýza emailov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Kontrola URL odkazov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Google Safe Browsing</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Základné výsledky</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>1 používateľ, 1 účet</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>História analýz</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>Export do PDF</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>API prístup</span></div>
+        </div>
         <button class="btn-plan btn-plan-ghost" onclick="openModal('register')">Začať zadarmo</button>
       </div>
 
@@ -1092,53 +1099,183 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
         <div class="pricing-period">/ mesiac</div>
         <div class="pricing-alt">alebo 79€ / rok (ušetri 41%)</div>
         <div class="divider"></div>
-        <ul class="pricing-features">
-          <li>Neobmedzené analýzy</li>
-          <li>Plné výsledky + detaily</li>
-          <li>História analýz</li>
-          <li>Export do PDF</li>
-          <li class="off">Multi-používateľský účet</li>
-          <li class="off">API prístup</li>
-          <li class="off">Dashboard správcu</li>
-        </ul>
-        <button class="btn-plan btn-plan-primary">Vyskúšať Pro</button>
+        <div class="pricing-features">
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Neobmedzené analýzy</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Plné výsledky + detaily</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Web skener</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>SSL/HTTPS analýza</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Security Headers check</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Google Safe Browsing API</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Mozilla Observatory skóre</span></div>
+            </div>
+          </div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Analýza súborov</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>PDF, DOC, DOCX, XLS, XLSX</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Makrá a vložené skripty</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>URL extrakcia z dokumentov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>VirusTotal multi-engine scan</span></div>
+            </div>
+          </div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Analýza emailových hlavičiek</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>SPF verification</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>DKIM signature check</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>DMARC policy analysis</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Email spoofing detection</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>PDF report generator</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>História analýz</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Export do PDF</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>Multi-používateľský účet</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>API prístup</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>Dashboard správcu</span></div>
+        </div>
+        <button class="btn-plan btn-plan-primary" onclick="openModal('register')">Vyskúšať Pro</button>
       </div>
 
       <!-- ŠKOLA -->
       <div class="pricing-card">
         <div class="pricing-plan">Škola</div>
+        <div class="plan-audience">
+          <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>Riaditeľ + Učitelia</span>
+          <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/></svg>Centralizované riadenie</span>
+        </div>
+        <div class="plan-description">Komplexné riešenie pre správu kybernetickej bezpečnosti celej školy. Riaditeľ získa prehľad o aktivite všetkých učiteľov cez administrátorský dashboard.</div>
         <div class="pricing-price"><sup>€</sup>249</div>
         <div class="pricing-period">/ rok</div>
         <div class="pricing-alt">alebo 339€ jednorazovo</div>
         <div class="divider"></div>
-        <ul class="pricing-features">
-          <li>Všetko z Pro</li>
-          <li>Až 50 používateľov</li>
-          <li>Dashboard pre riaditeľa</li>
-          <li>Mesačné reporty</li>
-          <li>Osobná konzultácia</li>
-          <li>Overenie školskej domény</li>
-          <li class="off">API prístup</li>
-        </ul>
+        <div class="pricing-features">
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Neobmedzené analýzy</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Plné výsledky + detaily</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Web skener</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>SSL/HTTPS analýza</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Security Headers check</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Google Safe Browsing API</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Mozilla Observatory skóre</span></div>
+            </div>
+          </div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Analýza súborov</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>PDF, DOC, DOCX, XLS, XLSX</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Makrá a vložené skripty</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>URL extrakcia z dokumentov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>VirusTotal multi-engine scan</span></div>
+            </div>
+          </div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Analýza emailových hlavičiek</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>SPF verification</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>DKIM signature check</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>DMARC policy analysis</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Email spoofing detection</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>PDF report generator</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>História analýz</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Export do PDF</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Až 50 používateľov</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Dashboard pre riaditeľa</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Prehľad aktivít všetkých používateľov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Štatistiky a reporty celej školy</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Riadenie prístupov a oprávnení</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Audit log všetkých akcií</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Export hromadných reportov</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Mesačné reporty</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Osobná konzultácia</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Overenie školskej domény</span></div>
+          <div class="feature-item disabled"><svg class="x-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg><span>API prístup</span></div>
+        </div>
         <button class="btn-plan btn-plan-ghost" onclick="openContact('škola')">Kontaktovať nás</button>
       </div>
 
       <!-- FIRMA -->
       <div class="pricing-card">
         <div class="pricing-plan">Firma</div>
+        <div class="plan-audience">
+          <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm8.5 9.5a.5.5 0 0 0-1 0V15H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5v-2.5z"/></svg>IT Manažér + Tím</span>
+          <span class="audience-tag"><svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/></svg>Enterprise Grade</span>
+        </div>
+        <div class="plan-description">Pokročilé riešenie pre stredné a veľké firmy. Dedikovaný account manager a API integrácia pre automatizáciu bezpečnostných procesov.</div>
         <div class="pricing-price"><sup>€</sup>319</div>
         <div class="pricing-period">/ rok</div>
         <div class="pricing-alt">alebo 399€ jednorazovo</div>
         <div class="divider"></div>
-        <ul class="pricing-features">
-          <li>Všetko zo Školy</li>
-          <li>Až 100 používateľov</li>
-          <li>API prístup</li>
-          <li>Vlastný branding</li>
-          <li>SLA podpora</li>
-          <li>Overenie firemnej domény</li>
-          <li>Dedikovaný account manager</li>
-        </ul>
+        <div class="pricing-features">
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Neobmedzené analýzy</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Plné výsledky + detaily</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Web skener</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>SSL/HTTPS analýza</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Security Headers check</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Google Safe Browsing API</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Mozilla Observatory skóre</span></div>
+            </div>
+          </div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Analýza súborov</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>PDF, DOC, DOCX, XLS, XLSX</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Makrá a vložené skripty</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>URL extrakcia z dokumentov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>VirusTotal multi-engine scan</span></div>
+            </div>
+          </div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Analýza emailových hlavičiek</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>SPF verification</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>DKIM signature check</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>DMARC policy analysis</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Email spoofing detection</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>PDF report generator</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>História analýz</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Export do PDF</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Až 100 používateľov</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Dashboard pre riaditeľa</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Prehľad aktivít všetkých používateľov</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Štatistiky a reporty celej organizácie</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Riadenie prístupov a oprávnení</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Audit log všetkých akcií</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Export hromadných reportov</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Mesačné reporty</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Osobná konzultácia</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Overenie firemnej domény</span></div>
+          <div class="feature-item expandable">
+            <button class="feature-main" onclick="toggleFeature(this)"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>API prístup</span><svg class="expand-arrow" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button>
+            <div class="feature-details">
+              <div class="detail-item"><span class="detail-bullet">→</span><span>REST API s rate limitom 10 000/hod</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Webhook integrácie</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Automatizované skenovanie</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>Custom reporting endpoints</span></div>
+              <div class="detail-item"><span class="detail-bullet">→</span><span>API dokumentácia + support</span></div>
+            </div>
+          </div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Vlastný branding</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>SLA podpora</span></div>
+          <div class="feature-item"><svg class="check-icon green" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg><span>Dedikovaný account manager</span></div>
+        </div>
         <button class="btn-plan btn-plan-ghost" onclick="openContact('firma')">Kontaktovať nás</button>
       </div>
 
@@ -1785,6 +1922,10 @@ const _sb = supabase.createClient(
   'https://qalcsmnvyuujsmnreglt.supabase.co',
   'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
 );
+
+function toggleFeature(btn){
+  btn.closest('.feature-item').classList.toggle('expanded');
+}
 
 function openModal(type){
   const ol=document.getElementById('modalOverlay');
