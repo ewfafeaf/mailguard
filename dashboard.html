@@ -71,7 +71,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Dashboard – MailGuard</title>
+<title>Dashboard – NonDox</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1780,7 +1780,7 @@ body::before{content:'';position:fixed;inset:0;
           <!-- Input card -->
           <div class="dg-input-card">
             <div class="dg-input-heading">Začni novú analýzu</div>
-            <div class="dg-input-sub">Vlož URL adresu alebo text emailu — MailGuard automaticky rozpozná typ a spustí analýzu.</div>
+            <div class="dg-input-sub">Vlož URL adresu alebo text emailu — NonDox automaticky rozpozná typ a spustí analýzu.</div>
             <textarea id="dashInput" class="hdr-textarea" rows="5"
               placeholder="Vlož URL alebo text emailu…&#10;&#10;Príklady:&#10;https://suspicious-site.com&#10;alebo celý text phishingového emailu"></textarea>
             <div style="display:flex;justify-content:flex-end;margin-top:12px">
@@ -2354,7 +2354,7 @@ body::before{content:'';position:fixed;inset:0;
             <div class="card-icon">👥</div>
             <div>
               <h3 class="card-title" id="teachersCardTitle">Učitelia</h3>
-              <p class="card-subtitle">Prehľad učiteľov a ich aktivity v MailGuard</p>
+              <p class="card-subtitle">Prehľad učiteľov a ich aktivity v NonDox</p>
             </div>
           </div>
           <div class="card-content" style="padding-bottom:8px">
@@ -2554,7 +2554,7 @@ function showPlanModal(required){
         <div style="font-size:2.2rem;margin-bottom:12px">⚡</div>
         <div style="font-size:1.15rem;font-weight:700;margin-bottom:8px">Vyžaduje ${label}</div>
         <div style="font-size:.88rem;color:var(--muted);line-height:1.6;margin-bottom:24px">
-          Táto funkcia vyžaduje plán <strong>${label}</strong>. Upgraduj si účet a odomkni plný potenciál MailGuard.
+          Táto funkcia vyžaduje plán <strong>${label}</strong>. Upgraduj si účet a odomkni plný potenciál NonDox.
         </div>
         <div style="display:flex;gap:10px;justify-content:center">
           <button onclick="document.getElementById('planUpgradeModal').remove()"
@@ -3013,7 +3013,7 @@ function showWsUpgradeModal(){
     <div class="ws-upgrade-box">
       <div class="ws-upgrade-lock">🔒</div>
       <div class="ws-upgrade-title">Web Skener vyžaduje Pro plán</div>
-      <div class="ws-upgrade-sub">Odomkni plnú bezpečnostnú analýzu webstránok s&nbsp;MailGuard&nbsp;Pro.</div>
+      <div class="ws-upgrade-sub">Odomkni plnú bezpečnostnú analýzu webstránok s&nbsp;NonDox&nbsp;Pro.</div>
       <ul class="ws-upgrade-benefits">
         <li>Neobmedzené skenovanie webstránok</li>
         <li>SSL / HTTPS analýza a hodnotenie</li>
@@ -3076,7 +3076,7 @@ async function webScan(){
 
   // Spusti terminálový overlay
   showTerminalOverlay();
-  termLine('[*]','Initializing MailGuard scanner v2.1...','info','muted',200);
+  termLine('[*]','Initializing NonDox scanner v2.1...','info','muted',200);
   termLine('[*]',`Target: ${hostname}`,'info','info',350);
   termLine('[*]','Resolving DNS... OK','info','info',500);
   termLine('[*]',`Connecting to ${hostname}:443...`,'info','info',450);
@@ -3243,7 +3243,7 @@ function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
 ══════════════════════════════════════════ */
 let _termChain=Promise.resolve();
 
-function showTerminalOverlay(title='mailguard-scan.sh'){
+function showTerminalOverlay(title='nondox-scan.sh'){
   // Odstráň prípadný starý overlay
   document.getElementById('wsTerminalOverlay')?.remove();
   const el=document.createElement('div');
@@ -4428,7 +4428,7 @@ async function exportPDF(filters={}){
   doc.setFont('helvetica','bold');
   doc.setFontSize(15);
   doc.setTextColor(255,255,255);
-  doc.text('MailGuard',margin+13,13);
+  doc.text('NonDox',margin+13,13);
 
   // Subtitle
   doc.setFont('helvetica','normal');
@@ -4589,14 +4589,14 @@ async function exportPDF(filters={}){
     doc.setFont('helvetica','normal');
     doc.setFontSize(7);
     doc.setTextColor(150,155,175);
-    doc.text('MailGuard - Security Report',margin,pageH-5.5);
+    doc.text('NonDox - Security Report',margin,pageH-5.5);
     doc.text('Page '+p+' / '+pageCount,pageW-margin,pageH-5.5,{align:'right'});
     doc.text(String(exportDate||''),pageW/2,pageH-5.5,{align:'center'});
   }
 
   // ── Save
   const dateTag=new Date().toISOString().slice(0,10);
-  doc.save('mailguard-report-'+dateTag+'.pdf');
+  doc.save('nondox-report-'+dateTag+'.pdf');
   showToast('PDF stiahnuté','success');
 
   } catch(err) {
@@ -4618,7 +4618,7 @@ async function checkGoogleSafeBrowsing(url){
   if(!key) return null;
   try{
     const body={
-      client:{clientId:'mailguard',clientVersion:'1.0'},
+      client:{clientId:'nondox',clientVersion:'1.0'},
       threatInfo:{
         threatTypes:['MALWARE','SOCIAL_ENGINEERING','UNWANTED_SOFTWARE','POTENTIALLY_HARMFUL_APPLICATION'],
         platformTypes:['ANY_PLATFORM'],
@@ -4687,8 +4687,8 @@ async function dashAnalyze(){
   let gsbMatches=null;
 
   // ── Terminálový overlay ──
-  showTerminalOverlay('mailguard-analyze.sh');
-  termLine('[*]','MailGuard Analyzer v2.1','info','muted',150);
+  showTerminalOverlay('nondox-analyze.sh');
+  termLine('[*]','NonDox Analyzer v2.1','info','muted',150);
 
   if(isEmail){
     const target=val.slice(0,65)+(val.length>65?'...':'');
@@ -4783,7 +4783,7 @@ async function dashAnalyze(){
 const _NOVA_TIPS=[
   'Nikdy neklikajte na linky v emailoch ktoré vyžadujú urgentné prihlásenie — školy sú častým cieľom phishingu.',
   'Skontrolujte pravidelne SPF a DKIM záznamy vašej školskej domény — chránia pred falšovaním emailov.',
-  'Podozrivé prílohy v emailoch vždy najprv analyzujte cez MailGuard pred otvorením.',
+  'Podozrivé prílohy v emailoch vždy najprv analyzujte cez NonDox pred otvorením.',
   'Používajte dvojfaktorové overenie pre všetky školské účty — je to najrýchlejší spôsob ako zastaviť útočníka.',
   'Ak dostanete email od "riaditeľa" s nezvyčajnou požiadavkou — vždy ho overte telefonicky pred akýmkoľvek konaním.',
 ];
@@ -5065,8 +5065,8 @@ async function analyzeFile(file){
   const gsbKey=localStorage.getItem('gsb_api_key')||'';
 
   // ── Terminálový overlay ──
-  showTerminalOverlay('mailguard-scan-file.sh');
-  termLine('[*]','MailGuard File Scanner v2.1','info','muted',150);
+  showTerminalOverlay('nondox-scan-file.sh');
+  termLine('[*]','NonDox File Scanner v2.1','info','muted',150);
   termLine('[*]',`File: ${file.name} (${sizeMB} MB)`,'info','info',200);
   termLine('[*]','Reading file content...','info','muted',280);
 
@@ -5365,8 +5365,8 @@ async function analyzeEmailHeaders(){
   saveInd.style.display='none';
 
   // ── Terminálový overlay ──
-  showTerminalOverlay('mailguard-analyze-headers.sh');
-  termLine('[*]','MailGuard Header Analyzer v2.1','info','muted',150);
+  showTerminalOverlay('nondox-analyze-headers.sh');
+  termLine('[*]','NonDox Header Analyzer v2.1','info','muted',150);
   termLine('[*]','Parsing email headers...','info','muted',280);
 
   // Async pipeline — termLine volania sa pridávajú keď sa výsledky vrátia
@@ -5844,11 +5844,11 @@ function generatePoliceReport(){
     doc.setPage(p);
     fillRect(0,284,W,13,C.rowBg);
     setFont(6,'normal',C.muted);
-    doc.text('Tento report bol vygenerovany automaticky systemom MailGuard. Nie je pravnym dokumentom.',margin,290);
+    doc.text('Tento report bol vygenerovany automaticky systemom NonDox. Nie je pravnym dokumentom.',margin,290);
     doc.text('Strana '+p+' / '+pageCount,W-margin,290,{align:'right'});
   }
 
-  doc.save('mailguard-report.pdf');
+  doc.save('nondox-report.pdf');
 }
 
 /* ══════════════════════════════════════════

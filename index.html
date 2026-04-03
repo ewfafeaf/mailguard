@@ -23,7 +23,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>MailGuard – Kybernetická ochrana pre školy</title>
+<title>NonDox – Kybernetická ochrana</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -717,7 +717,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
     <a href="dashboard.html" id="navDashboardLink" style="display:none">Dashboard</a>
   </div>
   <a class="nav-logo" href="#hero">
-    <img src="mailguard.png" alt="MailGuard"/>
+    <img src="mailguard.png" alt="NonDox"/>
   </a>
   <div class="nav-right" id="navRight">
     <button class="btn-signin" onclick="openModal('login')">Prihlásiť sa</button>
@@ -850,7 +850,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
           </div>
           <div class="step-label">STEP 02</div>
           <h3 class="step-title">Spusť analýzu</h3>
-          <p class="step-desc">MailGuard okamžite skontroluje obsah voči databaze phishingovych vzorov, blacklistom a bezpečnostným pravidlám.</p>
+          <p class="step-desc">NonDox okamžite skontroluje obsah voči databaze phishingovych vzorov, blacklistom a bezpečnostným pravidlám.</p>
         </div>
       </div>
 
@@ -1287,7 +1287,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo"><img src="mailguard.png" alt="MailGuard"/></div>
+        <div class="footer-logo"><img src="mailguard.png" alt="NonDox"/></div>
         <p class="footer-about">Váš osobný strážca v prehliadači. Chráni školy, firmy aj jednotlivcov pred phishingom a kybernetickými hrozbami.</p>
       </div>
       <div>
@@ -1317,7 +1317,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
       </div>
     </div>
     <div class="footer-bottom">
-      <div class="footer-copy">© 2025 MailGuard. Všetky práva vyhradené.</div>
+      <div class="footer-copy">© 2025 NonDox. Všetky práva vyhradené.</div>
       <div class="footer-right">
         <span>Made in Slovakia 🇸🇰</span>
         <span>Určené pre školy a firmy</span>
@@ -1332,7 +1332,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
   <div class="modal modal-wrap" id="modalLogin">
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div class="modal-title">Prihlásiť sa</div>
-    <div class="modal-sub">Vitaj späť v MailGuard</div>
+    <div class="modal-sub">Vitaj späť v NonDox</div>
     <div class="modal-field">
       <label>Email</label>
       <input type="email" id="loginEmail" placeholder="vas@email.sk" autocomplete="email"/>
@@ -1413,7 +1413,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
     <div id="contactSuccess" style="display:none;text-align:center;padding:16px 0">
       <div style="font-size:2.5rem;margin-bottom:12px">🎉</div>
       <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px">Správa odoslaná!</div>
-      <div style="font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.6">Ďakujeme za Váš záujem o MailGuard.<br>Ozveme sa ti do 24 hodín na zadaný email.</div>
+      <div style="font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.6">Ďakujeme za Váš záujem o NonDox.<br>Ozveme sa ti do 24 hodín na zadaný email.</div>
       <button class="modal-btn" style="margin-top:20px" onclick="closeModal()">Zavrieť</button>
     </div>
   </div>
@@ -1846,12 +1846,12 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
    FAQ
 ══════════════════════════════════════════ */
 const FAQS=[
-  {q:'Ako MailGuard funguje?',a:'MailGuard analyzuje text emailu alebo URL adresu priamo vo vašom prehliadači pomocou detekčných pravidiel a AI. Výsledky dostanete do pár sekúnd.'},
-  {q:'Je MailGuard bezpečný? Posiela moje dáta niekam?',a:'Nie. Všetka analýza prebieha priamo vo vašom prehliadači. Žiadny text emailu ani URL nie sú odosielané na žiadny server.'},
+  {q:'Ako NonDox funguje?',a:'NonDox analyzuje text emailu alebo URL adresu priamo vo vašom prehliadači pomocou detekčných pravidiel a AI. Výsledky dostanete do pár sekúnd.'},
+  {q:'Je NonDox bezpečný? Posiela moje dáta niekam?',a:'Nie. Všetka analýza prebieha priamo vo vašom prehliadači. Žiadny text emailu ani URL nie sú odosielané na žiadny server.'},
   {q:'Aký je rozdiel medzi FREE a PRO plánom?',a:'FREE plán umožňuje 3 analýzy denne s základnými výsledkami. PRO plán ponúka neobmedzené analýzy, plné výsledky, históriu a export do PDF.'},
-  {q:'Môžem MailGuard použiť pre celú školu?',a:'Áno! Plán ŠKOLA umožňuje až 50 používateľov na jednom účte s dashboardom pre riaditeľa a mesačnými reportmi.'},
+  {q:'Môžem NonDox použiť pre celú školu?',a:'Áno! Plán ŠKOLA umožňuje až 50 používateľov na jednom účte s dashboardom pre riaditeľa a mesačnými reportmi.'},
   {q:'Čo sa stane keď vyčerpám denný limit analýz?',a:'Po vyčerpaní 3 bezplatných analýz za deň vás upozorníme. Limit sa obnoví každý deň o polnoci.'},
-  {q:'Podporuje MailGuard slovenský jazyk?',a:'Áno, MailGuard je plne v slovenčine a detekuje phishingové vzory aj v slovenskom a českom jazyku.'},
+  {q:'Podporuje NonDox slovenský jazyk?',a:'Áno, NonDox je plne v slovenčine a detekuje phishingové vzory aj v slovenskom a českom jazyku.'},
 ];
 function buildFaq(){
   document.getElementById('faqList').innerHTML=FAQS.map((f,i)=>`
