@@ -634,6 +634,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   border-radius:6px;transition:color .2s}
 .modal-close:hover{color:#fff}
 .modal-wrap{position:relative}
+.invite-banner{padding:16px 20px;background:linear-gradient(135deg,rgba(79,142,247,.15),rgba(124,95,247,.15));border:1px solid rgba(79,142,247,.3);border-radius:12px;margin-bottom:24px;animation:slideInDown .4s ease-out}
+@keyframes slideInDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 /* nav user state */
 .user-menu{position:relative}
 .user-avatar{width:40px;height:40px;border-radius:50%;
@@ -1897,6 +1899,67 @@ const _sb = supabase.createClient(
   'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
 );
 
+// Auto-open registration modal with invite token
+window.addEventListener('DOMContentLoaded', async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteToken = urlParams.get('token');
+
+  if(inviteToken){
+    const {data: invitation, error} = await _sb
+      .from('team_members')
+      .select('*')
+      .eq('invite_token', inviteToken)
+      .eq('status', 'invited')
+      .maybeSingle();
+
+    if(error || !invitation){
+      alert('❌ Neplatná alebo expirovaná pozvánka!');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    window._invitationData = invitation;
+
+    openModal('register');
+
+    setTimeout(() => {
+      const emailInput = document.getElementById('regEmail');
+      if(emailInput){
+        emailInput.value = invitation.member_email;
+        emailInput.readOnly = true;
+        emailInput.style.opacity = '0.7';
+        emailInput.style.cursor = 'not-allowed';
+      }
+
+      const regForm = document.querySelector('#modalRegister');
+      if(regForm){
+        const existingBanner = regForm.querySelector('.invite-banner');
+        if(!existingBanner){
+          const banner = document.createElement('div');
+          banner.className = 'invite-banner';
+          banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 2rem;">🎓</div>
+              <div>
+                <div style="font-weight: 700; font-size: 1rem; color: #4f8ef7; margin-bottom: 4px;">
+                  Pozvánka do školy
+                </div>
+                <div style="font-size: 0.85rem; color: #8888aa;">
+                  Registruješ sa ako učiteľ: <strong style="color: #eeeef5;">${invitation.full_name}</strong>
+                </div>
+              </div>
+            </div>
+          `;
+          regForm.insertBefore(banner, regForm.firstChild);
+        }
+      }
+
+      const passwordInput = document.getElementById('regPassword');
+      if(passwordInput) passwordInput.focus();
+    }, 100);
+  }
+});
+
 function toggleFeature(btn){
   btn.closest('.feature-item').classList.toggle('expanded');
 }
@@ -2040,36 +2103,6 @@ function livePasswordCheck(){
 }
 
 async function doRegister(){
-  // Check for invite token
-  const urlParams = new URLSearchParams(window.location.search);
-  const inviteToken = urlParams.get('token');
-  let invitationData = null;
-
-  if(inviteToken){
-    // Verify token
-    const {data: invitation, error: invError} = await _sb
-      .from('team_members')
-      .select('*')
-      .eq('invite_token', inviteToken)
-      .eq('status', 'invited')
-      .maybeSingle();
-
-    if(invError || !invitation){
-      alert('❌ Neplatná alebo expirovaná pozvánka!');
-      window.location.href = 'index.html';
-      return;
-    }
-
-    invitationData = invitation;
-
-    // Pre-fill email
-    const emailInput = document.getElementById('regEmail');
-    if(emailInput){
-      emailInput.value = invitation.member_email;
-      emailInput.readOnly = true;
-    }
-  }
-
   const email=document.getElementById('regEmail').value.trim();
   const pass =document.getElementById('regPassword').value;
   const btn  =document.getElementById('regBtn');
@@ -2081,37 +2114,58 @@ async function doRegister(){
     return;
   }
   btn.disabled=true;btn.textContent='Registrujem…';err.textContent='';
-  const {data: regData,error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
+  const {data: regData, error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
   btn.disabled=false;btn.textContent='Vytvoriť účet';
-  if(error){err.textContent=translateAuthError(error.message);}
-  else{
-    // create profile row (ignore error if already exists)
-    if(regData?.user){
-      await _sb.from('profiles').insert({id:regData.user.id,email:regData.user.email,plan:'free'});
-    }
+  if(error){err.textContent=translateAuthError(error.message);return;}
 
-    // If invitation exists, set up teacher profile
-    if(invitationData && regData?.user){
-      // Update profile with teacher role
-      await _sb.from('profiles')
-        .update({
-          role: 'teacher',
-          admin_id: invitationData.owner_id,
-          full_name: invitationData.full_name
-        })
-        .eq('id', regData.user.id);
+  // create profile row (ignore error if already exists)
+  if(regData?.user){
+    await _sb.from('profiles').insert({id:regData.user.id,email:regData.user.email,plan:'free'});
+  }
 
-      // Update team member status
-      await _sb.from('team_members')
-        .update({
-          status: 'joined',
-          member_user_id: regData.user.id,
-          joined_at: new Date().toISOString()
-        })
-        .eq('id', invitationData.id);
-    }
+  if(window._invitationData && regData?.user){
+    const invitation = window._invitationData;
 
-    showEmailConfirmModal(email);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const {error: profileError} = await _sb.from('profiles')
+      .update({
+        role: 'teacher',
+        admin_id: invitation.owner_id,
+        full_name: invitation.full_name,
+        plan: 'school'
+      })
+      .eq('id', regData.user.id);
+    if(profileError) console.error('Profile update error:', profileError);
+
+    const {error: teamError} = await _sb.from('team_members')
+      .update({
+        status: 'joined',
+        member_user_id: regData.user.id,
+        joined_at: new Date().toISOString()
+      })
+      .eq('id', invitation.id);
+    if(teamError) console.error('Team member update error:', teamError);
+
+    err.textContent = '';
+    btn.textContent = '✅ Registrovaný ako učiteľ!';
+
+    // Clear token from URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    delete window._invitationData;
+
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+  } else {
+    // Normal registration flow
+    err.textContent = '';
+    btn.textContent = '✅ Úspešne!';
+
+    setTimeout(() => {
+      closeModal('register');
+      openModal('login');
+      const loginEmail = document.getElementById('loginEmail');
+      if(loginEmail) loginEmail.value = email;
+    }, 1200);
   }
 }
 
