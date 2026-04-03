@@ -6085,12 +6085,40 @@ async function inviteTeacher(){
     return;
   }
 
-  // Create registration link
   const registrationLink = `${window.location.origin}/index.html?token=${inviteToken}`;
 
-  console.log('📧 Registration link:', registrationLink);
+  // Send invite email via Edge Function
+  _teamMsg(msgEl, '📧 Posielam pozvánku emailom…', '#4f8ef7');
 
-  _teamMsg(msgEl, `✅ Pozvánka vytvorená pre ${email}!`, '#22c55e');
+  try{
+    const resp = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/invite-team-member', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhbGNzbW52eXV1anNtbnJlZ2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTEwNDI0NDMsImV4cCI6MjAyNjYxODQ0M30.gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06iOYmvh49xUvw',
+      },
+      body: JSON.stringify({
+        memberEmail: email,
+        memberName: name,
+        ownerEmail: _currentUser.email,
+        inviteToken,
+        registrationLink,
+      }),
+    });
+
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    _teamMsg(msgEl, `✅ Pozvánka odoslaná na ${email}!`, '#22c55e');
+  } catch(efErr){
+    console.warn('[Team] Edge Function chyba:', efErr.message);
+    // Fallback — show copyable link
+    _teamMsg(msgEl,
+      `⚠️ Email sa nepodarilo odoslať. Skopíruj link manuálne: <br>
+       <a href="${registrationLink}" style="color:#4f8ef7;word-break:break-all">${registrationLink}</a>`,
+      '#f59e0b'
+    );
+    if(msgEl) msgEl.style.display = 'block';
+  }
 
   if(emailEl) emailEl.value = '';
   if(nameEl) nameEl.value = '';
