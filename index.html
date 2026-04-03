@@ -2040,6 +2040,36 @@ function livePasswordCheck(){
 }
 
 async function doRegister(){
+  // Check for invite token
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteToken = urlParams.get('token');
+  let invitationData = null;
+
+  if(inviteToken){
+    // Verify token
+    const {data: invitation, error: invError} = await _sb
+      .from('team_members')
+      .select('*')
+      .eq('invite_token', inviteToken)
+      .eq('status', 'invited')
+      .maybeSingle();
+
+    if(invError || !invitation){
+      alert('❌ Neplatná alebo expirovaná pozvánka!');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    invitationData = invitation;
+
+    // Pre-fill email
+    const emailInput = document.getElementById('regEmail');
+    if(emailInput){
+      emailInput.value = invitation.member_email;
+      emailInput.readOnly = true;
+    }
+  }
+
   const email=document.getElementById('regEmail').value.trim();
   const pass =document.getElementById('regPassword').value;
   const btn  =document.getElementById('regBtn');
@@ -2051,14 +2081,36 @@ async function doRegister(){
     return;
   }
   btn.disabled=true;btn.textContent='Registrujem…';err.textContent='';
-  const {data,error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
+  const {data: regData,error}=await _sb.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://mailguard-eight.vercel.app'}});
   btn.disabled=false;btn.textContent='Vytvoriť účet';
   if(error){err.textContent=translateAuthError(error.message);}
   else{
     // create profile row (ignore error if already exists)
-    if(data?.user){
-      await _sb.from('profiles').insert({id:data.user.id,email:data.user.email,plan:'free'});
+    if(regData?.user){
+      await _sb.from('profiles').insert({id:regData.user.id,email:regData.user.email,plan:'free'});
     }
+
+    // If invitation exists, set up teacher profile
+    if(invitationData && regData?.user){
+      // Update profile with teacher role
+      await _sb.from('profiles')
+        .update({
+          role: 'teacher',
+          admin_id: invitationData.owner_id,
+          full_name: invitationData.full_name
+        })
+        .eq('id', regData.user.id);
+
+      // Update team member status
+      await _sb.from('team_members')
+        .update({
+          status: 'joined',
+          member_user_id: regData.user.id,
+          joined_at: new Date().toISOString()
+        })
+        .eq('id', invitationData.id);
+    }
+
     showEmailConfirmModal(email);
   }
 }

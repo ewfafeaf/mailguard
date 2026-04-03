@@ -2313,13 +2313,13 @@ body::before{content:'';position:fixed;inset:0;
             <!-- Form -->
             <div class="invite-form">
               <div class="form-row">
-                <div class="input-group">
+                <div class="team-input-group">
                   <label>Email učiteľa</label>
-                  <input type="email" id="teacherEmail" class="form-input" placeholder="jan.kovac@skola.sk" autocomplete="email"/>
+                  <input type="email" id="teamEmailInput" class="team-input" placeholder="jan.kovac@skola.sk" autocomplete="email"/>
                 </div>
-                <div class="input-group">
+                <div class="team-input-group">
                   <label>Meno a priezvisko</label>
-                  <input type="text" id="teacherName" class="form-input" placeholder="Mgr. Ján Kováč" autocomplete="name"/>
+                  <input type="text" id="teamNameInput" class="team-input" placeholder="Mgr. Ján Kováč" maxlength="100" autocomplete="name"/>
                 </div>
               </div>
 
@@ -2329,7 +2329,7 @@ body::before{content:'';position:fixed;inset:0;
                 </svg>
                 Pozvať učiteľa
               </button>
-              <div class="sc-msg" id="teamInviteMsg" style="margin-top:8px"></div>
+              <div class="sc-msg" id="teamMsg" style="margin-top:8px"></div>
             </div>
 
           </div>
@@ -5879,7 +5879,7 @@ async function loadTeachers(){
     <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam…</div>`);
 
   const {data,error}=await _sb.from('team_members')
-    .select('id,member_email,role,created_at,member_user_id')
+    .select('id,member_email,full_name,role,status,created_at,member_user_id,invite_token')
     .eq('owner_id',_currentUser.id)
     .order('created_at',{ascending:true});
 
@@ -5913,9 +5913,9 @@ async function loadTeachers(){
   const rows=withActivity.map(m=>{
     const initials=(m.member_email||'?')[0].toUpperCase();
     const addedDate=new Date(m.created_at).toLocaleDateString('sk-SK');
-    const statusBadge=m.notRegistered
-      ? `<span class="status-badge pending">Pozvaný</span>`
-      : `<span class="status-badge active">Aktívny</span>`;
+    const badgeClass = m.status === 'joined' || m.member_user_id ? 'joined' : 'pending';
+    const statusText = m.status === 'joined' || m.member_user_id ? 'Aktívny' : 'Čaká na registráciu';
+    const statusBadge=`<div class="team-badge ${badgeClass}">${statusText}</div>`;
     const activityHtml=m.notRegistered
       ? `<div class="activity-stats"><span style="font-size:.78rem;color:#8888aa;font-style:italic">Ešte nezaregistrovaný</span></div>`
       : `<div class="activity-stats">
@@ -6001,76 +6001,80 @@ async function teamShowHistory(userId, email){
 }
 
 async function inviteTeacher(){
-  const emailEl = document.getElementById('teacherEmail');
-  const nameEl  = document.getElementById('teacherName');
-  const msgEl   = document.getElementById('teamInviteMsg');
-  const btn     = document.getElementById('teamInviteBtn');
-  const email   = emailEl.value.trim().toLowerCase();
-  const name    = nameEl?.value.trim()||'';
-  const role    = 'member';
-  const limit   = TEAM_LIMIT[_currentPlan] || 50;
+  const emailEl = document.getElementById('teamEmailInput');
+  const nameEl  = document.getElementById('teamNameInput');
+  const msgEl   = document.getElementById('teamMsg');
 
-  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    _teamMsg(msgEl,'Zadaj platný email.','var(--red)'); return;
+  const email = emailEl?.value.trim() || '';
+  const name  = nameEl?.value.trim() || '';
+
+  if(!email || !name){
+    _teamMsg(msgEl,'Vyplň email a meno učiteľa!','var(--red)');
+    return;
   }
 
-  // Skontroluj limit
-  const {count}=await _sb.from('team_members').select('id',{count:'exact',head:true}).eq('owner_id',_currentUser.id);
-  if(count>=limit){
-    _teamMsg(msgEl,`Dosiahli ste limit ${limit} členov pre váš plán.`,'var(--red)'); return;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!emailRegex.test(email)){
+    _teamMsg(msgEl,'Neplatný email!','var(--red)');
+    return;
   }
 
-  // Skontroluj duplicitu
-  const {data:exists}=await _sb.from('team_members').select('id')
-    .eq('owner_id',_currentUser.id).eq('member_email',email).maybeSingle();
+  // Check limit
+  const limit = TEAM_LIMIT[_currentPlan] || 50;
+  const {count} = await _sb.from('team_members')
+    .select('id', {count:'exact', head:true})
+    .eq('owner_id', _currentUser.id);
+
+  if(count >= limit){
+    _teamMsg(msgEl,`Dosiahnutý limit ${limit} členov!`,'var(--red)');
+    return;
+  }
+
+  // Check duplicate
+  const {data:exists} = await _sb.from('team_members')
+    .select('id')
+    .eq('owner_id', _currentUser.id)
+    .eq('member_email', email)
+    .maybeSingle();
+
   if(exists){
-    _teamMsg(msgEl,'Tento člen je už v tíme.','var(--yellow)'); return;
+    _teamMsg(msgEl,'Tento email už je v tíme!','var(--red)');
+    return;
   }
 
-  btn.disabled=true; btn.textContent='Pozývam…';
+  // Generate unique invite token
+  const inviteToken = crypto.randomUUID();
 
-  const {error}=await _sb.from('team_members').insert({
-    owner_id:     _currentUser.id,
+  // Insert team member
+  const {error} = await _sb.from('team_members').insert({
+    owner_id: _currentUser.id,
     member_email: email,
-    role,
+    full_name: name,
+    role: 'member',
+    status: 'invited',
+    invite_token: inviteToken,
+    created_at: new Date().toISOString()
   });
 
-  btn.disabled=false; btn.textContent='Pozvať učiteľa';
-
   if(error){
-    _teamMsg(msgEl,'Chyba: '+error.message,'var(--red)'); return;
+    _teamMsg(msgEl,'Chyba: '+error.message,'var(--red)');
+    return;
   }
 
-  // Odošli pozvánku cez Edge Function
-  try{
-    await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/invite-team-member',{
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
-      },
-      body: JSON.stringify({
-        memberEmail: email,
-        ownerEmail:  _currentUser.email,
-        role,
-      }),
-    });
-  }catch(efErr){
-    console.warn('[Team] Edge Function chyba:', efErr.message);
-  }
+  // Create registration link
+  const registrationLink = `${window.location.origin}/index.html?token=${inviteToken}`;
 
-  // Ak je pozvaný už registrovaný, hneď ulož jeho user_id
-  try{
-    const {data:profile}=await _sb.from('profiles').select('id').eq('email',email).single();
-    if(profile?.id){
-      await _sb.from('team_members').update({member_user_id:profile.id})
-        .eq('owner_id',_currentUser.id).eq('member_email',email);
-    }
-  }catch(e){ console.warn('[Team] member_user_id lookup failed:', e.message); }
+  // TODO: Send via Edge Function later
+  console.log('📧 Registration link:', registrationLink);
 
-  _teamMsg(msgEl,`✅ ${email} bol(a) pridaný/á. Pozvánka odoslaná emailom.`,'var(--green)');
-  emailEl.value='';
-  if(nameEl) nameEl.value='';
+  _teamMsg(msgEl, `✅ Pozvánka vytvorená pre ${email}!`, '#22c55e');
+
+  // Show link in alert for now
+  alert(`✅ Pozvánka vytvorená!\n\nRegistračný link:\n${registrationLink}\n\n(Zatiaľ skopíruj a pošli manuálne, email sending coming soon)`);
+
+  if(emailEl) emailEl.value = '';
+  if(nameEl) nameEl.value = '';
+
   loadTeachers();
 }
 
