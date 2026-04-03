@@ -1938,12 +1938,13 @@ window.addEventListener('DOMContentLoaded', async () => {
         emailInput.style.cursor = 'not-allowed';
       }
 
-      const regForm = document.querySelector('#modalRegister');
-      if(regForm){
-        const existingBanner = regForm.querySelector('.invite-banner');
+      const regModal = document.getElementById('modalRegister');
+      if(regModal){
+        const existingBanner = regModal.querySelector('.invite-banner');
         if(!existingBanner){
           const banner = document.createElement('div');
           banner.className = 'invite-banner';
+          banner.style.cssText = 'padding: 16px 20px; background: linear-gradient(135deg, rgba(79, 142, 247, 0.15), rgba(124, 95, 247, 0.15)); border: 1px solid rgba(79, 142, 247, 0.3); border-radius: 12px; margin-bottom: 24px;';
           banner.innerHTML = `
             <div style="display: flex; align-items: center; gap: 12px;">
               <div style="font-size: 2rem;">🎓</div>
@@ -1957,7 +1958,7 @@ window.addEventListener('DOMContentLoaded', async () => {
               </div>
             </div>
           `;
-          regForm.insertBefore(banner, regForm.firstChild);
+          regModal.insertBefore(banner, regModal.firstChild);
         }
       }
 
