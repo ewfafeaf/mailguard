@@ -1899,12 +1899,16 @@ const _sb = supabase.createClient(
   'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
 );
 
-// Auto-open registration modal with invite token
+// ═══════════════════════════════════════════════════════════
+// INVITE TOKEN - Auto-open registration
+// ═══════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const inviteToken = urlParams.get('token');
 
   if(inviteToken){
+    console.log('🔍 Checking invite token:', inviteToken);
+
     const {data: invitation, error} = await _sb
       .from('team_members')
       .select('*')
@@ -1913,10 +1917,13 @@ window.addEventListener('DOMContentLoaded', async () => {
       .maybeSingle();
 
     if(error || !invitation){
+      console.error('❌ Token verification failed:', error);
       alert('❌ Neplatná alebo expirovaná pozvánka!');
       window.location.href = 'index.html';
       return;
     }
+
+    console.log('✅ Token valid:', invitation);
 
     window._invitationData = invitation;
 
@@ -1945,7 +1952,7 @@ window.addEventListener('DOMContentLoaded', async () => {
                   Pozvánka do školy
                 </div>
                 <div style="font-size: 0.85rem; color: #8888aa;">
-                  Registruješ sa ako učiteľ: <strong style="color: #eeeef5;">${invitation.full_name}</strong>
+                  Registruješ sa ako učiteľ: <strong style="color: #eeeef5;">${invitation.full_name || invitation.member_email}</strong>
                 </div>
               </div>
             </div>
@@ -2123,10 +2130,14 @@ async function doRegister(){
     await _sb.from('profiles').insert({id:regData.user.id,email:regData.user.email,plan:'free'});
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // TEACHER REGISTRATION - Setup profile & link to team
+  // ═══════════════════════════════════════════════════════════
   if(window._invitationData && regData?.user){
     const invitation = window._invitationData;
+    console.log('👨‍🏫 Setting up teacher profile:', invitation);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     const {error: profileError} = await _sb.from('profiles')
       .update({
@@ -2136,7 +2147,8 @@ async function doRegister(){
         plan: 'school'
       })
       .eq('id', regData.user.id);
-    if(profileError) console.error('Profile update error:', profileError);
+    if(profileError) console.error('❌ Profile update error:', profileError);
+    else console.log('✅ Profile updated as teacher');
 
     const {error: teamError} = await _sb.from('team_members')
       .update({
@@ -2145,16 +2157,17 @@ async function doRegister(){
         joined_at: new Date().toISOString()
       })
       .eq('id', invitation.id);
-    if(teamError) console.error('Team member update error:', teamError);
+    if(teamError) console.error('❌ Team member update error:', teamError);
+    else console.log('✅ Team member status updated');
 
     err.textContent = '';
     btn.textContent = '✅ Registrovaný ako učiteľ!';
 
-    // Clear token from URL
     window.history.replaceState({}, document.title, window.location.pathname);
     delete window._invitationData;
 
     setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+    return;
   } else {
     // Normal registration flow
     err.textContent = '';
