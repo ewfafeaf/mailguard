@@ -851,10 +851,23 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .btn-invite{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border:none;border-radius:8px;color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;transition:all .3s;align-self:flex-start;font-family:inherit}
 .btn-invite:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,142,247,.4)}
 .btn-invite:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+/* Team invite - Web Skener style */
+.team-invite-inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.ws-input-wrapper{display:flex;flex-direction:column;gap:8px}
+.ws-label{font-size:.85rem;font-weight:600;color:#8888aa;text-transform:uppercase;letter-spacing:.5px}
+.ws-input{width:100%;padding:14px 16px;background:rgba(34,34,58,.5);border:1px solid rgba(79,142,247,.2);border-radius:10px;color:#eeeef5;font-size:.95rem;font-family:'Segoe UI',system-ui,sans-serif;outline:none;transition:all .3s;box-sizing:border-box}
+.ws-input:focus{border-color:rgba(79,142,247,.5);background:rgba(34,34,58,.7);box-shadow:0 0 0 3px rgba(79,142,247,.1)}
+.ws-input::placeholder{color:#555577}
+.ws-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 28px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;transition:all .3s;align-self:flex-start}
+.ws-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,142,247,.4)}
+/* Copy link button */
+.btn-copy-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:6px;color:#4f8ef7;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-copy-link:hover{background:rgba(79,142,247,.2);transform:translateY(-1px)}
+.col-link{display:flex;align-items:center}
 /* teachers table */
 .teachers-table{display:flex;flex-direction:column;gap:1px;background:rgba(79,142,247,.1);border-radius:10px;overflow:hidden}
-.table-header{display:grid;grid-template-columns:2fr 120px 2fr 180px;gap:16px;padding:14px 20px;background:rgba(34,34,58,.8);font-size:.75rem;font-weight:700;color:#8888aa;text-transform:uppercase;letter-spacing:.5px}
-.teacher-row{display:grid;grid-template-columns:2fr 120px 2fr 180px;gap:16px;padding:18px 20px;background:rgba(18,18,26,.6);align-items:center;transition:all .2s}
+.table-header{display:grid;grid-template-columns:2fr 120px 2fr 280px 120px;gap:16px;padding:14px 20px;background:rgba(34,34,58,.8);font-size:.75rem;font-weight:700;color:#8888aa;text-transform:uppercase;letter-spacing:.5px}
+.teacher-row{display:grid;grid-template-columns:2fr 120px 2fr 280px 120px;gap:16px;padding:18px 20px;background:rgba(18,18,26,.6);align-items:center;transition:all .2s}
 .teacher-row:hover{background:rgba(34,34,58,.8)}
 .col-teacher{display:flex;align-items:center;gap:12px}
 .teacher-avatar{width:44px;height:44px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1rem;flex-shrink:0}
@@ -2312,20 +2325,20 @@ body::before{content:'';position:fixed;inset:0;
 
             <!-- Form -->
             <div class="invite-form">
-              <div class="form-row">
-                <div class="team-input-group">
-                  <label>Email učiteľa</label>
-                  <input type="email" id="teamEmailInput" class="team-input" placeholder="jan.kovac@skola.sk" autocomplete="email"/>
+              <div class="team-invite-inputs">
+                <div class="ws-input-wrapper">
+                  <label class="ws-label">Email učiteľa</label>
+                  <input type="email" id="teamEmailInput" class="ws-input" placeholder="jan.kovac@skola.sk" />
                 </div>
-                <div class="team-input-group">
-                  <label>Meno a priezvisko</label>
-                  <input type="text" id="teamNameInput" class="team-input" placeholder="Mgr. Ján Kováč" maxlength="100" autocomplete="name"/>
+                <div class="ws-input-wrapper">
+                  <label class="ws-label">Meno a priezvisko</label>
+                  <input type="text" id="teamNameInput" class="ws-input" placeholder="Mgr. Ján Kováč" />
                 </div>
               </div>
 
-              <button class="btn-invite" id="teamInviteBtn" onclick="inviteTeacher()">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11Z"/>
+              <button class="ws-btn primary" onclick="inviteTeacher()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
                 Pozvať učiteľa
               </button>
@@ -2348,10 +2361,11 @@ body::before{content:'';position:fixed;inset:0;
 
             <div class="teachers-table" id="teachersList">
               <div class="table-header">
-                <div class="col-teacher">Učiteľ</div>
-                <div>Stav</div>
-                <div class="col-activity">Aktivita</div>
-                <div class="col-actions">Akcie</div>
+                <div>UČITEĽ</div>
+                <div>STAV</div>
+                <div>AKTIVITA</div>
+                <div>LINK</div>
+                <div>AKCIE</div>
               </div>
               <div class="team-empty">Načítavam…</div>
             </div>
@@ -5927,6 +5941,15 @@ async function loadTeachers(){
     const historyBtn=m.member_user_id
       ? `<button class="btn-action secondary" onclick="teamShowHistory('${m.member_user_id}','${escHtml(m.member_email)}')">História</button>`
       : '';
+    const linkCol = m.status === 'invited' && m.invite_token
+      ? `<button class="btn-copy-link" onclick="copyInviteLink('${m.invite_token}', event)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Kopírovať link
+        </button>`
+      : '<span style="color:#555577;font-size:.85rem">—</span>';
     return`<div class="teacher-row">
       <div class="col-teacher">
         <div class="teacher-avatar">${initials}</div>
@@ -5937,6 +5960,7 @@ async function loadTeachers(){
       </div>
       <div>${statusBadge}</div>
       <div class="col-activity">${activityHtml}</div>
+      <div class="col-link">${linkCol}</div>
       <div class="col-actions">
         ${historyBtn}
         <button class="btn-action danger" onclick="removeTeacher('${m.id}','${escHtml(m.member_email)}')">Odstrániť</button>
@@ -6064,18 +6088,48 @@ async function inviteTeacher(){
   // Create registration link
   const registrationLink = `${window.location.origin}/index.html?token=${inviteToken}`;
 
-  // TODO: Send via Edge Function later
   console.log('📧 Registration link:', registrationLink);
 
   _teamMsg(msgEl, `✅ Pozvánka vytvorená pre ${email}!`, '#22c55e');
-
-  // Show link in alert for now
-  alert(`✅ Pozvánka vytvorená!\n\nRegistračný link:\n${registrationLink}\n\n(Zatiaľ skopíruj a pošli manuálne, email sending coming soon)`);
 
   if(emailEl) emailEl.value = '';
   if(nameEl) nameEl.value = '';
 
   loadTeachers();
+}
+
+function copyInviteLink(token, event){
+  event?.stopPropagation();
+
+  const link = `${window.location.origin}/index.html?token=${token}`;
+
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = event?.target.closest('.btn-copy-link');
+    if(btn){
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Skopírované!
+      `;
+      btn.style.background = 'rgba(34, 197, 94, 0.15)';
+      btn.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+      btn.style.color = '#22c55e';
+
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    }
+
+    showToast('✅ Link skopírovaný do schránky!', 'success');
+  }).catch(err => {
+    console.error('Copy failed:', err);
+    showToast('❌ Nepodarilo sa skopírovať', 'error');
+  });
 }
 
 async function removeTeacher(id, email){
