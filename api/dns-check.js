@@ -30,6 +30,16 @@ export default async function handler(req) {
                               .replace(/^www\./, '')
                               .replace(/\/$/, '');
 
+    const cacheKey = 'dns:' + cleanDomain;
+    const sbRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache?cache_key=eq.' + encodeURIComponent(cacheKey) + '&expires_at=gt.' + new Date().toISOString() + '&select=data', {
+      headers: {
+        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+      }
+    });
+    const sbData = await sbRes.json();
+    if (sbData && sbData[0]) return new Response(JSON.stringify(sbData[0].data), { status: 200, headers });
+
     const results = {
       domain: cleanDomain,
       spf: await checkSPF(cleanDomain),
@@ -43,6 +53,17 @@ export default async function handler(req) {
     // Calculate score
     results.score = calculateScore(results);
     results.recommendations = generateRecommendations(results);
+
+    await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache', {
+      method: 'POST',
+      headers: {
+        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ cache_key: cacheKey, data: results, expires_at: new Date(Date.now() + 24*3600000).toISOString() })
+    });
 
     return new Response(JSON.stringify(results), {
       status: 200,

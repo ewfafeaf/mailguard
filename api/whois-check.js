@@ -1,6 +1,7 @@
 // Vercel Serverless Function – RDAP/WHOIS kontrola domény
 // Primárny:  https://rdap.org/domain/DOMAIN  (IANA RDAP bootstrap, JSON)
 // Fallback:  https://who-dat.as93.net/DOMAIN.json (verejné API)
+const { getCache, setCache } = require('./cache-helper');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,6 +25,10 @@ module.exports = async function handler(req, res) {
 
   console.log(`[whois-check] Looking up: ${domain}`);
 
+  const cacheKey = 'whois:' + domain;
+  const cached = await getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
+
   const result = await tryRDAP(domain) || await tryWhoDat(domain);
 
   if (!result) {
@@ -32,7 +37,9 @@ module.exports = async function handler(req, res) {
   }
 
   console.log(`[whois-check] ok – age_days=${result.age_days} registrar=${result.registrar}`);
-  return res.status(200).json({ ok: true, domain, ...result });
+  const whoisResult = { ok: true, domain, ...result };
+  await setCache(cacheKey, whoisResult, 48);
+  return res.status(200).json(whoisResult);
 };
 
 /* ═══════════════════════════════════════

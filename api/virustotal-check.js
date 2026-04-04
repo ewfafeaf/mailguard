@@ -1,5 +1,6 @@
 // Vercel Serverless Function – VirusTotal domain reputation check
 // Endpoint: GET /api/virustotal-check?host=DOMAIN
+const { getCache, setCache } = require('./cache-helper');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,6 +25,10 @@ module.exports = async function handler(req, res) {
   const domain = parts.length > 2 ? parts.slice(-2).join('.') : clean;
 
   console.log(`[virustotal] Checking domain: ${domain}`);
+
+  const cacheKey = 'vt:' + domain;
+  const cached = await getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
 
   try {
     const r = await fetch(`https://www.virustotal.com/api/v3/domains/${encodeURIComponent(domain)}`, {
@@ -62,16 +67,9 @@ module.exports = async function handler(req, res) {
 
     console.log(`[virustotal] malicious=${malicious} suspicious=${suspicious} harmless=${harmless} total=${total}`);
 
-    return res.status(200).json({
-      ok: true,
-      domain,
-      malicious,
-      suspicious,
-      harmless,
-      undetected,
-      total,
-      reputation,
-    });
+    const result = { ok: true, domain, malicious, suspicious, harmless, undetected, total, reputation };
+    await setCache(cacheKey, result);
+    return res.status(200).json(result);
 
   } catch (err) {
     console.error('[virustotal] exception:', err.message);

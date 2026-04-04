@@ -28,6 +28,16 @@ export default async function handler(req) {
       .replace(/^www\./, '')
       .replace(/\/.*$/, '');
 
+    const cacheKey = 'blacklist:' + clean;
+    const sbRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache?cache_key=eq.' + encodeURIComponent(cacheKey) + '&expires_at=gt.' + new Date().toISOString() + '&select=data', {
+      headers: {
+        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+      }
+    });
+    const sbData = await sbRes.json();
+    if (sbData && sbData[0]) return new Response(JSON.stringify(sbData[0].data), { status: 200, headers });
+
     // Resolve to IP if domain
     let ip = clean;
     let resolvedFrom = null;
@@ -72,7 +82,7 @@ export default async function handler(req) {
     const clean_count = results.filter(r => !r.listed && !r.error).length;
     const errors = results.filter(r => r.error).length;
 
-    return new Response(JSON.stringify({
+    const blResult = {
       input: clean,
       ip,
       resolvedFrom,
@@ -83,7 +93,20 @@ export default async function handler(req) {
       errors,
       lists: results,
       score: calculateScore(listed.length, RBL_LISTS.length),
-    }), { status: 200, headers });
+    };
+
+    await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache', {
+      method: 'POST',
+      headers: {
+        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ cache_key: cacheKey, data: blResult, expires_at: new Date(Date.now() + 24*3600000).toISOString() })
+    });
+
+    return new Response(JSON.stringify(blResult), { status: 200, headers });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
