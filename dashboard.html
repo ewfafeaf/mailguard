@@ -70,6 +70,19 @@
 <html lang="sk">
 <head>
 <meta charset="UTF-8"/>
+<script
+  src="https://js-de.sentry-cdn.com/be1d4488aa009eba3b448e6f6b88a41f.min.js"
+  crossorigin="anonymous"
+></script>
+<script>
+  Sentry.onLoad(function() {
+    Sentry.init({
+      dsn: "https://be1d4488aa009eba3b448e6f6b88a41f@o4511163138179072.ingest.de.sentry.io/4511163145912400",
+      environment: "production",
+      release: "nondox@1.0.0",
+    });
+  });
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Dashboard – NonDox</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
