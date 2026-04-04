@@ -1442,6 +1442,8 @@ body::before{content:'';position:fixed;inset:0;
 
 .info-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;margin-left:8px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;transition:all .2s}
 .info-btn:hover{border-color:#4f8ef7;color:#4f8ef7}
+.info-btn-label{background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;border-radius:6px;padding:3px 10px;font-size:.78rem;font-weight:600;cursor:pointer;margin-left:10px;vertical-align:middle;transition:all .2s}
+.info-btn-label:hover{background:rgba(79,142,247,.3);border-color:#4f8ef7}
 .info-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:99999;display:none;align-items:center;justify-content:center}
 .info-modal-overlay.active{display:flex}
 .info-modal{background:#1a1d27;border:1px solid #2e3350;border-radius:16px;padding:32px;max-width:480px;width:90%;position:relative}
@@ -2268,7 +2270,7 @@ body::before{content:'';position:fixed;inset:0;
 
     <!-- Section: Web skener -->
     <div id="sectionWebskener" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Web skener<button class="info-btn" onclick="showInfoModal('web')">?</button></div>
+      <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Web skener<button class="info-btn-label" onclick="showInfoModal('web')">ⓘ Info</button></div>
 
       <!-- Feature cards — viditeľné pre všetkých -->
       <div class="ws-feature-grid">
@@ -2311,7 +2313,7 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Plány -->
     <!-- Section: Files -->
     <div id="sectionFiles" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov<button class="info-btn" onclick="showInfoModal('files')">?</button></div>
+      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov<button class="info-btn-label" onclick="showInfoModal('files')">ⓘ Info</button></div>
 
       <!-- Feature cards -->
       <div class="file-scanner-features">
@@ -2524,7 +2526,7 @@ body::before{content:'';position:fixed;inset:0;
     </div>
 
     <div id="sectionDns-checker" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#818cf8"></div>DNS & Email Security Checker<button class="info-btn" onclick="showInfoModal('dns')">?</button></div>
+      <div class="dash-section-title"><div class="dot" style="background:#818cf8"></div>DNS & Email Security Checker<button class="info-btn-label" onclick="showInfoModal('dns')">ⓘ Info</button></div>
 
       <!-- Feature cards -->
       <div class="ws-feature-grid">
@@ -2589,7 +2591,7 @@ body::before{content:'';position:fixed;inset:0;
     </div>
 
     <div id="sectionBlacklist-checker" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#ef4444"></div>IP & Domain Blacklist Checker<button class="info-btn" onclick="showInfoModal('blacklist')">?</button></div>
+      <div class="dash-section-title"><div class="dot" style="background:#ef4444"></div>IP & Domain Blacklist Checker<button class="info-btn-label" onclick="showInfoModal('blacklist')">ⓘ Info</button></div>
 
       <!-- Feature cards -->
       <div class="ws-feature-grid">
