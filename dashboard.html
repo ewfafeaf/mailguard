@@ -182,37 +182,39 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 
 /* ── DNS CHECKER ── */
 /* ── UNIFIED RESULTS DESIGN (DNS + Web skener) ── */
-.dns-score-card{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;
-  padding:32px 36px;border-radius:14px;text-align:center;margin-bottom:16px}
-.dns-score-circle{font-size:3.2rem;font-weight:800;line-height:1}
+.dns-score-card{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+  border:1px solid rgba(255,255,255,.08);
+  padding:28px 32px;border-radius:12px;text-align:center;margin-bottom:14px}
+.dns-score-circle{font-size:3rem;font-weight:800;line-height:1;color:#fff}
 /* Status badges */
-.status-badge{padding:3px 9px;border-radius:6px;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.status-pass{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
-.status-fail{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
-.status-weak{background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3)}
-.status-not_found,.status-error{background:rgba(107,114,128,.15);color:#9ca3af;border:1px solid rgba(107,114,128,.3)}
+.status-badge{padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase}
+.status-pass{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}
+.status-fail{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.25)}
+.status-weak{background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.25)}
+.status-not_found,.status-error{background:rgba(107,114,128,.12);color:#6b7280;border:1px solid rgba(107,114,128,.25)}
 /* Unified result section */
-.res-section{background:#1a1a2e;border:1px solid rgba(255,255,255,.08);border-radius:10px;
-  margin-bottom:12px;overflow:hidden}
-.res-section-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
-  color:#7a82a0;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.res-section{background:#0f1419;border:1px solid rgba(255,255,255,.08);border-radius:8px;
+  margin-bottom:10px;overflow:hidden}
+.res-section-title{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  color:#555e70;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
 .res-table{width:100%;border-collapse:collapse}
-.res-table td{padding:10px 16px;font-size:.86rem;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+.res-table td{padding:9px 14px;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
 .res-table tr:last-child td{border-bottom:none}
-.res-table .td-label{color:#e8eaf0;font-weight:500;width:38%}
-.res-table .td-detail{color:#7a82a0;word-break:break-all;font-size:.8rem}
-/* Recommendation cards */
-.res-rec{background:rgba(255,255,255,.03);border-left:3px solid;border-radius:6px;
-  padding:12px 14px;margin-bottom:8px}
-.res-rec:last-child{margin-bottom:0}
-.res-rec h4{margin:0 0 3px;font-size:.84rem;font-weight:700;color:#e8eaf0}
-.res-rec p{margin:0 0 8px;font-size:.79rem;color:#7a82a0;line-height:1.5}
-.res-rec-critical{border-color:#ef4444}
-.res-rec-warning{border-color:#f97316}
+.res-table .td-label{color:#c8cad8;font-weight:500;width:38%}
+.res-table .td-detail{color:#555e70;word-break:break-all;font-size:.78rem}
+/* Recommendations — plain list, no boxes */
+.res-recs-list{padding:10px 14px;display:flex;flex-direction:column;gap:12px}
+.res-rec{display:flex;flex-direction:column;gap:4px}
+.res-rec-title{font-size:.84rem;font-weight:600;color:#c8cad8}
+.res-rec-title.critical::before{content:'⚠ ';color:#ef4444}
+.res-rec-title.warning::before{content:'⚠ ';color:#f97316}
+.res-rec-desc{font-size:.78rem;color:#555e70;line-height:1.5;padding-left:16px}
 /* Fix code block */
-.dns-fix-code{background:#0d1117;color:#22c55e;padding:10px 14px;border-radius:6px;
-  font-family:'Courier New',monospace;font-size:.78rem;margin-top:0;overflow-x:auto;
-  white-space:pre-wrap;word-break:break-all;border:1px solid rgba(34,197,94,.15)}
+.dns-fix-code{background:#0d1117;color:#22c55e;padding:9px 12px;border-radius:5px;
+  font-family:'Courier New',monospace;font-size:.75rem;margin-top:2px;margin-left:16px;
+  overflow-x:auto;white-space:pre-wrap;word-break:break-all;
+  border:1px solid rgba(255,255,255,.06)}
 
 /* Hide old sidebar user panel */
 .sidebar-user{display:none!important}
@@ -3015,7 +3017,7 @@ async function analyzeDNS(){
 
 function displayDNSResults(data){
   const s=data.score;
-  const scoreCol=s>=80?'#22c55e':s>=60?'#f59e0b':s>=40?'#f97316':'#ef4444';
+  const verdictCol=s>=80?'#22c55e':s>=60?'#4f8ef7':s>=40?'#f97316':'#ef4444';
   const verdict=s>=80?'Excellent Security':s>=60?'Good Security':s>=40?'Needs Improvement':'Poor Security';
 
   const checks=[
@@ -3028,33 +3030,33 @@ function displayDNSResults(data){
   const tableRows=checks.map(c=>`
     <tr>
       <td class="td-label">${escHtml(c.name)}</td>
-      <td style="width:110px"><span class="status-badge status-${c.status.toLowerCase()}">${escHtml(c.status)}</span></td>
+      <td style="width:100px"><span class="status-badge status-${c.status.toLowerCase()}">${escHtml(c.status)}</span></td>
       <td class="td-detail">${escHtml(c.detail)}</td>
     </tr>`).join('');
 
   const recsHtml=data.recommendations.length===0
-    ?`<div style="color:#22c55e;font-size:.84rem;padding:2px 0">✓ Všetky kontroly prešli bez problémov</div>`
-    :data.recommendations.map(r=>`
-      <div class="res-rec res-rec-${r.type}">
-        <h4>${escHtml(r.title)}</h4>
-        <p>${escHtml(r.description)}</p>
+    ?`<div style="color:#22c55e;font-size:.8rem;padding:10px 14px">✓ All checks passed — no issues found</div>`
+    :`<div class="res-recs-list">${data.recommendations.map(r=>`
+      <div class="res-rec">
+        <div class="res-rec-title ${r.type}">${escHtml(r.title)}</div>
+        <div class="res-rec-desc">${escHtml(r.description)}</div>
         <div class="dns-fix-code">${escHtml(r.fix)}</div>
-      </div>`).join('');
+      </div>`).join('')}</div>`;
 
-  const resultEl=document.getElementById('dns-results');
-  resultEl.innerHTML=`
+  document.getElementById('dns-results').innerHTML=`
     <div class="dns-score-card">
-      <div class="dns-score-circle" style="color:${scoreCol}">${s}<span style="font-size:1rem;font-weight:400;opacity:.65">/100</span></div>
-      <div style="margin-top:8px;font-size:.95rem;font-weight:600;opacity:.9">${escHtml(verdict)}</div>
+      <div class="dns-score-circle">${s}<span style="font-size:.95rem;font-weight:400;color:rgba(255,255,255,.4)">/100</span></div>
+      <div style="margin-top:10px;font-size:.9rem;font-weight:700;color:${verdictCol};letter-spacing:.02em">${escHtml(verdict)}</div>
+      <div style="margin-top:4px;font-size:.72rem;color:#555e70;letter-spacing:.06em;text-transform:uppercase">${data.domain}</div>
     </div>
 
     <div class="res-section">
-      <div class="res-section-title">DNS Records Check</div>
+      <div class="res-section-title">DNS Records</div>
       <table class="res-table"><tbody>${tableRows}</tbody></table>
     </div>
 
-    <div class="res-section" style="padding:14px 16px">
-      <div class="res-section-title" style="padding:0 0 10px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)">Odporúčania</div>
+    <div class="res-section">
+      <div class="res-section-title">Recommendations</div>
       ${recsHtml}
     </div>`;
 }
@@ -3793,22 +3795,15 @@ function renderScoreHTML(r, partial=false){
 function renderFinalScore(r){
   if(!r) return renderScoreHTML(null);
   const s=r.score;
-  const {col}=scoreStyle(s);
-  const verdict=s>=80?'Stránka je dobre zabezpečená'
-    :s>=60?'Dobré zabezpečenie, menšie nedostatky'
-    :s>=40?'Stredné riziko – odporúčame opravy'
-    :'Slabé zabezpečenie – potrebná okamžitá akcia';
-  const badge=s>=80?'✅':s>=60?'⚠️':s>=40?'🟠':'🚨';
-  const progressFill=s>=80?'var(--green)':s>=60?'var(--yellow)':s>=40?'var(--orange)':'var(--red)';
-  return`<div class="ws-score-wrap" style="margin-bottom:16px">
-    <div class="ws-circle" style="color:${col};border-color:${col};background:${col}18">
-      <span class="ws-circle-num">${s}</span><span class="ws-circle-lbl">/ 100</span>
-    </div>
-    <div class="ws-score-info">
-      <div class="ws-verdict" style="color:${col}">${badge} ${verdict}</div>
-      <div class="ws-desc">Bezpečnostné skóre: <strong>${s}/100</strong>${r.gsbChecked?' · GSB skontrolovaný':''}</div>
-      <div class="ws-progress-bar"><div class="ws-progress-fill" style="background:${progressFill};width:${s}%;transition:width .5s ease"></div></div>
-    </div>
+  const verdictCol=s>=80?'#22c55e':s>=60?'#4f8ef7':s>=40?'#f97316':'#ef4444';
+  const verdict=s>=80?'Excellent Security'
+    :s>=60?'Good Security'
+    :s>=40?'Needs Improvement'
+    :'Poor Security';
+  return`<div class="dns-score-card" style="margin-bottom:14px">
+    <div class="dns-score-circle">${s}<span style="font-size:.95rem;font-weight:400;color:rgba(255,255,255,.4)">/100</span></div>
+    <div style="margin-top:10px;font-size:.9rem;font-weight:700;color:${verdictCol};letter-spacing:.02em">${verdict}</div>
+    ${r.gsbChecked?'<div style="margin-top:4px;font-size:.68rem;color:#555e70;letter-spacing:.06em;text-transform:uppercase">GSB checked</div>':''}
   </div>`;
 }
 
@@ -3820,10 +3815,14 @@ function scoreStyle(s){
 /* ── Odporúčania ── */
 function renderRecsHTML(recs){
   if(!recs||!recs.length)
-    return`<div style="color:#22c55e;font-size:.84rem;padding:4px 0">✓ Výborne! Žiadne ďalšie odporúčania.</div>`;
-  return`<div class="res-section" style="padding:14px 16px;margin-top:14px">
-    <div class="res-section-title" style="padding:0 0 10px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)">Odporúčania</div>
-    ${recs.map(r=>`<div class="res-rec res-rec-warning"><p style="margin:0;font-size:.82rem;color:#e8eaf0">${escHtml(r)}</p></div>`).join('')}
+    return`<div style="color:#22c55e;font-size:.8rem;padding:4px 0">✓ Výborne! Žiadne ďalšie odporúčania.</div>`;
+  return`<div class="res-section" style="margin-top:10px">
+    <div class="res-section-title">Odporúčania</div>
+    <div class="res-recs-list">${recs.map(r=>`
+      <div class="res-rec">
+        <div class="res-rec-title warning">⚠&nbsp;${escHtml(r)}</div>
+      </div>`).join('')}
+    </div>
   </div>`;
 }
 
