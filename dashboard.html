@@ -5636,7 +5636,7 @@ function renderHeadersResult(d){
 ══════════════════════════════════════════ */
 async function generatePoliceReport(){
   const d=_lastHeaderResult;
-  if(!d){ alert('Najprv spusti analyzu hlaviciek.'); return; }
+  if(!d){ alert('Please run header analysis first.'); return; }
 
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -5681,9 +5681,9 @@ async function generatePoliceReport(){
     }
     // Title (right side)
     sf(11,'bold',BLK);
-    doc.text('BEZPEČNOSTNÝ REPORT PRE POLÍCIU',W-margin,margin+4,{align:'right'});
+    doc.text('SECURITY REPORT FOR LAW ENFORCEMENT',W-margin,margin+4,{align:'right'});
     sf(8,'normal',GRY);
-    doc.text('Vygenerované: '+dateStr+' o '+timeStr,W-margin,margin+9,{align:'right'});
+    doc.text('Generated: '+dateStr+' at '+timeStr,W-margin,margin+9,{align:'right'});
     // Separator line
     ln(margin,margin+13,W-margin,margin+13,0.5,BLK);
     y=margin+19;
@@ -5693,7 +5693,7 @@ async function generatePoliceReport(){
   drawPageHeader();
 
   // ══ 1. INFORMAČNÁ SEKCIA ════════════════════════════════════════
-  sf(9,'bold',BLK); doc.text('1. ZÁKLADNÉ INFORMÁCIE O EMAILY',margin,y); y+=4;
+  sf(9,'bold',BLK); doc.text('1. EMAIL INFORMATION',margin,y); y+=4;
   ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
   const infoRows=[
@@ -5702,7 +5702,7 @@ async function generatePoliceReport(){
     ['Date Received:', d.date||'—'],
     ['Reply-To:',      d.replyTo||'—'],
     ['Return-Path:',   d.returnPath||'—'],
-    ['Analysis Date:', dateStr+' o '+timeStr],
+    ['Analysis Date:', dateStr+' at '+timeStr],
   ];
 
   const col1=50, rowH=8;
@@ -5719,7 +5719,7 @@ async function generatePoliceReport(){
   y+=6;
 
   // ══ 2. VÝSLEDKY ANALÝZY (tabuľka) ══════════════════════════════
-  sf(9,'bold',BLK); doc.text('2. VÝSLEDKY BEZPEČNOSTNEJ ANALÝZY',margin,y); y+=4;
+  sf(9,'bold',BLK); doc.text('2. SECURITY ANALYSIS RESULTS',margin,y); y+=4;
   ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
   // Table header
@@ -5743,11 +5743,11 @@ async function generatePoliceReport(){
   };
 
   const tableRows=[
-    ['SPF Check',              authVal(d.spf),          d.spf==='pass'?'Doména overená (SPF)':'SPF overenie zlyhalo'],
-    ['DKIM Check',             authVal(d.dkim),          d.dkim==='pass'?'Podpis platný':'DKIM podpis neplatný alebo chýba'],
-    ['DMARC Check',            authVal(d.dmarc),         d.dmarc==='pass'||d.dmarc==='present'?'DMARC politika prítomná':'DMARC politika chýba'],
-    ['From / Reply-To Match',  d.fromReturnMatch?{txt:'MATCH',risk:0}:{txt:'MISMATCH',risk:75}, d.fromReturnMatch?'From a Return-Path sa zhodujú':'From a Return-Path sú rozdielne domény'],
-    ['Spoofing Detection',     d.spoofingDetected?{txt:'DETECTED',risk:90}:{txt:'CLEAN',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Podozrivé znaky'):'Žiadne znaky spoofingu'],
+    ['SPF Check',              authVal(d.spf),          d.spf==='pass'?'Domain verified via SPF record':'SPF verification failed'],
+    ['DKIM Check',             authVal(d.dkim),          d.dkim==='pass'?'Valid cryptographic signature':'DKIM signature invalid or missing'],
+    ['DMARC Check',            authVal(d.dmarc),         d.dmarc==='pass'||d.dmarc==='present'?'DMARC policy present and valid':'DMARC policy missing or failed'],
+    ['From / Reply-To Match',  d.fromReturnMatch?{txt:'MATCH',risk:0}:{txt:'MISMATCH',risk:75}, d.fromReturnMatch?'From and Return-Path domains match':'From and Return-Path domains differ'],
+    ['Spoofing Detection',     d.spoofingDetected?{txt:'DETECTED',risk:90}:{txt:'CLEAN',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Suspicious indicators found'):'No spoofing indicators detected'],
   ];
 
   tableRows.forEach(([check,auth,detail],idx)=>{
@@ -5769,7 +5769,7 @@ async function generatePoliceReport(){
   y+=6;
 
   // ══ 3. SIEŤOVÁ STOPA ════════════════════════════════════════════
-  sf(9,'bold',BLK); doc.text('3. SIEŤOVÁ STOPA (Received chain)',margin,y); y+=4;
+  sf(9,'bold',BLK); doc.text('3. NETWORK TRACE (Received Chain)',margin,y); y+=4;
   ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
   const parseReceivedChain=(rawHdrs)=>{
@@ -5791,25 +5791,25 @@ async function generatePoliceReport(){
 
   const hops=parseReceivedChain(d._rawHeaders);
   const rawOrigin=hops.length?(hops[0].ip||hops[0].host||null):null;
-  const originDisplay=!rawOrigin||looksLikeBase64(rawOrigin)?'Nedostupná (skrytá providerom)':rawOrigin;
+  const originDisplay=!rawOrigin||looksLikeBase64(rawOrigin)?'Unavailable (hidden by provider)':rawOrigin;
 
   // Origin IP highlight row
   checkY(10);
   box(margin,y,contentW,9,[255,248,230],BORDER,0.3);
-  sf(7,'bold',[180,100,0]); doc.text('Originálna IP odosielateľa:',margin+2,y+6);
+  sf(7,'bold',[180,100,0]); doc.text('Original sender IP:',margin+2,y+6);
   sf(7,'bold',BLK); doc.text(originDisplay,margin+65,y+6);
   y+=9;
 
   if(!hops.length){
     checkY(10); box(margin,y,contentW,9,WHT,BORDER,0.2);
-    sf(7,'normal',GRY); doc.text('Received: hlavičky nie sú dostupné.',margin+2,y+6); y+=9;
+    sf(7,'normal',GRY); doc.text('Received: headers not available.',margin+2,y+6); y+=9;
   } else {
     // Table header
     const hColX=[margin,margin+8,margin+80];
     checkY(thH);
     box(margin,y,contentW,thH,TH_BG,BORDER,0.3);
     sf(7,'bold',BLK);
-    ['#','IP / Hostname','Čas prijatia'].forEach((h,i)=>{
+    ['#','IP / Hostname','Timestamp'].forEach((h,i)=>{
       doc.text(h,hColX[i]+2,y+5.5);
       if(i<2) ln(hColX[i+1],y,hColX[i+1],y+thH,0.2,BORDER);
     });
@@ -5818,7 +5818,7 @@ async function generatePoliceReport(){
     hops.forEach((hop,i)=>{
       const ipOk=hop.ip&&!looksLikeBase64(hop.ip);
       const hostOk=hop.host&&!looksLikeBase64(hop.host);
-      let srv=ipOk&&hostOk&&hop.host!==hop.ip?hop.ip+' ('+hop.host+')':ipOk?hop.ip:hostOk?hop.host:'—';
+      let srv=ipOk&&hostOk&&hop.host!==hop.ip?hop.ip+' ('+hop.host+')':ipOk?hop.ip:hostOk?hop.host:'-';
       const srvLines=doc.splitTextToSize(srv,68);
       const rH=Math.max(rowH,srvLines.length*4.5+3);
       checkY(rH);
@@ -5835,14 +5835,14 @@ async function generatePoliceReport(){
 
   // ══ 4. ZÁVER ════════════════════════════════════════════════════
   checkY(20);
-  sf(9,'bold',BLK); doc.text('4. ZÁVER A ODPORÚČANIE',margin,y); y+=4;
+  sf(9,'bold',BLK); doc.text('4. CONCLUSION AND RECOMMENDATION',margin,y); y+=4;
   ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
   const score=d.score||0;
   let verdictText;
-  if(score>=70)      verdictText='Email je pravdepodobne legitímny. Technická analýza nenašla príznaky podvodu.';
-  else if(score>=40) verdictText='Email je podozrivý – odporúčame preveriť u odosielateľa overenými kanálmi pred ďalším konaním.';
-  else               verdictText='Email vykazuje znaky podvodu alebo hrozby – odporúčame okamžite kontaktovať Políciu SR.';
+  if(score>=70)      verdictText='Email appears to be legitimate. Technical analysis found no signs of fraud or spoofing.';
+  else if(score>=40) verdictText='Email is suspicious. We recommend verifying with the sender through trusted channels before taking action.';
+  else               verdictText='Email shows signs of fraud or threat. We recommend immediately contacting Law Enforcement.';
 
   const vLines=doc.splitTextToSize(verdictText,contentW-6);
   const vH=Math.max(12,vLines.length*5.5+6);
@@ -5853,7 +5853,7 @@ async function generatePoliceReport(){
   y+=vH+4;
 
   sf(7,'normal',GRY);
-  doc.text('Skóre legitímnosti: '+score+' / 100',margin,y);
+  doc.text('Legitimacy Score: '+score+' / 100',margin,y);
   y+=10;
 
   // ══ FOOTER ══════════════════════════════════════════════════════
@@ -5862,8 +5862,8 @@ async function generatePoliceReport(){
     doc.setPage(p);
     ln(margin,285,W-margin,285,0.4,BLK);
     sf(6,'normal',GRY);
-    doc.text('Vygenerované systémom NonDox  •  nondox.com',margin,289);
-    doc.text('Strana '+p+' / '+pageCount,W-margin,289,{align:'right'});
+    doc.text('Generated by NonDox  •  nondox.com',margin,289);
+    doc.text('Page '+p+' / '+pageCount,W-margin,289,{align:'right'});
   }
 
   doc.save('nondox-police-report-'+dateStr.replace(/\./g,'-')+'.pdf');
