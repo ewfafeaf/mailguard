@@ -5664,7 +5664,7 @@ async function generatePoliceReport(){
     if(y+need>278){ doc.addPage(); y=margin; drawPageHeader(); }
   };
   const riskColor=(score)=> score<=30?CLR_GREEN:score<=60?CLR_ORG:CLR_RED;
-  const riskLabel=(score)=> score<=30?'Nízke':score<=60?'Stredné':'Vysoké';
+  const riskLabel=(score)=> score<=30?'Low':score<=60?'Medium':'High';
 
   // ── Helper: detect base64-like strings ──
   const looksLikeBase64=(s)=> s && !/[.:]/.test(s) && /^[A-Za-z0-9+/=]{8,}$/.test(s);
@@ -5697,12 +5697,12 @@ async function generatePoliceReport(){
   ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
   const infoRows=[
-    ['Email (From):',        d.from||'—'],
-    ['Predmet (Subject):',   d.subject||'—'],
-    ['Dátum prijatia:',      d.date||'—'],
-    ['Reply-To:',            d.replyTo||'—'],
-    ['Return-Path:',         d.returnPath||'—'],
-    ['Analýza vykonaná:',    dateStr+' o '+timeStr],
+    ['From:',          d.from||'—'],
+    ['Subject:',       d.subject||'—'],
+    ['Date Received:', d.date||'—'],
+    ['Reply-To:',      d.replyTo||'—'],
+    ['Return-Path:',   d.returnPath||'—'],
+    ['Analysis Date:', dateStr+' o '+timeStr],
   ];
 
   const col1=50, rowH=8;
@@ -5728,7 +5728,7 @@ async function generatePoliceReport(){
   const thH=8;
   box(margin,y,contentW,thH,TH_BG,BORDER,0.3);
   sf(7,'bold',BLK);
-  ['CHECK','VÝSLEDOK','RIZIKO','DETAIL'].forEach((h,i)=>{
+  ['CHECK','RESULT','RISK','DETAIL'].forEach((h,i)=>{
     doc.text(h,colX[i]+2,y+5.5);
     if(i<3) ln(colX[i+1],y,colX[i+1],y+thH,0.2,BORDER);
   });
@@ -5743,11 +5743,11 @@ async function generatePoliceReport(){
   };
 
   const tableRows=[
-    ['SPF Check',         authVal(d.spf),          d.spf==='pass'?'Doména overená (SPF)':'SPF overenie zlyhalo'],
-    ['DKIM Check',        authVal(d.dkim),          d.dkim==='pass'?'Podpis platný':'DKIM podpis neplatný alebo chýba'],
-    ['DMARC Check',       authVal(d.dmarc),         d.dmarc==='pass'||d.dmarc==='present'?'DMARC politika prítomná':'DMARC politika chýba'],
-    ['From / Reply-To',   d.fromReturnMatch?{txt:'ZHODA',risk:0}:{txt:'ROZDIEL',risk:75}, d.fromReturnMatch?'From a Return-Path sa zhodujú':'From a Return-Path sú rozdielne domény'],
-    ['Spoofing',          d.spoofingDetected?{txt:'DETEGOVANÝ',risk:90}:{txt:'ČISTÝ',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Podozrivé znaky'):'Žiadne znaky spoofingu'],
+    ['SPF Check',              authVal(d.spf),          d.spf==='pass'?'Doména overená (SPF)':'SPF overenie zlyhalo'],
+    ['DKIM Check',             authVal(d.dkim),          d.dkim==='pass'?'Podpis platný':'DKIM podpis neplatný alebo chýba'],
+    ['DMARC Check',            authVal(d.dmarc),         d.dmarc==='pass'||d.dmarc==='present'?'DMARC politika prítomná':'DMARC politika chýba'],
+    ['From / Reply-To Match',  d.fromReturnMatch?{txt:'MATCH',risk:0}:{txt:'MISMATCH',risk:75}, d.fromReturnMatch?'From a Return-Path sa zhodujú':'From a Return-Path sú rozdielne domény'],
+    ['Spoofing Detection',     d.spoofingDetected?{txt:'DETECTED',risk:90}:{txt:'CLEAN',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Podozrivé znaky'):'Žiadne znaky spoofingu'],
   ];
 
   tableRows.forEach(([check,auth,detail],idx)=>{
@@ -5840,9 +5840,9 @@ async function generatePoliceReport(){
 
   const score=d.score||0;
   let verdictText;
-  if(score>=70)      verdictText='Email je pravdepodobne legitímny. Technická analýza nenachádza príznaky podvodu.';
-  else if(score>=40) verdictText='Email je podozrivý – odporúčame preveriť u odosielateľa overenými kanálmi.';
-  else               verdictText='Email vykazuje znaky podvodu alebo hrozby – okamžite kontaktujte Políciu SR.';
+  if(score>=70)      verdictText='Email je pravdepodobne legitímny. Technická analýza nenašla príznaky podvodu.';
+  else if(score>=40) verdictText='Email je podozrivý – odporúčame preveriť u odosielateľa overenými kanálmi pred ďalším konaním.';
+  else               verdictText='Email vykazuje znaky podvodu alebo hrozby – odporúčame okamžite kontaktovať Políciu SR.';
 
   const vLines=doc.splitTextToSize(verdictText,contentW-6);
   const vH=Math.max(12,vLines.length*5.5+6);
