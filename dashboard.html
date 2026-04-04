@@ -1516,6 +1516,10 @@ body::before{content:'';position:fixed;inset:0;
         <span style="font-size:16px;line-height:1">🔍</span>
         <span>DNS Checker</span>
       </button>
+      <button class="nav-item" id="navBlacklistChecker" onclick="showSection('blacklist-checker')">
+        <span style="font-size:16px;line-height:1">🚫</span>
+        <span>Blacklist Checker</span>
+      </button>
     </div>
 
     <!-- ACCOUNT -->
@@ -2518,6 +2522,47 @@ body::before{content:'';position:fixed;inset:0;
       </div>
     </div>
 
+    <div id="sectionBlacklist-checker" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:#ef4444"></div>IP & Domain Blacklist Checker</div>
+
+      <!-- Feature cards -->
+      <div class="ws-feature-grid">
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🛡️</div>
+          <div class="ws-fc-title">Spamhaus ZEN</div>
+          <div class="ws-fc-desc">Najdôveryhodnejší RBL — SBL, XBL a PBL v jednej databáze.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">📡</div>
+          <div class="ws-fc-title">SORBS DNSBL</div>
+          <div class="ws-fc-desc">Spam and Open Relay Blocking System — detekuje open relay servery.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🔒</div>
+          <div class="ws-fc-title">Barracuda BRBL</div>
+          <div class="ws-fc-desc">Barracuda Reputation Block List — reputačná databáza IP adries.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">⚡</div>
+          <div class="ws-fc-title">UCEPROTECT</div>
+          <div class="ws-fc-desc">Multi-level blacklist — individuálne IP aj celé sieťové rozsahy.</div>
+        </div>
+      </div>
+
+      <!-- Animated input -->
+      <div class="ws-fancy-wrap">
+        <div class="ws-fancy-inner">
+          <span class="ws-fancy-icon">🚫</span>
+          <input type="text" id="blInput" class="ws-fancy-input"
+            placeholder="8.8.8.8"
+            onkeydown="if(event.key==='Enter')analyzeBlacklist()"/>
+          <button class="ws-scan-btn" id="blBtn" onclick="analyzeBlacklist()">Check Blacklist →</button>
+        </div>
+      </div>
+
+      <div id="bl-results" style="display:none"></div>
+    </div>
+
     <div id="sectionPlans" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--accent2)"></div>Plány & Ceny</div>
       <div id="plansGrid" class="plans-grid"></div>
@@ -2877,7 +2922,7 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','analyze','historia','nastavenia','podpora','webskener','files','headers','team','plans','dns-checker'].forEach(id=>{
+  ['nova','analyze','historia','nastavenia','podpora','webskener','files','headers','team','plans','dns-checker','blacklist-checker'].forEach(id=>{
     const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
     if(!el) return;
     if(id===s){
@@ -2902,13 +2947,13 @@ function showSection(s){
       el.style.display='none';
     }
   });
-  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans','navDnsChecker'].forEach(id=>{
+  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans','navDnsChecker','navBlacklistChecker'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navDashboard',analyze:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans','dns-checker':'navDnsChecker'};
+  const map={nova:'navDashboard',analyze:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans','dns-checker':'navDnsChecker','blacklist-checker':'navBlacklistChecker'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans','dns-checker'].includes(s);
+  const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans','dns-checker','blacklist-checker'].includes(s);
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
   if(s==='nova')       loadNovaExtras();
   if(s==='analyze')    loadAnalyzeSection();
@@ -2920,8 +2965,10 @@ function showSection(s){
   if(s==='webskener') initWsPlaceholders();
   if(s==='files'        && !checkPlan('pro'))    showUpgradeModal('files');
   if(s==='headers'      && !checkPlan('pro'))    showUpgradeModal('headers');
-  if(s==='dns-checker'  && !checkPlan('school')) showUpgradeModal('dns-checker');
+  if(s==='dns-checker'       && !checkPlan('school')) showUpgradeModal('dns-checker');
   if(s==='dns-checker') initDnsPlaceholders();
+  if(s==='blacklist-checker' && !checkPlan('school')) showUpgradeModal('blacklist-checker');
+  if(s==='blacklist-checker') initBlPlaceholders();
 }
 
 /* ══════════════════════════════════════════
@@ -3052,6 +3099,144 @@ function displayDNSResults(data){
 
     <div class="res-section">
       <div class="res-section-title">DNS Records</div>
+      <table class="res-table"><tbody>${tableRows}</tbody></table>
+    </div>
+
+    <div class="res-section">
+      <div class="res-section-title">Recommendations</div>
+      ${recsHtml}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════
+   BLACKLIST CHECKER
+══════════════════════════════════════════ */
+const _BL_PLACEHOLDERS=['8.8.8.8','1.1.1.1','mail.google.com','192.168.1.1','smtp.example.com','185.220.101.1'];
+let _blPlaceholderTimer=null;
+
+function initBlPlaceholders(){
+  const inp=document.getElementById('blInput');
+  if(!inp||_blPlaceholderTimer) return;
+  let i=0;
+  _blPlaceholderTimer=setInterval(()=>{
+    if(document.activeElement===inp) return;
+    i=(i+1)%_BL_PLACEHOLDERS.length;
+    inp.style.transition='opacity .3s';
+    inp.style.opacity='0';
+    setTimeout(()=>{ inp.placeholder=_BL_PLACEHOLDERS[i]; inp.style.opacity='1'; },300);
+  },2800);
+}
+
+async function analyzeBlacklist(){
+  const input=document.getElementById('blInput').value.trim();
+  if(!input){ alert('Zadajte IP adresu alebo doménu!'); return; }
+
+  const btn=document.getElementById('blBtn');
+  const resultEl=document.getElementById('bl-results');
+  btn.disabled=true; btn.textContent='Checking…';
+  resultEl.style.display='none';
+
+  showTerminalOverlay('nondox-blacklist.sh');
+  termLine('[*]','Initializing NonDox Blacklist Checker v1.0...','info','muted',80);
+  termLine('[*]','Target: '+input,'info','info',80);
+  termLine('[*]','Resolving to IP address...','info','info',80);
+  termLine('[*]','Reversing IP for RBL lookup...','info','info',80);
+  termLine('[*]','Querying Spamhaus ZEN...','info','info',80);
+  termLine('[*]','Querying SORBS DNSBL...','info','info',80);
+  termLine('[*]','Querying Barracuda BRBL...','info','info',80);
+  termLine('[*]','Querying SpamCop, UCEPROTECT...','info','info',80);
+
+  try{
+    const response=await fetch('/api/blacklist-check',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({input})
+    });
+    const data=await response.json();
+
+    if(response.ok){
+      termLine(data.blacklisted?'[-]':'[+]',
+        data.blacklisted
+          ?`BLACKLISTED on ${data.count} of ${data.checked} lists`
+          :`CLEAN — not found on any of ${data.checked} blacklists`,
+        data.blacklisted?'err':'ok',data.blacklisted?'err':'ok',80);
+      if(data.resolvedFrom)
+        termLine('[*]','Resolved '+data.resolvedFrom+' → '+data.ip,'info','muted',80);
+      const scoreIcon=data.score>=80?'[+]':data.score>=40?'[*]':'[-]';
+      const scoreCls =data.score>=80?'ok':data.score>=40?'info':'err';
+      termLine(scoreIcon,'Reputation score: '+data.score+'/100',scoreCls,scoreCls,80);
+      termLine('[✓]','Blacklist check complete!','done','ok',80);
+
+      _termChain=_termChain.then(async()=>{
+        await new Promise(ok=>setTimeout(ok,500));
+        document.getElementById('wsTerminalOverlay')?.remove();
+        displayBlacklistResults(data);
+        resultEl.style.display='block';
+      });
+      await _termChain;
+    }else{
+      termLine('[-]','Error: '+data.error,'err','err',80);
+      await closeTerminalOverlay();
+      alert('Error: '+data.error);
+    }
+  }catch(error){
+    termLine('[-]','Network error: '+error.message,'err','err',80);
+    await closeTerminalOverlay();
+    alert('Error: '+error.message);
+  }finally{
+    btn.disabled=false; btn.textContent='Check Blacklist →';
+  }
+}
+
+function displayBlacklistResults(data){
+  const s=data.score;
+  const verdictCol=s>=80?'#22c55e':s>=60?'#4f8ef7':s>=40?'#f97316':'#ef4444';
+  const verdict=data.blacklisted
+    ?`Blacklisted on ${data.count} of ${data.checked} lists`
+    :`Clean — not found on ${data.checked} blacklists`;
+
+  const tableRows=data.lists.map(r=>{
+    const statusCls=r.listed?'status-fail':r.error?'status-error':'status-pass';
+    const statusTxt=r.listed?'LISTED':r.error?'ERROR':'CLEAN';
+    const detail=r.listed?(r.detail||r.returnCode||'Listed')
+      :r.error?'Timeout / unavailable':'Not listed';
+    const sevDot=r.severity==='high'?'#ef4444':r.severity==='medium'?'#f97316':'#6b7280';
+    return`<tr>
+      <td class="td-label">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${sevDot};margin-right:7px;vertical-align:middle;flex-shrink:0"></span>${escHtml(r.name)}
+      </td>
+      <td style="width:90px"><span class="status-badge ${statusCls}">${statusTxt}</span></td>
+      <td class="td-detail">${escHtml(detail)}</td>
+    </tr>`;
+  }).join('');
+
+  const recsHtml=!data.blacklisted
+    ?`<div style="color:#22c55e;font-size:.8rem;padding:10px 14px">✓ IP/domain is not listed on any blacklist</div>`
+    :`<div class="res-recs-list">
+        <div class="res-rec">
+          <div class="res-rec-title critical">Your IP is listed on ${data.count} blacklist${data.count!==1?'s':''}</div>
+          <div class="res-rec-desc">Email deliverability may be severely affected. Contact each RBL to request delisting.</div>
+        </div>
+        ${data.lists.filter(r=>r.listed).map(r=>`
+        <div class="res-rec">
+          <div class="res-rec-title warning">${escHtml(r.name)}${r.detail?' — '+escHtml(r.detail):''}</div>
+          <div class="res-rec-desc">Visit ${escHtml(r.host)} to submit a delisting request.</div>
+        </div>`).join('')}
+      </div>`;
+
+  const resolvedNote=data.resolvedFrom
+    ?`<div style="margin-top:4px;font-size:.72rem;color:#555e70">Resolved: ${escHtml(data.resolvedFrom)} → ${escHtml(data.ip)}</div>`:'';
+
+  document.getElementById('bl-results').innerHTML=`
+    <div class="dns-score-card">
+      <div class="dns-score-circle">${s}<span style="font-size:.95rem;font-weight:400;color:rgba(255,255,255,.4)">/100</span></div>
+      <div style="margin-top:10px;font-size:.9rem;font-weight:700;color:${verdictCol};letter-spacing:.02em">${escHtml(verdict)}</div>
+      <div style="margin-top:4px;font-size:.72rem;color:#555e70;letter-spacing:.06em;text-transform:uppercase">${escHtml(data.ip||data.input)}</div>
+      ${resolvedNote}
+    </div>
+
+    <div class="res-section">
+      <div class="res-section-title">Blacklist Results — ${data.clean} clean · ${data.count} listed · ${data.errors||0} errors</div>
       <table class="res-table"><tbody>${tableRows}</tbody></table>
     </div>
 
