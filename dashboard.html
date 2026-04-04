@@ -2922,18 +2922,19 @@ async function analyzeDNS(){
   btn.disabled=true; btn.textContent='Analyzujem…';
   resultEl.style.display='none';
 
-  // Fullscreen terminál (rovnaký ako Web skener)
+  // Fullscreen terminál — rýchle riadky (80ms medzi každým)
   showTerminalOverlay('nondox-dns.sh');
-  termLine('[*]','Initializing NonDox DNS checker v1.0...','info','muted',200);
-  termLine('[*]','Target domain: '+domain,'info','info',380);
-  termLine('[*]','Querying Google DNS API...','info','info',560);
-  termLine('[*]','Checking SPF record (TXT)...','info','info',900);
-  termLine('[*]','Verifying DKIM signature (default selector)...','info','info',1400);
-  termLine('[*]','Analyzing DMARC policy (_dmarc)...','info','info',1900);
-  termLine('[*]','Fetching MX records...','info','info',2400);
-  termLine('[*]','Calculating security score...','info','muted',2900);
+  termLine('[*]','Initializing NonDox DNS checker v1.0...','info','muted', 80);
+  termLine('[*]','Target domain: '+domain,                 'info','info',  80);
+  termLine('[*]','Querying Google DNS API...',             'info','info',  80);
+  termLine('[*]','Checking SPF record (TXT)...',          'info','info',  80);
+  termLine('[*]','Verifying DKIM signature...',           'info','info',  80);
+  termLine('[*]','Analyzing DMARC policy (_dmarc)...',   'info','info',  80);
+  termLine('[*]','Fetching MX records...',                'info','info',  80);
+  termLine('[*]','Calculating security score...',         'info','muted', 80);
 
   try{
+    // API beží paralelne s terminálovou animáciou
     const response=await fetch('/api/dns-check',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -2944,32 +2945,36 @@ async function analyzeDNS(){
     if(response.ok){
       termLine(data.spf.status==='PASS'?'[+]':'[-]',
         'SPF: '+(data.spf.status==='PASS'?'PASS — record found':'FAIL — no SPF record'),
-        data.spf.status==='PASS'?'ok':'err',data.spf.status==='PASS'?'ok':'err',3300);
+        data.spf.status==='PASS'?'ok':'err',data.spf.status==='PASS'?'ok':'err',80);
       termLine(data.dkim.status==='PASS'?'[+]':'[-]',
-        'DKIM: '+(data.dkim.status==='PASS'?'PASS — signature found':'NOT FOUND — no DKIM key'),
-        data.dkim.status==='PASS'?'ok':'err',data.dkim.status==='PASS'?'ok':'err',3600);
+        'DKIM: '+(data.dkim.status==='PASS'?'PASS — found':'NOT FOUND — no DKIM key'),
+        data.dkim.status==='PASS'?'ok':'err',data.dkim.status==='PASS'?'ok':'err',80);
       termLine(data.dmarc.exists?'[+]':'[-]',
         'DMARC: '+(data.dmarc.exists?'FOUND — p='+data.dmarc.policy:'MISSING — no DMARC policy'),
-        data.dmarc.exists?'ok':'err',data.dmarc.exists?'ok':'err',3900);
+        data.dmarc.exists?'ok':'err',data.dmarc.exists?'ok':'err',80);
       termLine(data.mx.count>0?'[+]':'[-]',
         'MX: '+data.mx.count+' mail server'+(data.mx.count!==1?'s':'')+' found',
-        data.mx.count>0?'ok':'err',data.mx.count>0?'ok':'err',4200);
+        data.mx.count>0?'ok':'err',data.mx.count>0?'ok':'err',80);
       const scoreIcon=data.score>=80?'[+]':data.score>=40?'[*]':'[-]';
       const scoreCls =data.score>=80?'ok':data.score>=40?'info':'err';
-      termLine(scoreIcon,'Final score: '+data.score+'/100',scoreCls,scoreCls,4500);
-      termLine('[✓]','DNS check complete!','done','ok',4800);
+      termLine(scoreIcon,'Final score: '+data.score+'/100',scoreCls,scoreCls,80);
+      termLine('[✓]','DNS check complete!','done','ok',80);
 
-      // Renderuj výsledky pod overlayom (bez blikania)
-      resultEl.style.display='block';
-      displayDNSResults(data);
-      await closeTerminalOverlay();
+      // Po skončení všetkých riadkov: 500ms pauza → skry overlay → zobraz výsledky
+      _termChain=_termChain.then(async()=>{
+        await new Promise(ok=>setTimeout(ok,500));
+        document.getElementById('wsTerminalOverlay')?.remove();
+        displayDNSResults(data);
+        resultEl.style.display='block';
+      });
+      await _termChain;
     }else{
-      termLine('[-]','Error: '+data.error,'err','err',3300);
+      termLine('[-]','Error: '+data.error,'err','err',80);
       await closeTerminalOverlay();
       alert('Error: '+data.error);
     }
   }catch(error){
-    termLine('[-]','Network error: '+error.message,'err','err',3300);
+    termLine('[-]','Network error: '+error.message,'err','err',80);
     await closeTerminalOverlay();
     alert('Error: '+error.message);
   }finally{
