@@ -4414,15 +4414,16 @@ async function exportPDF(filters={}){
   doc.setFillColor(18,18,26);
   doc.rect(0,0,pageW,22,'F');
 
-  // Shield circle
-  doc.setFillColor(255,255,255);
-  doc.circle(margin+5,11,4.5,'F');
-
-  // Logo text
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(15);
-  doc.setTextColor(255,255,255);
-  doc.text('NonDox',margin+13,13);
+  // Logo image
+  try{
+    const logoImg=new Image(); logoImg.src='nondox.png';
+    await new Promise((res,rej)=>{ logoImg.onload=res; logoImg.onerror=rej; });
+    const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight);
+    doc.addImage(logoImg,'PNG',margin,6,logoW,logoH);
+  }catch(e){
+    doc.setFont('helvetica','bold'); doc.setFontSize(15);
+    doc.setTextColor(255,255,255); doc.text('NonDox',margin,13);
+  }
 
   // Subtitle
   doc.setFont('helvetica','normal');
@@ -5620,8 +5621,15 @@ function generatePoliceReport(){
   fillRect(W/2,0,W/2,38,C.header2);
 
   // Logo a nazov
-  setFont(21,'bold',[255,255,255]);
-  doc.text('MAILGUARD',margin,14);
+  try{
+    const logoImg=new Image(); logoImg.src='nondox.png';
+    await new Promise((res,rej)=>{ logoImg.onload=res; logoImg.onerror=rej; });
+    const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight);
+    doc.addImage(logoImg,'PNG',margin,5,logoW,logoH);
+  }catch(e){
+    setFont(21,'bold',[255,255,255]);
+    doc.text('NonDox',margin,14);
+  }
 
   setFont(8,'bold',[210,220,255]);
   doc.text('BEZPECNOSTNY REPORT PRE POLICIU',margin,21);
