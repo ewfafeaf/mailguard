@@ -1440,6 +1440,16 @@ body::before{content:'';position:fixed;inset:0;
   color:var(--muted);font-size:.79rem}
 .hist-date-cell{color:var(--muted);font-size:.74rem;white-space:nowrap;line-height:1.5}
 
+.info-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;margin-left:8px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;transition:all .2s}
+.info-btn:hover{border-color:#4f8ef7;color:#4f8ef7}
+.info-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:99999;display:none;align-items:center;justify-content:center}
+.info-modal-overlay.active{display:flex}
+.info-modal{background:#1a1d27;border:1px solid #2e3350;border-radius:16px;padding:32px;max-width:480px;width:90%;position:relative}
+.info-modal h3{font-size:1.1rem;font-weight:800;margin-bottom:16px;color:#eeeef5}
+.info-modal p{font-size:.88rem;color:#7a82a0;line-height:1.7;margin-bottom:10px}
+.info-modal .close-btn{position:absolute;top:16px;right:16px;background:none;border:none;color:#7a82a0;font-size:1.2rem;cursor:pointer}
+.info-modal .close-btn:hover{color:#eeeef5}
+
 .bg-beams {
   position: fixed;
   inset: 0;
@@ -2258,7 +2268,7 @@ body::before{content:'';position:fixed;inset:0;
 
     <!-- Section: Web skener -->
     <div id="sectionWebskener" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Web skener</div>
+      <div class="dash-section-title"><div class="dot" style="background:var(--teal)"></div>Web skener<button class="info-btn" onclick="showInfoModal('web')">?</button></div>
 
       <!-- Feature cards — viditeľné pre všetkých -->
       <div class="ws-feature-grid">
@@ -2301,7 +2311,7 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Plány -->
     <!-- Section: Files -->
     <div id="sectionFiles" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov</div>
+      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov<button class="info-btn" onclick="showInfoModal('files')">?</button></div>
 
       <!-- Feature cards -->
       <div class="file-scanner-features">
@@ -2514,7 +2524,7 @@ body::before{content:'';position:fixed;inset:0;
     </div>
 
     <div id="sectionDns-checker" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#818cf8"></div>DNS & Email Security Checker</div>
+      <div class="dash-section-title"><div class="dot" style="background:#818cf8"></div>DNS & Email Security Checker<button class="info-btn" onclick="showInfoModal('dns')">?</button></div>
 
       <!-- Feature cards -->
       <div class="ws-feature-grid">
@@ -2579,7 +2589,7 @@ body::before{content:'';position:fixed;inset:0;
     </div>
 
     <div id="sectionBlacklist-checker" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#ef4444"></div>IP & Domain Blacklist Checker</div>
+      <div class="dash-section-title"><div class="dot" style="background:#ef4444"></div>IP & Domain Blacklist Checker<button class="info-btn" onclick="showInfoModal('blacklist')">?</button></div>
 
       <!-- Feature cards -->
       <div class="ws-feature-grid">
@@ -7384,6 +7394,66 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 </div>
+<div class="info-modal-overlay" id="infoModalOverlay" onclick="if(event.target===this)closeInfoModal()">
+  <div class="info-modal">
+    <button class="close-btn" onclick="closeInfoModal()">✕</button>
+    <h3 id="infoModalTitle"></h3>
+    <div id="infoModalBody"></div>
+    <button style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;font-weight:700;cursor:pointer;margin-top:16px" onclick="closeInfoModal()">Zavrieť</button>
+  </div>
+</div>
+<script>
+const INFO_DATA = {
+  web: {
+    title: '🌐 Web skener',
+    body: `<p>Web skener analyzuje bezpečnosť webových stránok a domén. Kontroluje:</p>
+           <p>🔒 <strong>SSL/TLS certifikát</strong> — platnosť, silu šifrovania a konfiguráciu HTTPS</p>
+           <p>🌍 <strong>WHOIS & doména</strong> — vek domény, registrátor a varovné signály</p>
+           <p>🛡️ <strong>VirusTotal</strong> — reputácia domény voči 90+ antivírusovým databázam</p>
+           <p>📡 <strong>Shodan</strong> — otvorené porty a sieťová bezpečnosť servera</p>
+           <p>📋 <strong>HTTP hlavičky</strong> — bezpečnostné hlavičky ako HSTS, CSP, X-Frame-Options</p>`
+  },
+  files: {
+    title: '📄 Analýza súborov',
+    body: `<p>Analyzuje PDF, DOCX a XLSX súbory na skryté hrozby. Detekuje:</p>
+           <p>⚠️ <strong>JavaScript v PDF</strong> — škodlivé skripty ktoré sa spustia pri otvorení</p>
+           <p>🔗 <strong>Podozrivé URL</strong> — odkazy na phishingové a malware stránky</p>
+           <p>📎 <strong>Vložené súbory</strong> — skryté prílohy v dokumentoch</p>
+           <p>🤖 <strong>Makrá VBA</strong> — automatizované skripty v Office dokumentoch</p>
+           <p>✅ <strong>Google Safe Browsing</strong> — kontrola všetkých URL v dokumente</p>`
+  },
+  dns: {
+    title: '🔍 DNS Checker',
+    body: `<p>DNS Checker overuje emailovú bezpečnosť tvojej domény. Kontroluje:</p>
+           <p>📧 <strong>SPF záznam</strong> — určuje ktoré servery smú posielať emaily za tvoju doménu</p>
+           <p>✍️ <strong>DKIM podpis</strong> — kryptograficky podpisuje emaily aby sa nedali falšovať</p>
+           <p>🛡️ <strong>DMARC politika</strong> — určuje čo sa stane s emailmi ktoré zlyhajú SPF/DKIM</p>
+           <p>📬 <strong>MX záznamy</strong> — overuje či doména správne prijíma emaily</p>
+           <p>💡 Správne nastavenie týchto záznamov chráni pred email spoofingom a phishingom.</p>`
+  },
+  blacklist: {
+    title: '🚫 Blacklist Checker',
+    body: `<p>Kontroluje či je IP adresa alebo doména na spam blacklistoch. Preveruje:</p>
+           <p>🔴 <strong>Spamhaus ZEN & XBL</strong> — najdôveryhodnejšie blacklisty, detekuje spam zdroje</p>
+           <p>🟠 <strong>SORBS DNSBL</strong> — open relay servery a spam zdroje</p>
+           <p>🟠 <strong>Barracuda BRBL</strong> — reputačná databáza IP adries</p>
+           <p>🟡 <strong>SpamCop, UCEPROTECT</strong> — používateľmi hlásené spam zdroje</p>
+           <p>💡 Ak je tvoja IP na blackliste, emaily ti môžu skončiť v spame príjemcov.</p>`
+  }
+};
+
+function showInfoModal(type) {
+  const data = INFO_DATA[type];
+  if (!data) return;
+  document.getElementById('infoModalTitle').textContent = data.title;
+  document.getElementById('infoModalBody').innerHTML = data.body;
+  document.getElementById('infoModalOverlay').classList.add('active');
+}
+
+function closeInfoModal() {
+  document.getElementById('infoModalOverlay').classList.remove('active');
+}
+</script>
 <script src="sentry.min.js"></script>
 <script>
   if (typeof Sentry !== 'undefined') {
