@@ -2,6 +2,39 @@
 // Primárny:  https://rdap.org/domain/DOMAIN  (IANA RDAP bootstrap, JSON)
 // Fallback:  https://who-dat.as93.net/DOMAIN.json (verejné API)
 
+const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
+
+async function getCache(key) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cache?cache_key=eq.${encodeURIComponent(key)}&expires_at=gt.${new Date().toISOString()}&select=data&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    return rows && rows[0] ? rows[0].data : null;
+  } catch(e) { return null; }
+}
+
+async function setCache(key, value, hours = 24) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/cache`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        cache_key: key,
+        data: value,
+        expires_at: new Date(Date.now() + hours * 3600000).toISOString()
+      })
+    });
+  } catch(e) {}
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -22,6 +55,10 @@ module.exports = async function handler(req, res) {
   const parts = clean.split('.');
   const domain = parts.length > 2 ? parts.slice(-2).join('.') : clean;
 
+  const cacheKey = 'whois:' + domain;
+  const cached = await getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
+
   console.log(`[whois-check] Looking up: ${domain}`);
 
   const result = await tryRDAP(domain) || await tryWhoDat(domain);
@@ -32,7 +69,9 @@ module.exports = async function handler(req, res) {
   }
 
   console.log(`[whois-check] ok – age_days=${result.age_days} registrar=${result.registrar}`);
-  return res.status(200).json({ ok: true, domain, ...result });
+  const whoisResult = { ok: true, domain, ...result };
+  await setCache(cacheKey, whoisResult, 48);
+  return res.status(200).json(whoisResult);
 };
 
 /* ═══════════════════════════════════════

@@ -1,6 +1,39 @@
 // Vercel Serverless Function – VirusTotal domain reputation check
 // Endpoint: GET /api/virustotal-check?host=DOMAIN
 
+const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
+
+async function getCache(key) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cache?cache_key=eq.${encodeURIComponent(key)}&expires_at=gt.${new Date().toISOString()}&select=data&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    return rows && rows[0] ? rows[0].data : null;
+  } catch(e) { return null; }
+}
+
+async function setCache(key, value, hours = 24) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/cache`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        cache_key: key,
+        data: value,
+        expires_at: new Date(Date.now() + hours * 3600000).toISOString()
+      })
+    });
+  } catch(e) {}
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -22,6 +55,10 @@ module.exports = async function handler(req, res) {
   // Použi root doménu
   const parts = clean.split('.');
   const domain = parts.length > 2 ? parts.slice(-2).join('.') : clean;
+
+  const cacheKey = 'vt:' + domain;
+  const cached = await getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
 
   console.log(`[virustotal] Checking domain: ${domain}`);
 
@@ -62,16 +99,9 @@ module.exports = async function handler(req, res) {
 
     console.log(`[virustotal] malicious=${malicious} suspicious=${suspicious} harmless=${harmless} total=${total}`);
 
-    return res.status(200).json({
-      ok: true,
-      domain,
-      malicious,
-      suspicious,
-      harmless,
-      undetected,
-      total,
-      reputation,
-    });
+    const vtResult = { ok: true, domain, malicious, suspicious, harmless, undetected, total, reputation };
+    await setCache(cacheKey, vtResult, 24);
+    return res.status(200).json(vtResult);
 
   } catch (err) {
     console.error('[virustotal] exception:', err.message);

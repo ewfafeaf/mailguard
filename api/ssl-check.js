@@ -3,6 +3,39 @@
 
 const tls = require('tls');
 
+const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
+
+async function getCache(key) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cache?cache_key=eq.${encodeURIComponent(key)}&expires_at=gt.${new Date().toISOString()}&select=data&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    return rows && rows[0] ? rows[0].data : null;
+  } catch(e) { return null; }
+}
+
+async function setCache(key, value, hours = 24) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/cache`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        cache_key: key,
+        data: value,
+        expires_at: new Date(Date.now() + hours * 3600000).toISOString()
+      })
+    });
+  } catch(e) {}
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -19,11 +52,16 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid hostname' });
   }
 
+  const cacheKey = 'ssl:' + clean;
+  const cached = await getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
+
   console.log(`[ssl-check] Connecting to ${clean}:443`);
 
   try {
     const result = await checkSSL(clean);
     console.log(`[ssl-check] grade=${result.grade} protocol=${result.protocol} daysLeft=${result.cert?.daysLeft}`);
+    await setCache(cacheKey, result, 12);
     return res.status(200).json(result);
   } catch (err) {
     console.error('[ssl-check] error:', err.message);
