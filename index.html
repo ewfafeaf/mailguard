@@ -694,9 +694,57 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
   90% {opacity:1}
   100%{transform:translateY(-10vh) scale(1);opacity:0}
 }
+
+@keyframes beam-1 {
+  0%   { transform: rotate(-45deg) translateY(-10%); opacity: 0.5; }
+  50%  { transform: rotate(-35deg) translateY(5%); opacity: 0.7; }
+  100% { transform: rotate(-45deg) translateY(-10%); opacity: 0.5; }
+}
+
+@keyframes beam-2 {
+  0%   { transform: rotate(45deg) translateY(10%); opacity: 0.4; }
+  50%  { transform: rotate(35deg) translateY(-5%); opacity: 0.6; }
+  100% { transform: rotate(45deg) translateY(10%); opacity: 0.4; }
+}
+
+.bg-beams {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-beam-1 {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 70%;
+  height: 130%;
+  background: linear-gradient(105deg, rgba(30, 60, 180, 0.45) 0%, rgba(20, 40, 120, 0.2) 40%, transparent 70%);
+  animation: beam-1 12s ease-in-out infinite;
+  transform-origin: top left;
+  filter: blur(8px);
+}
+
+.bg-beam-2 {
+  position: absolute;
+  top: -20%;
+  right: -20%;
+  width: 60%;
+  height: 120%;
+  background: linear-gradient(255deg, rgba(40, 80, 200, 0.35) 0%, rgba(20, 50, 150, 0.15) 40%, transparent 70%);
+  animation: beam-2 15s ease-in-out infinite;
+  transform-origin: top right;
+  filter: blur(8px);
+}
 </style>
 </head>
 <body>
+<div class="bg-beams">
+  <div class="bg-beam-1"></div>
+  <div class="bg-beam-2"></div>
+</div>
 
 
 
