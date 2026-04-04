@@ -5634,7 +5634,7 @@ function renderHeadersResult(d){
 /* ══════════════════════════════════════════
    POLICE REPORT (PDF)
 ══════════════════════════════════════════ */
-function generatePoliceReport(){
+async function generatePoliceReport(){
   const d=_lastHeaderResult;
   if(!d){ alert('Najprv spusti analyzu hlaviciek.'); return; }
   console.log('_lastHeaderResult:', JSON.stringify(_lastHeaderResult));
