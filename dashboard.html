@@ -303,11 +303,23 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
   0%,100%{box-shadow:0 0 0 1px rgba(0,212,255,.25),0 0 30px rgba(0,212,255,.08)}
   50%    {box-shadow:0 0 0 1px rgba(79,142,247,.5),0 0 50px rgba(79,142,247,.18)}}
 .ws-fancy-inner{display:flex;align-items:center;background:rgba(13,13,20,.9);
-  border-radius:12px;overflow:hidden;border:1px solid rgba(79,142,247,.2)}
+  border-radius:12px;overflow:hidden;border:1px solid rgba(79,142,247,.2);
+  transition:border-color .2s}
+.ws-fancy-inner:focus-within{border-color:#4f8ef7}
 .ws-fancy-icon{padding:0 14px;font-size:1.1rem;flex-shrink:0;color:var(--muted)}
-.ws-fancy-input{flex:1;background:transparent;border:none;outline:none;
-  padding:16px 0;font-size:.95rem;color:var(--text);font-family:inherit}
+.ws-fancy-input{flex:1;background:rgba(13,13,20,.9);border:none;outline:none;
+  padding:16px 0;font-size:.95rem;color:#e8eaf0;font-family:inherit;
+  -webkit-text-fill-color:#e8eaf0;caret-color:#e8eaf0}
 .ws-fancy-input::placeholder{color:var(--muted);transition:opacity .3s}
+/* Prevent browser autofill from flashing white */
+.ws-fancy-input:-webkit-autofill,
+.ws-fancy-input:-webkit-autofill:hover,
+.ws-fancy-input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px rgba(13,13,20,.9) inset !important;
+  -webkit-text-fill-color:#e8eaf0 !important;
+  caret-color:#e8eaf0;
+  transition:background-color 9999s ease-in-out 0s;
+}
 .ws-scan-btn{margin:6px;padding:10px 22px;border:none;border-radius:9px;
   background:linear-gradient(90deg,var(--teal),var(--accent));color:#000;
   font-weight:800;font-size:.88rem;cursor:pointer;font-family:inherit;
