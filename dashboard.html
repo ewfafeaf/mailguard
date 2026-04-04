@@ -5637,285 +5637,236 @@ function renderHeadersResult(d){
 async function generatePoliceReport(){
   const d=_lastHeaderResult;
   if(!d){ alert('Najprv spusti analyzu hlaviciek.'); return; }
-  console.log('_lastHeaderResult:', JSON.stringify(_lastHeaderResult));
 
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const W=210, margin=18;
+  const W=210, margin=18, contentW=W-2*margin;
   let y=margin;
 
   const now=new Date();
   const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
   const timeStr=now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
 
-  // ── Farby (tmavy profesionalny styl) ──
-  const C={
-    pageBg:   [15,  17,  23],   // #0f1117
-    header1:  [79,  142, 247],  // #4f8ef7
-    header2:  [124, 95,  247],  // #7c5ff7
-    text:     [232, 234, 240],  // #e8eaf0
-    muted:    [130, 140, 165],
-    accent:   [79,  142, 247],  // #4f8ef7 nadpisy
-    rowBg:    [26,  29,  39],   // #1a1d27
-    border:   [46,  51,  80],   // #2e3350
-    red:      [239, 68,  68],
-    green:    [52,  211, 153],
-    yellow:   [251, 191, 36],
-  };
+  // ── Colors (light professional) ──
+  const BLK=[0,0,0], WHT=[255,255,255], GRY=[100,100,100];
+  const CLR_GREEN=[34,197,94], CLR_ORG=[249,115,22], CLR_RED=[239,68,68];
+  const BORDER=[0,0,0];
+  const TH_BG=[240,240,240];
 
   // ── Helpers ──
-  const setFont=(size,style='normal',color=C.text)=>{
-    doc.setFontSize(size); doc.setFont('helvetica',style); doc.setTextColor(...color);
+  const sf=(sz,style='normal',rgb=BLK)=>{ doc.setFontSize(sz);doc.setFont('helvetica',style);doc.setTextColor(...rgb); };
+  const ln=(x1,y1,x2,y2,w=0.3,rgb=BORDER)=>{ doc.setDrawColor(...rgb);doc.setLineWidth(w);doc.line(x1,y1,x2,y2); };
+  const box=(x,bY,bW,bH,fill=WHT,stroke=BORDER,sw=0.3)=>{
+    doc.setFillColor(...fill); doc.setDrawColor(...stroke); doc.setLineWidth(sw);
+    doc.rect(x,bY,bW,bH,'FD');
   };
-  const hline=(x1,y1,x2,y2,color=C.border,w=0.3)=>{
-    doc.setDrawColor(...color); doc.setLineWidth(w); doc.line(x1,y1,x2,y2);
+  const checkY=(need=12)=>{
+    if(y+need>278){ doc.addPage(); y=margin; drawPageHeader(); }
   };
-  const fillRect=(x,ry,rw,rh,fill,radius=0)=>{
-    doc.setFillColor(...fill);
-    radius>0 ? doc.roundedRect(x,ry,rw,rh,radius,radius,'F') : doc.rect(x,ry,rw,rh,'F');
-  };
-  const checkY=(need=10)=>{
-    if(y+need>282){ doc.addPage(); fillRect(0,0,W,297,C.pageBg); y=margin; }
-  };
+  const riskColor=(score)=> score<=30?CLR_GREEN:score<=60?CLR_ORG:CLR_RED;
+  const riskLabel=(score)=> score<=30?'Nízke':score<=60?'Stredné':'Vysoké';
 
-  // ══ POZADIE ══════════════════════════════════════════════════════
-  fillRect(0,0,W,297,C.pageBg);
-
-  // ══ HLAVICKA – gradient simulovany dvoma obdlznikmi ══════════════
-  fillRect(0,0,W/2,38,C.header1);
-  fillRect(W/2,0,W/2,38,C.header2);
-
-  // Logo a nazov
-  try{
-    const logoImg=new Image(); logoImg.src='nondox.png';
-    await new Promise((res,rej)=>{ logoImg.onload=res; logoImg.onerror=rej; });
-    const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight);
-    doc.addImage(logoImg,'PNG',margin,5,logoW,logoH);
-  }catch(e){
-    setFont(21,'bold',[255,255,255]);
-    doc.text('NonDox',margin,14);
-  }
-
-  setFont(8,'bold',[210,220,255]);
-  doc.text('BEZPECNOSTNY REPORT PRE POLICIU',margin,21);
-
-  setFont(7,'normal',[180,195,240]);
-  doc.text('Vygenerovane: '+dateStr+' o '+timeStr,margin,28);
-
-  // Score badge
-  const score=d.score;
-  const scoreColor=score>=70?C.green:score>=40?C.yellow:C.red;
-  const scoreLabel=score>=70?'LEGITIMNY':score>=40?'PODOZRIVY':'HROZBA';
-  fillRect(W-52,5,42,28,scoreColor,3);
-  setFont(23,'bold',[15,17,23]);
-  doc.text(String(score),W-31,19,{align:'center'});
-  setFont(7,'bold',[15,17,23]);
-  doc.text(scoreLabel,W-31,25,{align:'center'});
-  setFont(6,'normal',[15,17,23]);
-  doc.text('skore / 100',W-31,29,{align:'center'});
-
-  y=46;
-
-  // ══ HELPERS PRE SEKCIE ════════════════════════════════════════════
-  const sectionHeader=(title)=>{
-    checkY(13);
-    fillRect(margin,y,W-2*margin,8,C.rowBg,2);
-    hline(margin,y,margin+3,y+8,C.accent,2);
-    setFont(9,'bold',C.accent);
-    doc.text(title,margin+5,y+5.5);
-    y+=12;
-  };
-
-  const dataRow=(label,value,valueColor=C.text)=>{
-    checkY(9);
-    fillRect(margin,y,W-2*margin,8,C.rowBg);
-    hline(margin,y,W-margin,y,C.border,0.2);
-    setFont(7,'bold',C.muted);
-    doc.text(label,margin+3,y+5.2);
-    setFont(8,'normal',valueColor);
-    const lines=doc.splitTextToSize(value||'—',W-margin-68);
-    doc.text(lines,74,y+5.2);
-    y+=Math.max(8,lines.length*5+3);
-  };
-
-  // Helper: detekuj ci retazec vyzera ako Base64 (ziadna bodka ani dvojbodka = nie je IP ani hostname)
+  // ── Helper: detect base64-like strings ──
   const looksLikeBase64=(s)=> s && !/[.:]/.test(s) && /^[A-Za-z0-9+/=]{8,}$/.test(s);
 
-  // ══ 1. ZAKLADNE INFORMACIE ════════════════════════════════════════
-  sectionHeader('1. ZAKLADNE INFORMACIE');
-  // Od (From) — zobraz celu hodnotu vratane emailu
-  dataRow('Od (From):',         d.from||'—');
-  dataRow('Predmet (Subject):', d.subject||'—');
-  dataRow('Datum emailu:',      d.date||'—');
-  dataRow('Reply-To:',          d.replyTo||'—');
-  dataRow('Return-Path:',       d.returnPath||'—');
-  dataRow('Pocet hopov:',       d.receivedHops!=null?String(d.receivedHops):'—');
-  y+=5;
-
-  // ══ 2. TECHNICKA ANALYZA ══════════════════════════════════════════
-  sectionHeader('2. TECHNICKA ANALYZA');
-
-  const authVal=(v)=>{
-    if(!v) return ['—', C.muted];
-    if(v==='pass')     return [v.toUpperCase(), C.green];
-    if(v==='fail')     return [v.toUpperCase(), C.red];
-    if(v==='softfail') return [v.toUpperCase(), C.yellow];
-    if(v==='present')  return [v.toUpperCase(), C.muted];
-    return [v.toUpperCase(), C.muted];
+  // ══ PAGE HEADER (reusable) ═══════════════════════════════════════
+  const drawPageHeader=()=>{
+    // Logo
+    try{
+      const logoImg=new Image(); logoImg.src='nondox.png';
+      const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight)||40;
+      doc.addImage(logoImg,'PNG',margin,margin,logoW,logoH);
+    }catch(e){
+      sf(16,'bold',BLK); doc.text('NonDox',margin,margin+8);
+    }
+    // Title (right side)
+    sf(11,'bold',BLK);
+    doc.text('BEZPEČNOSTNÝ REPORT PRE POLÍCIU',W-margin,margin+4,{align:'right'});
+    sf(8,'normal',GRY);
+    doc.text('Vygenerované: '+dateStr+' o '+timeStr,W-margin,margin+9,{align:'right'});
+    // Separator line
+    ln(margin,margin+13,W-margin,margin+13,0.5,BLK);
+    y=margin+19;
   };
 
-  const [spfTxt,  spfCol]  = authVal(d.spf);
-  const [dkimTxt, dkimCol] = authVal(d.dkim);
-  const [dmarcTxt,dmarcCol]= authVal(d.dmarc);
+  // ══ HEADER ═══════════════════════════════════════════════════════
+  drawPageHeader();
 
-  dataRow('SPF vysledok:',      spfTxt,   spfCol);
-  dataRow('DKIM vysledok:',     dkimTxt,  dkimCol);
-  dataRow('DMARC vysledok:',    dmarcTxt, dmarcCol);
-  dataRow('Return-Path zhoda:', d.fromReturnMatch?'ANO – zhoda':'NIE – rozdielne domeny', d.fromReturnMatch?C.green:C.red);
-  dataRow('Spoofing detekowany:',d.spoofingDetected?'ANO':'NIE', d.spoofingDetected?C.red:C.green);
-  y+=3;
+  // ══ 1. INFORMAČNÁ SEKCIA ════════════════════════════════════════
+  sf(9,'bold',BLK); doc.text('1. ZÁKLADNÉ INFORMÁCIE O EMAILY',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
-  // Spoofing flagy
-  if(d.spoofingDetected && d.spoofingFlags?.length){
-    checkY(10);
-    setFont(8,'bold',C.red);
-    doc.text('Detekowane indikatory podvodu:',margin+2,y);
-    y+=5;
-    for(const flag of d.spoofingFlags){
-      checkY(7);
-      fillRect(margin,y-1,W-2*margin,7,[35,20,20]);
-      setFont(7,'normal',C.text);
-      const lines=doc.splitTextToSize('• '+flag, W-2*margin-8);
-      doc.text(lines,margin+4,y+4);
-      y+=lines.length*5+2;
-    }
-  }
-  y+=5;
+  const infoRows=[
+    ['Email (From):',        d.from||'—'],
+    ['Predmet (Subject):',   d.subject||'—'],
+    ['Dátum prijatia:',      d.date||'—'],
+    ['Reply-To:',            d.replyTo||'—'],
+    ['Return-Path:',         d.returnPath||'—'],
+    ['Analýza vykonaná:',    dateStr+' o '+timeStr],
+  ];
 
-  // ══ 3. SIETOVA STOPA ═════════════════════════════════════════════
-  sectionHeader('3. SIETOVA STOPA (Received chain)');
+  const col1=50, rowH=8;
+  infoRows.forEach(([label,val])=>{
+    checkY(rowH);
+    box(margin,y,contentW,rowH,WHT,BORDER,0.2);
+    box(margin,y,col1,rowH,[248,248,248],BORDER,0.2);
+    sf(7,'bold',GRY); doc.text(label,margin+2,y+5.2);
+    sf(7,'normal',BLK);
+    const lines=doc.splitTextToSize(val,contentW-col1-4);
+    doc.text(lines[0]||'—',margin+col1+2,y+5.2);
+    y+=rowH;
+  });
+  y+=6;
 
-  // Parsuj Received headery z raw vstupu
+  // ══ 2. VÝSLEDKY ANALÝZY (tabuľka) ══════════════════════════════
+  sf(9,'bold',BLK); doc.text('2. VÝSLEDKY BEZPEČNOSTNEJ ANALÝZY',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+
+  // Table header
+  const colW=[55,28,28,contentW-55-28-28];
+  const colX=[margin, margin+55, margin+83, margin+111];
+  const thH=8;
+  box(margin,y,contentW,thH,TH_BG,BORDER,0.3);
+  sf(7,'bold',BLK);
+  ['CHECK','VÝSLEDOK','RIZIKO','DETAIL'].forEach((h,i)=>{
+    doc.text(h,colX[i]+2,y+5.5);
+    if(i<3) ln(colX[i+1],y,colX[i+1],y+thH,0.2,BORDER);
+  });
+  y+=thH;
+
+  const authVal=(v)=>{
+    if(!v||v==='—') return {txt:'—',risk:0};
+    if(v==='pass')  return {txt:'PASS',risk:0};
+    if(v==='fail')  return {txt:'FAIL',risk:80};
+    if(v==='softfail') return {txt:'SOFTFAIL',risk:55};
+    return {txt:v.toUpperCase(),risk:30};
+  };
+
+  const tableRows=[
+    ['SPF Check',         authVal(d.spf),          d.spf==='pass'?'Doména overená (SPF)':'SPF overenie zlyhalo'],
+    ['DKIM Check',        authVal(d.dkim),          d.dkim==='pass'?'Podpis platný':'DKIM podpis neplatný alebo chýba'],
+    ['DMARC Check',       authVal(d.dmarc),         d.dmarc==='pass'||d.dmarc==='present'?'DMARC politika prítomná':'DMARC politika chýba'],
+    ['From / Reply-To',   d.fromReturnMatch?{txt:'ZHODA',risk:0}:{txt:'ROZDIEL',risk:75}, d.fromReturnMatch?'From a Return-Path sa zhodujú':'From a Return-Path sú rozdielne domény'],
+    ['Spoofing',          d.spoofingDetected?{txt:'DETEGOVANÝ',risk:90}:{txt:'ČISTÝ',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Podozrivé znaky'):'Žiadne znaky spoofingu'],
+  ];
+
+  tableRows.forEach(([check,auth,detail],idx)=>{
+    const rowLines=doc.splitTextToSize(detail||'—',colW[3]-4);
+    const rH=Math.max(rowH,rowLines.length*4.5+3);
+    checkY(rH);
+    box(margin,y,contentW,rH,idx%2===0?WHT:[250,250,250],BORDER,0.2);
+    ['','','',''].forEach((_,i)=>{ if(i<3) ln(colX[i+1],y,colX[i+1],y+rH,0.2,BORDER); });
+
+    sf(7,'normal',BLK);   doc.text(check,colX[0]+2,y+5.2);
+    sf(7,'bold',auth.risk<=30?CLR_GREEN:auth.risk<=60?CLR_ORG:CLR_RED);
+    doc.text(auth.txt,colX[1]+2,y+5.2);
+    sf(7,'bold',riskColor(auth.risk));
+    doc.text(riskLabel(auth.risk),colX[2]+2,y+5.2);
+    sf(6,'normal',GRY);
+    doc.text(rowLines,colX[3]+2,y+4.5);
+    y+=rH;
+  });
+  y+=6;
+
+  // ══ 3. SIEŤOVÁ STOPA ════════════════════════════════════════════
+  sf(9,'bold',BLK); doc.text('3. SIEŤOVÁ STOPA (Received chain)',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+
   const parseReceivedChain=(rawHdrs)=>{
     if(!rawHdrs) return [];
     const unfolded=rawHdrs.replace(/\r\n/g,'\n').replace(/\n([ \t]+)/g,' ');
-    const hops=[];
-    for(const line of unfolded.split('\n')){
-      if(!/^received\s*:/i.test(line)) continue;
+    return unfolded.split('\n').filter(l=>/^received\s*:/i.test(l)).map(line=>{
       const val=line.slice(line.indexOf(':')+1).trim();
       const ipMatch  =val.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/);
       const hostMatch=val.match(/from\s+([^\s([\]]+)/i);
       const dateMatch=val.match(/;\s*(.+)$/);
-      // Ignoruj Base64-like hodnoty v hostname
       const rawHost=hostMatch?hostMatch[1]:null;
-      hops.push({
-        ip:   ipMatch ? ipMatch[1] : null,
-        host: rawHost && !looksLikeBase64(rawHost) ? rawHost : null,
-        time: dateMatch? dateMatch[1].trim().slice(0,40) : null,
-      });
-    }
-    return hops.reverse(); // chronologicky: odosielatel → prijimatel
+      return{
+        ip:   ipMatch?ipMatch[1]:null,
+        host: rawHost&&!looksLikeBase64(rawHost)?rawHost:null,
+        time: dateMatch?dateMatch[1].trim().slice(0,40):null,
+      };
+    }).reverse();
   };
 
   const hops=parseReceivedChain(d._rawHeaders);
-
-  // Originalna IP — prvy hop (odosielatel)
   const rawOrigin=hops.length?(hops[0].ip||hops[0].host||null):null;
-  const originDisplay= !rawOrigin || looksLikeBase64(rawOrigin)
-    ? 'Nedostupna (skryta providerom)'
-    : rawOrigin;
-  const originColor= (!rawOrigin||looksLikeBase64(rawOrigin)) ? C.muted : C.text;
+  const originDisplay=!rawOrigin||looksLikeBase64(rawOrigin)?'Nedostupná (skrytá providerom)':rawOrigin;
 
-  checkY(14);
-  fillRect(margin,y,W-2*margin,12,[30,20,45]);
-  hline(margin,y,margin,y+12,C.yellow,3);
-  setFont(7,'bold',C.yellow);
-  doc.text('Originalna IP odosielatela (posledny Received: from):',margin+5,y+5);
-  setFont(8,'bold',originColor);
-  doc.text(originDisplay,margin+5,y+10);
-  y+=16;
+  // Origin IP highlight row
+  checkY(10);
+  box(margin,y,contentW,9,[255,248,230],BORDER,0.3);
+  sf(7,'bold',[180,100,0]); doc.text('Originálna IP odosielateľa:',margin+2,y+6);
+  sf(7,'bold',BLK); doc.text(originDisplay,margin+65,y+6);
+  y+=9;
 
   if(!hops.length){
-    checkY(10);
-    fillRect(margin,y,W-2*margin,9,C.rowBg,2);
-    setFont(8,'normal',C.muted);
-    doc.text('Data nie su dostupne (Received: hlavicky chybaju).',margin+4,y+6);
-    y+=13;
+    checkY(10); box(margin,y,contentW,9,WHT,BORDER,0.2);
+    sf(7,'normal',GRY); doc.text('Received: hlavičky nie sú dostupné.',margin+2,y+6); y+=9;
   } else {
-    // Hlavicka tabulky
-    checkY(10);
-    fillRect(margin,y,W-2*margin,8,[35,40,65]);
-    setFont(7,'bold',C.accent);
-    doc.text('#',           margin+3,   y+5.5);
-    doc.text('IP / Hostname', margin+12, y+5.5);
-    doc.text('Cas prijatia',  margin+100,y+5.5);
-    y+=8;
+    // Table header
+    const hColX=[margin,margin+8,margin+80];
+    checkY(thH);
+    box(margin,y,contentW,thH,TH_BG,BORDER,0.3);
+    sf(7,'bold',BLK);
+    ['#','IP / Hostname','Čas prijatia'].forEach((h,i)=>{
+      doc.text(h,hColX[i]+2,y+5.5);
+      if(i<2) ln(hColX[i+1],y,hColX[i+1],y+thH,0.2,BORDER);
+    });
+    y+=thH;
 
     hops.forEach((hop,i)=>{
-      checkY(9);
-      fillRect(margin,y,W-2*margin,8,i%2===0?C.rowBg:[20,23,35]);
-      hline(margin,y,W-margin,y,C.border,0.15);
-
-      setFont(7,'bold',C.muted);
-      doc.text(String(i+1),margin+3,y+5.5);
-
-      // Zobraz IP + hostname, pri Base64-like hodnote zobraz —
-      const ipOk  = hop.ip   && !looksLikeBase64(hop.ip);
-      const hostOk= hop.host && !looksLikeBase64(hop.host);
-      let serverStr;
-      if(ipOk && hostOk && hop.host!==hop.ip) serverStr=hop.ip+' ('+hop.host+')';
-      else if(ipOk)   serverStr=hop.ip;
-      else if(hostOk) serverStr=hop.host;
-      else            serverStr='—';
-
-      setFont(7,'normal',serverStr==='—'?C.muted:C.text);
-      const serverLines=doc.splitTextToSize(serverStr,82);
-      doc.text(serverLines,margin+12,y+5.5);
-
-      setFont(6,'normal',C.muted);
-      const timeLines=doc.splitTextToSize(hop.time||'—',W-margin-115);
-      doc.text(timeLines,margin+100,y+5.5);
-
-      y+=Math.max(8,serverLines.length*4.5+3);
+      const ipOk=hop.ip&&!looksLikeBase64(hop.ip);
+      const hostOk=hop.host&&!looksLikeBase64(hop.host);
+      let srv=ipOk&&hostOk&&hop.host!==hop.ip?hop.ip+' ('+hop.host+')':ipOk?hop.ip:hostOk?hop.host:'—';
+      const srvLines=doc.splitTextToSize(srv,68);
+      const rH=Math.max(rowH,srvLines.length*4.5+3);
+      checkY(rH);
+      box(margin,y,contentW,rH,i%2===0?WHT:[250,250,250],BORDER,0.2);
+      ln(hColX[1],y,hColX[1],y+rH,0.2,BORDER);
+      ln(hColX[2],y,hColX[2],y+rH,0.2,BORDER);
+      sf(7,'normal',GRY);  doc.text(String(i+1),hColX[0]+2,y+5.2);
+      sf(7,'normal',srv==='—'?GRY:BLK); doc.text(srvLines,hColX[1]+2,y+5.2);
+      sf(6,'normal',GRY);  doc.text(doc.splitTextToSize(hop.time||'—',W-margin-82),hColX[2]+2,y+5.2);
+      y+=rH;
     });
   }
-  y+=5;
+  y+=6;
 
-  // ══ 4. ZAVER ══════════════════════════════════════════════════════
-  sectionHeader('4. ZAVER A ODPORUCANIE');
-  checkY(28);
+  // ══ 4. ZÁVER ════════════════════════════════════════════════════
+  checkY(20);
+  sf(9,'bold',BLK); doc.text('4. ZÁVER A ODPORÚČANIE',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
-  let verdictText, verdictBg;
-  if(score>=70){
-    verdictText='Email je pravdepodobne legitimny. Technicka analyza nenachadza priznaky podvodu.';
-    verdictBg=[20,45,30];
-  } else if(score>=40){
-    verdictText='Email je podozrivy – odporucame preverit u odosielatela overenymi kanalmi.';
-    verdictBg=[45,38,15];
-  } else {
-    verdictText='Email vykazuje znaky podvodu alebo hrozby – okamzite kontaktujte policiu SR.';
-    verdictBg=[45,15,15];
-  }
+  const score=d.score||0;
+  let verdictText;
+  if(score>=70)      verdictText='Email je pravdepodobne legitímny. Technická analýza nenachádza príznaky podvodu.';
+  else if(score>=40) verdictText='Email je podozrivý – odporúčame preveriť u odosielateľa overenými kanálmi.';
+  else               verdictText='Email vykazuje znaky podvodu alebo hrozby – okamžite kontaktujte Políciu SR.';
 
-  const vLines=doc.splitTextToSize(verdictText, W-2*margin-10);
-  const vH=Math.max(16, vLines.length*6+8);
-  fillRect(margin,y,W-2*margin,vH,verdictBg,3);
-  hline(margin,y,margin,y+vH,scoreColor,3);
-  setFont(10,'bold',scoreColor);
-  doc.text(vLines,margin+6,y+7);
-  y+=vH+8;
+  const vLines=doc.splitTextToSize(verdictText,contentW-6);
+  const vH=Math.max(12,vLines.length*5.5+6);
+  checkY(vH);
+  box(margin,y,contentW,vH,WHT,riskColor(100-score),0.5);
+  sf(8,'bold',riskColor(100-score));
+  doc.text(vLines,margin+3,y+6);
+  y+=vH+4;
 
-  // ══ PATICKA ═══════════════════════════════════════════════════════
+  sf(7,'normal',GRY);
+  doc.text('Skóre legitímnosti: '+score+' / 100',margin,y);
+  y+=10;
+
+  // ══ FOOTER ══════════════════════════════════════════════════════
   const pageCount=doc.getNumberOfPages();
   for(let p=1;p<=pageCount;p++){
     doc.setPage(p);
-    fillRect(0,284,W,13,C.rowBg);
-    setFont(6,'normal',C.muted);
-    doc.text('Tento report bol vygenerovany automaticky systemom NonDox. Nie je pravnym dokumentom.',margin,290);
-    doc.text('Strana '+p+' / '+pageCount,W-margin,290,{align:'right'});
+    ln(margin,285,W-margin,285,0.4,BLK);
+    sf(6,'normal',GRY);
+    doc.text('Vygenerované systémom NonDox  •  nondox.com',margin,289);
+    doc.text('Strana '+p+' / '+pageCount,W-margin,289,{align:'right'});
   }
 
-  doc.save('nondox-report.pdf');
+  doc.save('nondox-police-report-'+dateStr.replace(/\./g,'-')+'.pdf');
 }
 
 /* ══════════════════════════════════════════
