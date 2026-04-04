@@ -1482,7 +1482,6 @@ body::before{content:'';position:fixed;inset:0;
       <button class="nav-item" id="navDnsChecker" onclick="showSection('dns-checker')">
         <span style="font-size:16px;line-height:1">🔍</span>
         <span>DNS Checker</span>
-        <span class="badge-pro" style="background:rgba(99,102,241,.15);color:#818cf8">SCHOOL</span>
       </button>
     </div>
 
@@ -2459,18 +2458,6 @@ body::before{content:'';position:fixed;inset:0;
         </div>
       </div>
 
-      <!-- Terminal loading overlay (inline) -->
-      <div id="dnsTerminalWrap" class="term-inline-wrap">
-        <div class="wst-window">
-          <div class="wst-titlebar">
-            <div class="wst-dots"><span class="wst-dot r"></span><span class="wst-dot y"></span><span class="wst-dot g"></span></div>
-            <span class="wst-title">nondox-dns-check.sh</span>
-            <span style="width:60px"></span>
-          </div>
-          <div class="wst-body" id="dnsTermBody"><span class="wst-cursor" id="dnsTermCursor">█</span></div>
-        </div>
-      </div>
-
       <div id="dns-results" style="display:none">
         <div class="dns-score-card">
           <div class="dns-score-circle"><span id="dns-score">0</span><span style="font-size:1.1rem;font-weight:400;opacity:.7">/100</span></div>
@@ -2926,42 +2913,25 @@ function initDnsPlaceholders(){
   },2800);
 }
 
-function dnsTermLine(icon,text,iconCls='info',textCls='info',delay=340){
-  setTimeout(()=>{
-    const body=document.getElementById('dnsTermBody');
-    const cursor=document.getElementById('dnsTermCursor');
-    if(!body) return;
-    const div=document.createElement('div');
-    div.className='wst-line';
-    div.innerHTML=`<span class="wst-icon ${iconCls}">${escHtml(icon)}</span><span class="wst-text ${textCls}">${escHtml(text)}</span>`;
-    body.insertBefore(div,cursor);
-    requestAnimationFrame(()=>div.classList.add('wst-show'));
-    body.scrollTop=body.scrollHeight;
-  },delay);
-}
-
 async function analyzeDNS(){
   const domain=document.getElementById('dnsInput').value.trim();
   if(!domain){ alert('Zadajte doménu!'); return; }
 
-  // Reset & show terminal
-  document.getElementById('dns-results').style.display='none';
-  const wrap=document.getElementById('dnsTerminalWrap');
-  wrap.style.display='block';
-  const body=document.getElementById('dnsTermBody');
-  body.innerHTML='<span class="wst-cursor" id="dnsTermCursor">█</span>';
-
   const btn=document.getElementById('dnsBtn');
+  const resultEl=document.getElementById('dns-results');
   btn.disabled=true; btn.textContent='Analyzujem…';
+  resultEl.style.display='none';
 
-  // Terminal sequence
-  dnsTermLine('$','nondox-dns-check --domain '+domain,'ok','ok',0);
-  dnsTermLine('//','Initializing DNS resolver…','info','muted',350);
-  dnsTermLine('⟳','Checking SPF record…','info','info',800);
-  dnsTermLine('⟳','Verifying DKIM signature…','info','info',1400);
-  dnsTermLine('⟳','Analyzing DMARC policy…','info','info',2000);
-  dnsTermLine('⟳','Fetching MX records…','info','info',2600);
-  dnsTermLine('//','Calculating security score…','info','muted',3200);
+  // Fullscreen terminál (rovnaký ako Web skener)
+  showTerminalOverlay('nondox-dns.sh');
+  termLine('[*]','Initializing NonDox DNS checker v1.0...','info','muted',200);
+  termLine('[*]','Target domain: '+domain,'info','info',380);
+  termLine('[*]','Querying Google DNS API...','info','info',560);
+  termLine('[*]','Checking SPF record (TXT)...','info','info',900);
+  termLine('[*]','Verifying DKIM signature (default selector)...','info','info',1400);
+  termLine('[*]','Analyzing DMARC policy (_dmarc)...','info','info',1900);
+  termLine('[*]','Fetching MX records...','info','info',2400);
+  termLine('[*]','Calculating security score...','info','muted',2900);
 
   try{
     const response=await fetch('/api/dns-check',{
@@ -2972,22 +2942,36 @@ async function analyzeDNS(){
     const data=await response.json();
 
     if(response.ok){
-      dnsTermLine('✔','SPF: '+(data.spf.status==='PASS'?'PASS ✓':'FAIL ✗'),'ok',data.spf.status==='PASS'?'ok':'err',3700);
-      dnsTermLine('✔','DKIM: '+(data.dkim.status==='PASS'?'PASS ✓':'NOT FOUND'),'ok',data.dkim.status==='PASS'?'ok':'err',4000);
-      dnsTermLine('✔','DMARC: '+(data.dmarc.exists?'FOUND (p='+data.dmarc.policy+')':'MISSING'),'ok',data.dmarc.exists?'ok':'err',4300);
-      dnsTermLine('✔','MX: '+data.mx.count+' server'+(data.mx.count!==1?'s':''),'ok',data.mx.count>0?'ok':'err',4600);
-      dnsTermLine('✅','Score: '+data.score+'/100 — Analysis complete!','done','ok',5000);
-      setTimeout(()=>{
-        wrap.style.display='none';
-        displayDNSResults(data);
-      },5600);
+      termLine(data.spf.status==='PASS'?'[+]':'[-]',
+        'SPF: '+(data.spf.status==='PASS'?'PASS — record found':'FAIL — no SPF record'),
+        data.spf.status==='PASS'?'ok':'err',data.spf.status==='PASS'?'ok':'err',3300);
+      termLine(data.dkim.status==='PASS'?'[+]':'[-]',
+        'DKIM: '+(data.dkim.status==='PASS'?'PASS — signature found':'NOT FOUND — no DKIM key'),
+        data.dkim.status==='PASS'?'ok':'err',data.dkim.status==='PASS'?'ok':'err',3600);
+      termLine(data.dmarc.exists?'[+]':'[-]',
+        'DMARC: '+(data.dmarc.exists?'FOUND — p='+data.dmarc.policy:'MISSING — no DMARC policy'),
+        data.dmarc.exists?'ok':'err',data.dmarc.exists?'ok':'err',3900);
+      termLine(data.mx.count>0?'[+]':'[-]',
+        'MX: '+data.mx.count+' mail server'+(data.mx.count!==1?'s':'')+' found',
+        data.mx.count>0?'ok':'err',data.mx.count>0?'ok':'err',4200);
+      const scoreIcon=data.score>=80?'[+]':data.score>=40?'[*]':'[-]';
+      const scoreCls =data.score>=80?'ok':data.score>=40?'info':'err';
+      termLine(scoreIcon,'Final score: '+data.score+'/100',scoreCls,scoreCls,4500);
+      termLine('[✓]','DNS check complete!','done','ok',4800);
+
+      // Renderuj výsledky pod overlayom (bez blikania)
+      resultEl.style.display='block';
+      displayDNSResults(data);
+      await closeTerminalOverlay();
     }else{
-      dnsTermLine('✗','Error: '+data.error,'err','err',3700);
-      setTimeout(()=>{ wrap.style.display='none'; alert('Error: '+data.error); },4200);
+      termLine('[-]','Error: '+data.error,'err','err',3300);
+      await closeTerminalOverlay();
+      alert('Error: '+data.error);
     }
   }catch(error){
-    dnsTermLine('✗','Network error: '+error.message,'err','err',3700);
-    setTimeout(()=>{ wrap.style.display='none'; alert('Error: '+error.message); },4200);
+    termLine('[-]','Network error: '+error.message,'err','err',3300);
+    await closeTerminalOverlay();
+    alert('Error: '+error.message);
   }finally{
     btn.disabled=false; btn.textContent='Analyzovať →';
   }
@@ -3412,12 +3396,13 @@ async function webScan(){
   termLine(scoreIcon,`Final score: ${report.score}/100`,scoreCls,scoreCls,400);
   termLine('[✓]','Scan complete!','done','ok',350);
 
-  // Čakaj na koniec terminálovej animácie + fade
-  await closeTerminalOverlay();
-
-  // Vyrenderuj výsledky
+  // Vyrenderuj výsledky POD overlayom (žiadne blikanie keď overlay zmizne)
   console.log('[webScan] FINAL score:', report.score);
+  resultEl.style.display='block';
   resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report,shodanResult);
+
+  // Až potom zavrieme overlay — obsah je už pripravený pod ním
+  await closeTerminalOverlay();
 
   btn.disabled=false;
   btn.textContent='🌐 Skenovať';
