@@ -179,6 +179,24 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
   font-size:.6rem;font-weight:700;letter-spacing:.5px;flex-shrink:0}
 .badge-free{background:rgba(16,185,129,.15);color:#10b981}
 .badge-pro{background:rgba(245,158,11,.15);color:#f59e0b}
+
+/* ── DNS CHECKER ── */
+.dns-score-card{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;
+  padding:36px;border-radius:14px;text-align:center;margin-bottom:20px}
+.dns-score-circle{font-size:3.2rem;font-weight:800;line-height:1}
+.status-badge{padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:700;letter-spacing:.03em}
+.status-pass{background:#22c55e;color:#fff}
+.status-fail{background:#ef4444;color:#fff}
+.status-weak{background:#f97316;color:#fff}
+.status-not_found,.status-error{background:#6b7280;color:#fff}
+.dns-rec-card{padding:16px 18px;border-radius:9px;margin-bottom:12px;border-left:4px solid}
+.dns-rec-card h4{margin:0 0 4px;font-size:.88rem;font-weight:700}
+.dns-rec-card p{margin:0 0 8px;font-size:.82rem;color:#555;line-height:1.5}
+.rec-critical{background:#fff0f0;border-color:#ef4444}
+.rec-warning{background:#fffbeb;border-color:#f59e0b}
+.dns-fix-code{background:#1e1e1e;color:#22c55e;padding:10px 14px;border-radius:6px;
+  font-family:monospace;font-size:.8rem;margin-top:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+
 /* Hide old sidebar user panel */
 .sidebar-user{display:none!important}
 
@@ -1461,6 +1479,11 @@ body::before{content:'';position:fixed;inset:0;
         <span>Analýza hlavičiek</span>
         <span class="badge-pro" id="proBadgeHeaders">PRO</span>
       </button>
+      <button class="nav-item" id="navDnsChecker" onclick="showSection('dns-checker')">
+        <span style="font-size:16px;line-height:1">🔍</span>
+        <span>DNS Checker</span>
+        <span class="badge-pro" style="background:rgba(99,102,241,.15);color:#818cf8">SCHOOL</span>
+      </button>
     </div>
 
     <!-- ACCOUNT -->
@@ -2398,6 +2421,54 @@ body::before{content:'';position:fixed;inset:0;
       </div>
     </div>
 
+    <div id="sectionDns-checker" class="dash-section" style="display:none">
+      <div class="dash-section-title"><div class="dot" style="background:#818cf8"></div>DNS & Email Security Checker</div>
+
+      <div class="card" style="margin-bottom:20px;padding:28px 28px 24px">
+        <p style="margin:0 0 14px;font-size:.88rem;color:#7a82a0">Skontrolujte SPF, DKIM, DMARC a MX záznamy vašej domény</p>
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div style="flex:1">
+            <label style="display:block;font-size:.75rem;font-weight:600;color:#7a82a0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Doména (napr. skola.sk)</label>
+            <input type="text" id="dns-domain-input" placeholder="skola.sk"
+              style="width:100%;padding:11px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"
+              onkeydown="if(event.key==='Enter')analyzeDNS()">
+          </div>
+          <button onclick="analyzeDNS()" class="btn-primary" style="padding:11px 22px;white-space:nowrap">Analyzovať DNS →</button>
+        </div>
+      </div>
+
+      <div id="dns-loading" style="display:none;text-align:center;padding:40px">
+        <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto 14px"></div>
+        <p style="color:#7a82a0;font-size:.9rem">Kontrolujem DNS záznamy…</p>
+      </div>
+
+      <div id="dns-results" style="display:none">
+        <div class="dns-score-card">
+          <div class="dns-score-circle"><span id="dns-score">0</span><span style="font-size:1.1rem;font-weight:400;opacity:.7">/100</span></div>
+          <h3 id="dns-verdict" style="margin:10px 0 0;font-size:1.1rem;font-weight:600">Analyzing…</h3>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;padding:24px">
+          <h3 style="margin:0 0 16px;font-size:.95rem;font-weight:700">DNS Records Check</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+            <thead>
+              <tr style="border-bottom:1px solid #2e3350">
+                <th style="text-align:left;padding:8px 10px;color:#7a82a0;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Check</th>
+                <th style="text-align:left;padding:8px 10px;color:#7a82a0;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Status</th>
+                <th style="text-align:left;padding:8px 10px;color:#7a82a0;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Detail</th>
+              </tr>
+            </thead>
+            <tbody id="dns-records-tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="dns-recommendations" class="card" style="padding:24px">
+          <h3 style="margin:0 0 16px;font-size:.95rem;font-weight:700">⚠️ Odporúčania</h3>
+          <div id="dns-recommendations-list"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="sectionPlans" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:var(--accent2)"></div>Plány & Ceny</div>
       <div id="plansGrid" class="plans-grid"></div>
@@ -2757,7 +2828,7 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','analyze','historia','nastavenia','podpora','webskener','files','headers','team','plans'].forEach(id=>{
+  ['nova','analyze','historia','nastavenia','podpora','webskener','files','headers','team','plans','dns-checker'].forEach(id=>{
     const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
     if(!el) return;
     if(id===s){
@@ -2782,13 +2853,13 @@ function showSection(s){
       el.style.display='none';
     }
   });
-  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans'].forEach(id=>{
+  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans','navDnsChecker'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navDashboard',analyze:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans'};
+  const map={nova:'navDashboard',analyze:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans','dns-checker':'navDnsChecker'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans'].includes(s);
+  const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans','dns-checker'].includes(s);
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
   if(s==='nova')       loadNovaExtras();
   if(s==='analyze')    loadAnalyzeSection();
@@ -2798,13 +2869,76 @@ function showSection(s){
   if(s==='plans') renderPlans();
   if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeachers(); }
   if(s==='webskener') initWsPlaceholders();
-  if(s==='files'   && !checkPlan('pro')) showUpgradeModal('files');
-  if(s==='headers' && !checkPlan('pro')) showUpgradeModal('headers');
+  if(s==='files'        && !checkPlan('pro'))    showUpgradeModal('files');
+  if(s==='headers'      && !checkPlan('pro'))    showUpgradeModal('headers');
+  if(s==='dns-checker'  && !checkPlan('school')) showUpgradeModal('dns-checker');
 }
 
 /* ══════════════════════════════════════════
    PLANS
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   DNS CHECKER
+══════════════════════════════════════════ */
+async function analyzeDNS(){
+  const domain=document.getElementById('dns-domain-input').value.trim();
+  if(!domain){ alert('Zadajte doménu!'); return; }
+
+  document.getElementById('dns-loading').style.display='block';
+  document.getElementById('dns-results').style.display='none';
+
+  try{
+    const response=await fetch('/api/dns-check',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({domain})
+    });
+    const data=await response.json();
+    if(response.ok) displayDNSResults(data);
+    else alert('Error: '+data.error);
+  }catch(error){
+    alert('Error: '+error.message);
+  }finally{
+    document.getElementById('dns-loading').style.display='none';
+  }
+}
+
+function displayDNSResults(data){
+  document.getElementById('dns-results').style.display='block';
+  document.getElementById('dns-score').textContent=data.score;
+  const verdict=data.score>=80?'Excellent Security':data.score>=60?'Good Security':data.score>=40?'Needs Improvement':'Poor Security';
+  document.getElementById('dns-verdict').textContent=verdict;
+
+  const tbody=document.getElementById('dns-records-tbody');
+  tbody.innerHTML='';
+  const checks=[
+    {name:'SPF Record',   status:data.spf.status,   detail:data.spf.record||'Not found'},
+    {name:'DKIM Signature',status:data.dkim.status, detail:data.dkim.selector?'Selector: '+data.dkim.selector:'Not configured'},
+    {name:'DMARC Policy', status:data.dmarc.status, detail:data.dmarc.policy?'p='+data.dmarc.policy:'Not found'},
+    {name:'MX Records',   status:data.mx.status,    detail:data.mx.count+' mail server'+(data.mx.count!==1?'s':'')}
+  ];
+  checks.forEach(check=>{
+    const tr=document.createElement('tr');
+    tr.style.cssText='border-bottom:1px solid #2e3350';
+    tr.innerHTML=`<td style="padding:10px;font-size:.86rem">${check.name}</td>`+
+      `<td style="padding:10px"><span class="status-badge status-${check.status.toLowerCase()}">${check.status}</span></td>`+
+      `<td style="padding:10px;font-size:.82rem;color:#7a82a0;word-break:break-all">${check.detail}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const recList=document.getElementById('dns-recommendations-list');
+  recList.innerHTML='';
+  if(data.recommendations.length===0){
+    recList.innerHTML='<p style="color:#22c55e;font-size:.9rem">✅ Všetky kontroly prešli!</p>';
+  }else{
+    data.recommendations.forEach(rec=>{
+      recList.innerHTML+=`<div class="dns-rec-card rec-${rec.type}">`+
+        `<h4>${rec.title}</h4><p>${rec.description}</p>`+
+        `<div class="dns-fix-code">${rec.fix}</div></div>`;
+    });
+  }
+}
+
 function renderPlans(){
   const current = _currentPlan || 'free';
 
