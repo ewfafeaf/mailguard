@@ -110,7 +110,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
    MODERN SIDEBAR
    ═══════════════════════════════════════ */
 .modern-sidebar{position:fixed;left:0;top:0;height:100vh;width:200px;
-  background:rgba(15,17,27,.95);backdrop-filter:blur(20px);
+  background:#000000;
   border-right:1px solid rgba(79,142,247,.1);
   display:flex;flex-direction:column;padding:16px 10px;z-index:100}
 .sidebar-logo{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:24px}
@@ -1401,7 +1401,7 @@ body::before{content:'';position:fixed;inset:0;
 <aside class="modern-sidebar">
   <a href="index.html" class="logo-link">
     <div class="sidebar-logo">
-      <img src="nondox.png" alt="NonDox" style="height: 36px; width: auto; display: block; margin: 0 auto;">
+      <img src="nondox.png" alt="NonDox" style="height: 48px; width: auto; display: block; margin: 0 auto;">
     </div>
   </a>
 
@@ -1445,21 +1445,21 @@ body::before{content:'';position:fixed;inset:0;
           <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
         <span>Web skener</span>
-        <span class="badge-pro">PRO</span>
+        <span class="badge-pro" id="proBadgeWebskener">PRO</span>
       </button>
       <button class="nav-item" id="navFiles" onclick="showSection('files')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
         </svg>
         <span>Analýza súborov</span>
-        <span class="badge-pro">PRO</span>
+        <span class="badge-pro" id="proBadgeFiles">PRO</span>
       </button>
       <button class="nav-item" id="navHeaders" onclick="showSection('headers')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 7h16M4 12h16M4 17h16"/>
         </svg>
         <span>Analýza hlavičiek</span>
-        <span class="badge-pro">PRO</span>
+        <span class="badge-pro" id="proBadgeHeaders">PRO</span>
       </button>
     </div>
 
@@ -1831,6 +1831,22 @@ body::before{content:'';position:fixed;inset:0;
             <div class="az-tip-dots" id="azTipDots"></div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- Team Members (school/business only) -->
+      <div id="dashTeamCard" style="display:none;margin-top:16px">
+        <div class="team-card">
+          <div class="card-header">
+            <div class="card-icon">👥</div>
+            <div>
+              <div class="card-title" id="dashTeamTitle">Tím učiteľov</div>
+              <div class="card-subtitle">Pozvaní členovia vášho tímu</div>
+            </div>
+          </div>
+          <div class="card-content" style="padding-bottom:8px">
+            <div id="dashTeamList" style="font-size:.85rem;color:var(--muted)">Načítavam…</div>
+          </div>
         </div>
       </div>
     </div>
@@ -2497,6 +2513,12 @@ async function loadProfile(){
   // Zobraz sidebar položku tímu len pre school/business
   const navTeam=document.getElementById('navTeam');
   if(navTeam) navTeam.style.display=checkPlanSilent('school')?'flex':'none';
+  // Skryj PRO badge ak má platený plán
+  const hasPro=_currentPlan!=='free';
+  ['proBadgeWebskener','proBadgeFiles','proBadgeHeaders'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=hasPro?'none':'';
+  });
 }
 
 async function updateUserInfo(){
@@ -4783,8 +4805,51 @@ const _NOVA_TIPS=[
   'Ak dostanete email od "riaditeľa" s nezvyčajnou požiadavkou — vždy ho overte telefonicky pred akýmkoľvek konaním.',
 ];
 
+async function loadDashTeam(){
+  const card=document.getElementById('dashTeamCard');
+  const list=document.getElementById('dashTeamList');
+  const title=document.getElementById('dashTeamTitle');
+  if(!card||!list) return;
+
+  // Zobraz len pre school/business plán
+  if(_currentPlan!=='school'&&_currentPlan!=='business'){ card.style.display='none'; return; }
+  card.style.display='block';
+
+  const {data,error}=await _sb.from('team_members')
+    .select('id,member_email,full_name,status,created_at')
+    .eq('owner_id',_currentUser.id)
+    .order('created_at',{ascending:false});
+
+  if(error||!data?.length){
+    list.innerHTML=`<div style="padding:12px 0;color:var(--muted);font-style:italic">Zatiaľ žiadni členovia. Pozvite učiteľov v sekcii Tím.</div>`;
+    return;
+  }
+
+  if(title) title.textContent=`Tím učiteľov (${data.length})`;
+
+  list.innerHTML=data.map(m=>{
+    const initials=(m.full_name||m.member_email||'?')[0].toUpperCase();
+    const name=escHtml(m.full_name||m.member_email);
+    const email=escHtml(m.member_email);
+    const badgeClass=m.status==='joined'?'joined':'pending';
+    const statusText=m.status==='joined'?'Aktívny':'Čaká na registráciu';
+    const added=new Date(m.created_at).toLocaleDateString('sk-SK');
+    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.9rem;flex-shrink:0">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;color:#eeeef5;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+        <div style="font-size:.76rem;color:#8888aa">${email} · Pridaný ${added}</div>
+      </div>
+      <div class="team-badge ${badgeClass}" style="flex-shrink:0">${statusText}</div>
+    </div>`;
+  }).join('');
+}
+
 let _activityChart=null;
 async function loadNovaExtras(){
+  // ── Team Members card ──
+  loadDashTeam();
+
   // ── Tip dňa ──
   const tipEl=document.getElementById('novaTip');
   if(tipEl) tipEl.textContent=_NOVA_TIPS[Math.floor(Math.random()*_NOVA_TIPS.length)];
