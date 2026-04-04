@@ -3,7 +3,6 @@
 // 2. Shodan /shodan/host/{IP} → porty, softvér, OS
 
 const dns = require('dns').promises;
-const { getCache, setCache } = require('./cache-helper');
 
 const DANGEROUS_PORTS = {
   21:    { label:'FTP',           risk:'high' },
@@ -36,10 +35,6 @@ module.exports = async function handler(req, res) {
 
   const clean = host.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
   if (!/^[a-z0-9.-]+$/.test(clean)) return res.status(400).json({ error: 'Invalid hostname' });
-
-  const cacheKey = 'shodan:' + clean;
-  const cached = await getCache(cacheKey);
-  if (cached) return res.status(200).json(cached);
 
   const apiKey = process.env.SHODAN_API_KEY;
   if (!apiKey) return res.status(200).json({ ok: false, error: 'SHODAN_API_KEY nie je nastavený' });
@@ -108,7 +103,7 @@ module.exports = async function handler(req, res) {
 
   console.log(`[shodan] ports=${ports.join(',')} dangerous=${openDangerous.map(p=>p.port).join(',')}`);
 
-  const result = {
+  return res.status(200).json({
     ok:           true,
     ip,
     inShodan:     true,
@@ -121,7 +116,5 @@ module.exports = async function handler(req, res) {
     openDangerous,
     tags:         data.tags || [],
     lastUpdate:   data.last_update || null,
-  };
-  await setCache(cacheKey, result, 6);
-  return res.status(200).json(result);
+  });
 };

@@ -2,7 +2,6 @@
 // Nepotrebuje SSL Labs – výsledok do 3 sekúnd
 
 const tls = require('tls');
-const { getCache, setCache } = require('./cache-helper');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,16 +19,11 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid hostname' });
   }
 
-  const cacheKey = 'ssl:' + clean;
-  const cached = await getCache(cacheKey);
-  if (cached) return res.status(200).json(cached);
-
   console.log(`[ssl-check] Connecting to ${clean}:443`);
 
   try {
     const result = await checkSSL(clean);
     console.log(`[ssl-check] grade=${result.grade} protocol=${result.protocol} daysLeft=${result.cert?.daysLeft}`);
-    await setCache(cacheKey, result, 12);
     return res.status(200).json(result);
   } catch (err) {
     console.error('[ssl-check] error:', err.message);
