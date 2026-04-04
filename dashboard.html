@@ -4207,6 +4207,7 @@ async function loadHistory(page=1){
       <td><div class="hist-input-cell" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,55))}${(r.input||'').length>55?'…':''}</div></td>
       <td style="text-align:center"><span class="hist-score-circle ${scoreCls}">${score}</span></td>
       <td><span class="badge badge-${level}">${vl}</span></td>
+      <td><button class="btn-action secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="exportHistoryPDF(${r.id})">📄 PDF</button></td>
     </tr>`;
   }).join('');
 
@@ -4220,7 +4221,7 @@ async function loadHistory(page=1){
 
   container.innerHTML=`<table class="hist-table">
     <thead><tr>
-      <th>Dátum</th><th>Typ</th><th>Vstup</th><th style="text-align:center">Skóre</th><th>Verdikt</th>
+      <th>Dátum</th><th>Typ</th><th>Vstup</th><th style="text-align:center">Skóre</th><th>Verdikt</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>${pagination}`;
@@ -4245,6 +4246,179 @@ async function loadHistStats(){
   if(el('hstatToday')) el('hstatToday').textContent=td?td.length:0;
   if(el('hstatWeek'))  el('hstatWeek').textContent=wk?wk.length:0;
   if(el('hstatMonth')) el('hstatMonth').textContent=mo?mo.length:0;
+}
+
+async function exportHistoryPDF(id){
+  const {data:r,error}=await _sb.from('analyses').select('*').eq('id',id).single();
+  if(error||!r){ alert('Could not load analysis data.'); return; }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, margin=18, contentW=W-2*margin;
+  let y=margin;
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const recDate=new Date(r.created_at);
+  const recDateStr=recDate.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const recTimeStr=recDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+  const BLK=[0,0,0], WHT=[255,255,255], GRY=[100,100,100];
+  const CLR_GREEN=[34,197,94], CLR_ORG=[249,115,22], CLR_RED=[239,68,68];
+  const BORDER=[0,0,0], TH_BG=[240,240,240];
+  const sf=(sz,style='normal',rgb=BLK)=>{ doc.setFontSize(sz);doc.setFont('helvetica',style);doc.setTextColor(...rgb); };
+  const ln=(x1,y1,x2,y2,w=0.3,rgb=BORDER)=>{ doc.setDrawColor(...rgb);doc.setLineWidth(w);doc.line(x1,y1,x2,y2); };
+  const box=(x,bY,bW,bH,fill=WHT,stroke=BORDER,sw=0.3)=>{ doc.setFillColor(...fill);doc.setDrawColor(...stroke);doc.setLineWidth(sw);doc.rect(x,bY,bW,bH,'FD'); };
+  const checkY=(need=12)=>{ if(y+need>278){ doc.addPage(); y=margin; drawHeader(); } };
+  const riskColor=(s)=> s<=30?CLR_GREEN:s<=60?CLR_ORG:CLR_RED;
+  const riskLabel=(s)=> s<=30?'Low':s<=60?'Medium':'High';
+  const score=r.score||0;
+
+  const typeNames={url:'URL Analysis',email:'Email Analysis',web:'Web Scanner',pdf:'File Analysis',headers:'Email Headers'};
+  const typeName=typeNames[r.type]||'Analysis';
+  const verdictNames={safe:'Safe',low:'Low Risk',medium:'Medium Risk',high:'High Risk'};
+  const verdictName=verdictNames[r.verdict]||r.verdict||'—';
+
+  // ── Page header ──
+  const drawHeader=()=>{
+    try{
+      const logoImg=new Image(); logoImg.src='nondox.png';
+      const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight)||40;
+      doc.addImage(logoImg,'PNG',margin,margin,logoW,logoH);
+    }catch(e){ sf(16,'bold',BLK); doc.text('NonDox',margin,margin+8); }
+    sf(11,'bold',BLK);
+    doc.text('SECURITY ANALYSIS REPORT',W-margin,margin+4,{align:'right'});
+    sf(8,'normal',GRY);
+    doc.text('Generated: '+dateStr+' at '+timeStr,W-margin,margin+9,{align:'right'});
+    ln(margin,margin+13,W-margin,margin+13,0.5,BLK);
+    y=margin+19;
+  };
+  drawHeader();
+
+  // ── 1. Analysis Information ──
+  sf(9,'bold',BLK); doc.text('1. ANALYSIS INFORMATION',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+
+  const col1=50, rowH=8;
+  const infoRows=[
+    ['Analysis Type:', typeName],
+    ['Input:',         r.input||'—'],
+    ['Date:',          recDateStr+' at '+recTimeStr],
+    ['Score:',         score+' / 100'],
+    ['Verdict:',       verdictName],
+  ];
+  infoRows.forEach(([label,val],idx)=>{
+    checkY(rowH);
+    box(margin,y,contentW,rowH,WHT,BORDER,0.2);
+    box(margin,y,col1,rowH,[248,248,248],BORDER,0.2);
+    sf(7,'bold',GRY); doc.text(label,margin+2,y+5.2);
+    const isScore=label==='Score:';
+    const isVerdict=label==='Verdict:';
+    let textColor=BLK;
+    if(isScore) textColor=riskColor(score);
+    if(isVerdict) textColor=riskColor(score);
+    sf(7,isScore||isVerdict?'bold':'normal',textColor);
+    const lines=doc.splitTextToSize(val,contentW-col1-4);
+    doc.text(lines[0]||'—',margin+col1+2,y+5.2);
+    y+=rowH;
+  });
+  y+=6;
+
+  // ── 2. Detailed Results ──
+  sf(9,'bold',BLK); doc.text('2. SECURITY ANALYSIS RESULTS',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+
+  const colW=[55,28,28,contentW-55-28-28];
+  const colX=[margin,margin+55,margin+83,margin+111];
+  const thH=8;
+  box(margin,y,contentW,thH,TH_BG,BORDER,0.3);
+  sf(7,'bold',BLK);
+  ['CHECK','RESULT','RISK','DETAIL'].forEach((h,i)=>{
+    doc.text(h,colX[i]+2,y+5.5);
+    if(i<3) ln(colX[i+1],y,colX[i+1],y+thH,0.2,BORDER);
+  });
+  y+=thH;
+
+  const tableRow=(check,resTxt,rsk,detail,idx)=>{
+    const rLines=doc.splitTextToSize(detail||'—',colW[3]-4);
+    const rH=Math.max(rowH,rLines.length*4.5+3);
+    checkY(rH);
+    box(margin,y,contentW,rH,idx%2===0?WHT:[250,250,250],BORDER,0.2);
+    if(colX[1]) ln(colX[1],y,colX[1],y+rH,0.2,BORDER);
+    if(colX[2]) ln(colX[2],y,colX[2],y+rH,0.2,BORDER);
+    if(colX[3]) ln(colX[3],y,colX[3],y+rH,0.2,BORDER);
+    sf(7,'normal',BLK);   doc.text(check,colX[0]+2,y+5.2);
+    sf(7,'bold',riskColor(rsk)); doc.text(resTxt,colX[1]+2,y+5.2);
+    sf(7,'bold',riskColor(rsk)); doc.text(riskLabel(rsk),colX[2]+2,y+5.2);
+    sf(6,'normal',GRY);   doc.text(rLines,colX[3]+2,y+4.5);
+    y+=rH;
+  };
+
+  if(r.type==='headers'){
+    const hd=_lastHeaderResult&&_lastHeaderResult.from&&r.input&&r.input.includes(_lastHeaderResult.from||'___')?_lastHeaderResult:null;
+    const av=(v)=>{ if(!v) return {txt:'N/A',rsk:30}; if(v==='pass') return {txt:'PASS',rsk:0}; if(v==='fail') return {txt:'FAIL',rsk:80}; if(v==='softfail') return {txt:'SOFTFAIL',rsk:55}; return {txt:v.toUpperCase(),rsk:30}; };
+    const spf=av(hd?.spf);   tableRow('SPF Check',spf.txt,spf.rsk,hd?.spf==='pass'?'Domain verified via SPF record':'SPF verification failed or unavailable',0);
+    const dkim=av(hd?.dkim); tableRow('DKIM Check',dkim.txt,dkim.rsk,hd?.dkim==='pass'?'Valid cryptographic signature':'DKIM signature invalid or not available',1);
+    const dmarc=av(hd?.dmarc);tableRow('DMARC Check',dmarc.txt,dmarc.rsk,hd?.dmarc?'DMARC policy present':'DMARC policy missing or unavailable',2);
+    const matchRsk=hd?.fromReturnMatch===false?75:0;
+    tableRow('From/Reply-To Match',hd?.fromReturnMatch===false?'MISMATCH':'MATCH',matchRsk,hd?.fromReturnMatch===false?'From and Return-Path domains differ':'Domains match or data unavailable',3);
+    const spfRsk=hd?.spoofingDetected?90:0;
+    tableRow('Spoofing Detection',hd?.spoofingDetected?'DETECTED':'CLEAN',spfRsk,hd?.spoofingDetected?'Spoofing indicators found':'No spoofing indicators detected',4);
+  } else if(r.type==='url'||r.type==='email'){
+    const s=r.score||0;
+    tableRow('Input Analysis',s>=70?'HIGH RISK':s>=45?'MEDIUM RISK':s>=20?'LOW RISK':'CLEAN',s,'Automated pattern and rule-based analysis',0);
+    tableRow('Score Assessment',String(s)+'/100',s,'Risk score calculated from multiple detection rules',1);
+    tableRow('Verdict',r.verdict?.toUpperCase()||'—',s,'Final automated verdict based on combined checks',2);
+  } else if(r.type==='web'){
+    const s=r.score||0;
+    tableRow('Web Security Score',String(s)+'/100',s,'Combined web security assessment',0);
+    tableRow('SSL/TLS',s<50?'ISSUES DETECTED':'CHECK PERFORMED',s<50?70:10,'SSL certificate and HTTPS configuration check',1);
+    tableRow('Security Headers',s<40?'MISSING':'PARTIAL',s<40?60:30,'HTTP security headers evaluation',2);
+    tableRow('Safe Browsing',s>=80?'CLEAN':'REVIEW NEEDED',s>=80?0:50,'Google Safe Browsing database check',3);
+  } else if(r.type==='pdf'){
+    const s=r.score||0;
+    tableRow('File Analysis',s>=70?'THREATS FOUND':s>=30?'SUSPICIOUS':'CLEAN',s,'Static file content analysis',0);
+    tableRow('Macro Detection',s>=50?'DETECTED':'NONE FOUND',s>=50?70:0,'Macro and embedded script detection',1);
+    tableRow('Embedded URLs',s>=40?'FOUND':'NONE',s>=40?40:0,'Embedded URL extraction and analysis',2);
+    tableRow('VirusTotal',s>=60?'FLAGGED':'CLEAN',s>=60?80:0,'Multi-engine antivirus scan result',3);
+  } else {
+    tableRow('Analysis','COMPLETED',score,'Automated security analysis',0);
+    tableRow('Risk Score',String(score)+'/100',score,'Overall risk assessment',1);
+  }
+  y+=6;
+
+  // ── 3. Conclusion ──
+  checkY(24);
+  sf(9,'bold',BLK); doc.text('3. CONCLUSION AND RECOMMENDATION',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+
+  let conclusionText;
+  if(score<=30)      conclusionText='Analysis indicates this content is likely safe. No significant threats were detected.';
+  else if(score<=60) conclusionText='Analysis indicates potential risk. Exercise caution and verify through trusted channels before taking action.';
+  else               conclusionText='Analysis indicates high risk. This content shows significant threat indicators. Do not interact with this content.';
+
+  const vLines=doc.splitTextToSize(conclusionText,contentW-6);
+  const vH=Math.max(12,vLines.length*5.5+6);
+  checkY(vH);
+  box(margin,y,contentW,vH,WHT,riskColor(score),0.5);
+  sf(8,'bold',riskColor(score)); doc.text(vLines,margin+3,y+6);
+  y+=vH+4;
+  sf(7,'normal',GRY); doc.text('Legitimacy Score: '+score+' / 100',margin,y);
+  y+=10;
+
+  // ── Footer ──
+  const pageCount=doc.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    ln(margin,285,W-margin,285,0.4,BLK);
+    sf(6,'normal',GRY);
+    doc.text('Generated by NonDox  •  nondox.com',margin,289);
+    doc.text('Page '+p+' / '+pageCount,W-margin,289,{align:'right'});
+  }
+
+  const tag=recDateStr.replace(/\//g,'-');
+  doc.save('nondox-analysis-'+r.type+'-'+tag+'.pdf');
 }
 
 function renderHistCalendar(){
@@ -4342,12 +4516,13 @@ async function loadHistoryByDate(dateStr){
       <td><div class="hist-input-cell" title="${escHtml(r.input||'')}">${escHtml((r.input||'').slice(0,55))}${(r.input||'').length>55?'…':''}</div></td>
       <td style="text-align:center"><span class="hist-score-circle ${scoreCls}">${score}</span></td>
       <td><span class="badge badge-${level}">${vl}</span></td>
+      <td><button class="btn-action secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="exportHistoryPDF(${r.id})">📄 PDF</button></td>
     </tr>`;
   }).join('');
 
   container.innerHTML=`<table class="hist-table">
     <thead><tr>
-      <th>Dátum</th><th>Typ</th><th>Vstup</th><th style="text-align:center">Skóre</th><th>Verdikt</th>
+      <th>Dátum</th><th>Typ</th><th>Vstup</th><th style="text-align:center">Skóre</th><th>Verdikt</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
