@@ -4724,9 +4724,10 @@ async function exportHistoryPDF(id){
   const verdictName=verdictNames[r.verdict]||r.verdict||'—';
 
   // ── Page header ──
-  const drawHeader=()=>{
+  const drawHeader=async()=>{
     try{
       const logoImg=new Image(); logoImg.src='nondox.png';
+      await new Promise((res)=>{ logoImg.onload=res; logoImg.onerror=res; });
       const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight)||40;
       doc.addImage(logoImg,'PNG',margin,margin,logoW,logoH);
     }catch(e){ sf(16,'bold',BLK); doc.text('NonDox',margin,margin+8); }
@@ -6288,10 +6289,11 @@ async function generatePoliceReport(){
   const looksLikeBase64=(s)=> s && !/[.:]/.test(s) && /^[A-Za-z0-9+/=]{8,}$/.test(s);
 
   // ══ PAGE HEADER (reusable) ═══════════════════════════════════════
-  const drawPageHeader=()=>{
+  const drawPageHeader=async()=>{
     // Logo
     try{
       const logoImg=new Image(); logoImg.src='nondox.png';
+      await new Promise((res)=>{ logoImg.onload=res; logoImg.onerror=res; });
       const logoH=10; const logoW=logoH*(logoImg.naturalWidth/logoImg.naturalHeight)||40;
       doc.addImage(logoImg,'PNG',margin,margin,logoW,logoH);
     }catch(e){
