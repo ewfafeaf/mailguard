@@ -2424,22 +2424,51 @@ body::before{content:'';position:fixed;inset:0;
     <div id="sectionDns-checker" class="dash-section" style="display:none">
       <div class="dash-section-title"><div class="dot" style="background:#818cf8"></div>DNS & Email Security Checker</div>
 
-      <div class="card" style="margin-bottom:20px;padding:28px 28px 24px">
-        <p style="margin:0 0 14px;font-size:.88rem;color:#7a82a0">Skontrolujte SPF, DKIM, DMARC a MX záznamy vašej domény</p>
-        <div style="display:flex;gap:10px;align-items:flex-end">
-          <div style="flex:1">
-            <label style="display:block;font-size:.75rem;font-weight:600;color:#7a82a0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Doména (napr. skola.sk)</label>
-            <input type="text" id="dns-domain-input" placeholder="skola.sk"
-              style="width:100%;padding:11px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"
-              onkeydown="if(event.key==='Enter')analyzeDNS()">
-          </div>
-          <button onclick="analyzeDNS()" class="btn-primary" style="padding:11px 22px;white-space:nowrap">Analyzovať DNS →</button>
+      <!-- Feature cards -->
+      <div class="ws-feature-grid">
+        <div class="ws-fc">
+          <div class="ws-fc-icon">✉️</div>
+          <div class="ws-fc-title">SPF Verification</div>
+          <div class="ws-fc-desc">Overíme SPF záznam domény — kto smie odosielať emaily v jej mene.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🔐</div>
+          <div class="ws-fc-title">DKIM Signature</div>
+          <div class="ws-fc-desc">Kontrola kryptografického podpisu overujúceho autenticitu odoslaných emailov.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🛡️</div>
+          <div class="ws-fc-title">DMARC Policy</div>
+          <div class="ws-fc-desc">Politika čo sa stane s emailami ktoré zlyhajú SPF alebo DKIM kontrolu.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">📬</div>
+          <div class="ws-fc-title">MX Records</div>
+          <div class="ws-fc-desc">Overenie mail serverov zodpovedných za príjem emailov pre doménu.</div>
         </div>
       </div>
 
-      <div id="dns-loading" style="display:none;text-align:center;padding:40px">
-        <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto 14px"></div>
-        <p style="color:#7a82a0;font-size:.9rem">Kontrolujem DNS záznamy…</p>
+      <!-- Animated input — rovnaký štýl ako Web skener -->
+      <div class="ws-fancy-wrap">
+        <div class="ws-fancy-inner">
+          <span class="ws-fancy-icon">🔍</span>
+          <input type="text" id="dnsInput" class="ws-fancy-input"
+            placeholder="google.com"
+            onkeydown="if(event.key==='Enter')analyzeDNS()"/>
+          <button class="ws-scan-btn" id="dnsBtn" onclick="analyzeDNS()">Analyzovať →</button>
+        </div>
+      </div>
+
+      <!-- Terminal loading overlay (inline) -->
+      <div id="dnsTerminalWrap" class="term-inline-wrap">
+        <div class="wst-window">
+          <div class="wst-titlebar">
+            <div class="wst-dots"><span class="wst-dot r"></span><span class="wst-dot y"></span><span class="wst-dot g"></span></div>
+            <span class="wst-title">nondox-dns-check.sh</span>
+            <span style="width:60px"></span>
+          </div>
+          <div class="wst-body" id="dnsTermBody"><span class="wst-cursor" id="dnsTermCursor">█</span></div>
+        </div>
       </div>
 
       <div id="dns-results" style="display:none">
@@ -2872,6 +2901,7 @@ function showSection(s){
   if(s==='files'        && !checkPlan('pro'))    showUpgradeModal('files');
   if(s==='headers'      && !checkPlan('pro'))    showUpgradeModal('headers');
   if(s==='dns-checker'  && !checkPlan('school')) showUpgradeModal('dns-checker');
+  if(s==='dns-checker') initDnsPlaceholders();
 }
 
 /* ══════════════════════════════════════════
@@ -2880,12 +2910,58 @@ function showSection(s){
 /* ══════════════════════════════════════════
    DNS CHECKER
 ══════════════════════════════════════════ */
+const _DNS_PLACEHOLDERS=['google.com','microsoft.com','facebook.com','amazon.com','skola.sk','apple.com'];
+let _dnsPlaceholderTimer=null;
+
+function initDnsPlaceholders(){
+  const inp=document.getElementById('dnsInput');
+  if(!inp||_dnsPlaceholderTimer) return;
+  let i=0;
+  _dnsPlaceholderTimer=setInterval(()=>{
+    if(document.activeElement===inp) return;
+    i=(i+1)%_DNS_PLACEHOLDERS.length;
+    inp.style.transition='opacity .3s';
+    inp.style.opacity='0';
+    setTimeout(()=>{ inp.placeholder=_DNS_PLACEHOLDERS[i]; inp.style.opacity='1'; },300);
+  },2800);
+}
+
+function dnsTermLine(icon,text,iconCls='info',textCls='info',delay=340){
+  setTimeout(()=>{
+    const body=document.getElementById('dnsTermBody');
+    const cursor=document.getElementById('dnsTermCursor');
+    if(!body) return;
+    const div=document.createElement('div');
+    div.className='wst-line';
+    div.innerHTML=`<span class="wst-icon ${iconCls}">${escHtml(icon)}</span><span class="wst-text ${textCls}">${escHtml(text)}</span>`;
+    body.insertBefore(div,cursor);
+    requestAnimationFrame(()=>div.classList.add('wst-show'));
+    body.scrollTop=body.scrollHeight;
+  },delay);
+}
+
 async function analyzeDNS(){
-  const domain=document.getElementById('dns-domain-input').value.trim();
+  const domain=document.getElementById('dnsInput').value.trim();
   if(!domain){ alert('Zadajte doménu!'); return; }
 
-  document.getElementById('dns-loading').style.display='block';
+  // Reset & show terminal
   document.getElementById('dns-results').style.display='none';
+  const wrap=document.getElementById('dnsTerminalWrap');
+  wrap.style.display='block';
+  const body=document.getElementById('dnsTermBody');
+  body.innerHTML='<span class="wst-cursor" id="dnsTermCursor">█</span>';
+
+  const btn=document.getElementById('dnsBtn');
+  btn.disabled=true; btn.textContent='Analyzujem…';
+
+  // Terminal sequence
+  dnsTermLine('$','nondox-dns-check --domain '+domain,'ok','ok',0);
+  dnsTermLine('//','Initializing DNS resolver…','info','muted',350);
+  dnsTermLine('⟳','Checking SPF record…','info','info',800);
+  dnsTermLine('⟳','Verifying DKIM signature…','info','info',1400);
+  dnsTermLine('⟳','Analyzing DMARC policy…','info','info',2000);
+  dnsTermLine('⟳','Fetching MX records…','info','info',2600);
+  dnsTermLine('//','Calculating security score…','info','muted',3200);
 
   try{
     const response=await fetch('/api/dns-check',{
@@ -2894,12 +2970,26 @@ async function analyzeDNS(){
       body:JSON.stringify({domain})
     });
     const data=await response.json();
-    if(response.ok) displayDNSResults(data);
-    else alert('Error: '+data.error);
+
+    if(response.ok){
+      dnsTermLine('✔','SPF: '+(data.spf.status==='PASS'?'PASS ✓':'FAIL ✗'),'ok',data.spf.status==='PASS'?'ok':'err',3700);
+      dnsTermLine('✔','DKIM: '+(data.dkim.status==='PASS'?'PASS ✓':'NOT FOUND'),'ok',data.dkim.status==='PASS'?'ok':'err',4000);
+      dnsTermLine('✔','DMARC: '+(data.dmarc.exists?'FOUND (p='+data.dmarc.policy+')':'MISSING'),'ok',data.dmarc.exists?'ok':'err',4300);
+      dnsTermLine('✔','MX: '+data.mx.count+' server'+(data.mx.count!==1?'s':''),'ok',data.mx.count>0?'ok':'err',4600);
+      dnsTermLine('✅','Score: '+data.score+'/100 — Analysis complete!','done','ok',5000);
+      setTimeout(()=>{
+        wrap.style.display='none';
+        displayDNSResults(data);
+      },5600);
+    }else{
+      dnsTermLine('✗','Error: '+data.error,'err','err',3700);
+      setTimeout(()=>{ wrap.style.display='none'; alert('Error: '+data.error); },4200);
+    }
   }catch(error){
-    alert('Error: '+error.message);
+    dnsTermLine('✗','Network error: '+error.message,'err','err',3700);
+    setTimeout(()=>{ wrap.style.display='none'; alert('Error: '+error.message); },4200);
   }finally{
-    document.getElementById('dns-loading').style.display='none';
+    btn.disabled=false; btn.textContent='Analyzovať →';
   }
 }
 
@@ -2912,10 +3002,10 @@ function displayDNSResults(data){
   const tbody=document.getElementById('dns-records-tbody');
   tbody.innerHTML='';
   const checks=[
-    {name:'SPF Record',   status:data.spf.status,   detail:data.spf.record||'Not found'},
-    {name:'DKIM Signature',status:data.dkim.status, detail:data.dkim.selector?'Selector: '+data.dkim.selector:'Not configured'},
-    {name:'DMARC Policy', status:data.dmarc.status, detail:data.dmarc.policy?'p='+data.dmarc.policy:'Not found'},
-    {name:'MX Records',   status:data.mx.status,    detail:data.mx.count+' mail server'+(data.mx.count!==1?'s':'')}
+    {name:'SPF Record',    status:data.spf.status,   detail:data.spf.record||'Not found'},
+    {name:'DKIM Signature',status:data.dkim.status,  detail:data.dkim.selector?'Selector: '+data.dkim.selector:'Not configured'},
+    {name:'DMARC Policy',  status:data.dmarc.status, detail:data.dmarc.policy?'p='+data.dmarc.policy:'Not found'},
+    {name:'MX Records',    status:data.mx.status,    detail:data.mx.count+' mail server'+(data.mx.count!==1?'s':'')}
   ];
   checks.forEach(check=>{
     const tr=document.createElement('tr');
