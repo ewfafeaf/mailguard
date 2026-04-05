@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bezpečnostný test – NonDox</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 20%,rgba(239,68,68,.06) 0%,transparent 70%);pointer-events:none}
+.card{background:#1a1d27;border:1px solid #2e3350;border-radius:18px;padding:48px 40px;width:100%;max-width:520px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.icon{font-size:4rem;margin-bottom:20px;display:block}
+.badge{display:inline-block;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#ef4444;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:99px;margin-bottom:20px}
+h1{font-size:1.6rem;font-weight:800;margin-bottom:12px;color:#eeeef5}
+.subtitle{font-size:.95rem;color:#7a82a0;line-height:1.6;margin-bottom:32px}
+.tips{background:#22263a;border:1px solid #2e3350;border-radius:12px;padding:20px;text-align:left;margin-bottom:28px}
+.tips-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4f8ef7;margin-bottom:14px}
+.tip{display:flex;gap:10px;margin-bottom:10px;font-size:.85rem;color:#9ca3b8;line-height:1.5}
+.tip:last-child{margin-bottom:0}
+.tip-icon{flex-shrink:0;font-size:1rem}
+.btn{display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;font-size:.95rem;font-weight:700;text-decoration:none;box-shadow:0 4px 18px rgba(79,142,247,.28)}
+.footer{margin-top:24px;font-size:.78rem;color:#4a5070}
+.footer a{color:#4f8ef7;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="icon">🎣</span>
+  <div class="badge">⚠️ Toto bol bezpečnostný test</div>
+  <h1>Klikol si na phishing link!</h1>
+  <p class="subtitle">Neboj sa — toto bol len simulovaný test od tvojej školy. Žiadne dáta neboli odcudzené. Ale v reálnom živote by to mohlo dopadnúť inak.</p>
+
+  <div class="tips">
+    <div class="tips-title">💡 Ako rozpoznať phishing</div>
+    <div class="tip"><span class="tip-icon">🔍</span><span>Vždy skontroluj odosielateľa emailu — podvodníci používajú podobné adresy</span></div>
+    <div class="tip"><span class="tip-icon">🔗</span><span>Pred kliknutím prejdi myšou cez link a skontroluj URL v spodnej lište</span></div>
+    <div class="tip"><span class="tip-icon">⏰</span><span>Buď opatrný pri emailoch ktoré vytvárajú pocit urgentnosti</span></div>
+    <div class="tip"><span class="tip-icon">🔒</span><span>Nikdy nezadávaj heslo cez link z emailu — choď priamo na stránku</span></div>
+    <div class="tip"><span class="tip-icon">📞</span><span>Pri pochybnostiach zavolaj odosielateľovi a over či email naozaj poslal</span></div>
+  </div>
+
+  <a href="https://nondox.com" class="btn">Prejsť na NonDox →</a>
+  <div class="footer">Tento test bol vytvorený cez <a href="https://nondox.com">NonDox</a> — nástroj pre kybernetickú bezpečnosť škôl</div>
+</div>
+</body>
+</html>
