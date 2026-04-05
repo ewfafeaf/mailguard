@@ -2710,6 +2710,7 @@ const _sb = supabase.createClient(
 );
 
 let _currentUser = null;
+let _currentRole = 'admin';
 let _currentPlan = 'free';
 const FREE_DAILY_LIMIT = 3;
 const PLAN_RANK = { free: 0, pro: 1, school: 2, business: 3 };
@@ -2780,21 +2781,20 @@ function initParticles(){
 }
 
 async function loadProfile(){
-  const {data}=await _sb.from('profiles').select('plan').eq('id',_currentUser.id).single();
+  const {data}=await _sb.from('profiles').select('plan,role').eq('id',_currentUser.id).single();
   _currentPlan=data?.plan||'free';
-  const planLabel=PLAN_LABELS[_currentPlan]||'Free Plan';
+  _currentRole=data?.role||'admin';
+  const isTeacher=_currentRole==='teacher'&&_currentPlan==='school';
+  const planLabel=isTeacher?'Škola - Učiteľ':(PLAN_LABELS[_currentPlan]||'Free Plan');
   document.getElementById('sidebarPlan').textContent=planLabel;
   const planEl=document.getElementById('sidebarUserPlan');
   if(planEl) planEl.textContent=planLabel;
   const tcPlan=document.getElementById('topbarCompactPlan');
   if(tcPlan) tcPlan.textContent=planLabel;
-  // settings plan badge
   const settingsBadge=document.getElementById('settingsPlanBadge');
   if(settingsBadge) settingsBadge.textContent=planLabel;
-  // Zobraz sidebar položku tímu len pre school/business
   const navTeam=document.getElementById('navTeam');
-  if(navTeam) navTeam.style.display=checkPlanSilent('school')?'flex':'none';
-  // Skryj PRO badge ak má platený plán
+  if(navTeam) navTeam.style.display=(checkPlanSilent('school')&&!isTeacher)?'flex':'none';
   const hasPro=_currentPlan!=='free';
   ['proBadgeWebskener','proBadgeFiles','proBadgeHeaders'].forEach(id=>{
     const el=document.getElementById(id);
