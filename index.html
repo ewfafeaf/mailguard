@@ -2192,14 +2192,16 @@ async function doRegister(){
 
     await new Promise(resolve => setTimeout(resolve, 1500));
 
+    await new Promise(resolve => setTimeout(resolve, 2000));
     const {error: profileError} = await _sb.from('profiles')
-      .update({
+      .upsert({
+        id: regData.user.id,
+        email: regData.user.email,
         role: 'teacher',
         admin_id: invitation.owner_id,
         full_name: invitation.full_name,
         plan: 'school'
-      })
-      .eq('id', regData.user.id);
+      }, { onConflict: 'id' });
     if(profileError) console.error('❌ Profile update error:', profileError);
     else console.log('✅ Profile updated as teacher');
 
