@@ -2510,6 +2510,58 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
+        <!-- Phishing Simulator -->
+        <div class="team-card" id="phishingSimulatorCard">
+          <div class="card-header">
+            <div class="card-icon">🎣</div>
+            <div>
+              <h3 class="card-title">Phishing Simulator</h3>
+              <p class="card-subtitle">Otestuj odolnosť tímu voči phishingu. Pošli simulovaný phishing email a sleduj kto klikol.</p>
+            </div>
+          </div>
+          <div class="card-content">
+
+            <div class="team-invite-inputs" style="margin-bottom:16px">
+              <div class="ws-input-wrapper">
+                <label class="ws-label">Názov kampane</label>
+                <input type="text" id="phishingCampaignName" class="ws-input" placeholder="Test 1 – Apríl 2026"/>
+              </div>
+              <div class="ws-input-wrapper">
+                <label class="ws-label">Šablóna emailu</label>
+                <select id="phishingTemplate" class="ws-input" style="cursor:pointer">
+                  <option value="password">🔐 Obnovenie hesla (urgentné)</option>
+                  <option value="invoice">📄 Faktúra na schválenie</option>
+                  <option value="package">📦 Balík čaká na vyzdvihnutie</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.82rem;color:#f87171">
+              ⚠️ Emaily budú odoslané všetkým učiteľom v tíme. Používaj zodpovedne.
+            </div>
+
+            <button class="ws-btn primary" onclick="launchPhishingCampaign()" id="phishingLaunchBtn">
+              🎣 Spustiť kampaň
+            </button>
+            <div class="sc-msg" id="phishingMsg" style="margin-top:8px"></div>
+
+          </div>
+        </div>
+
+        <!-- Phishing Výsledky -->
+        <div class="team-card" id="phishingResultsCard" style="display:none">
+          <div class="card-header">
+            <div class="card-icon">📊</div>
+            <div>
+              <h3 class="card-title">Výsledky kampaní</h3>
+              <p class="card-subtitle">Prehľad phishing testov a ich výsledkov</p>
+            </div>
+          </div>
+          <div class="card-content">
+            <div id="phishingCampaignsList" class="team-empty">Načítavam kampane…</div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Modal: história učiteľa -->
@@ -3029,7 +3081,7 @@ function showSection(s){
   if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats(); }
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
-  if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeachers(); }
+  if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else { loadTeachers(); loadPhishingCampaigns(); } }
   if(s==='webskener') initWsPlaceholders();
   if(s==='files'        && !checkPlan('pro'))    showUpgradeModal('files');
   if(s==='headers'      && !checkPlan('pro'))    showUpgradeModal('headers');
@@ -7335,6 +7387,103 @@ document.addEventListener('DOMContentLoaded',()=>{
   initGrowthChart();
   initResourceChart();
 });
+
+async function launchPhishingCampaign() {
+  const name = document.getElementById('phishingCampaignName').value.trim();
+  const template = document.getElementById('phishingTemplate').value;
+  const btn = document.getElementById('phishingLaunchBtn');
+  const msg = document.getElementById('phishingMsg');
+
+  if (!name) { msg.innerHTML = '<span style="color:#ef4444">Zadaj názov kampane</span>'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Spúšťam…';
+  msg.innerHTML = '';
+
+  try {
+    // Načítaj učiteľov
+    const { data: members } = await _sb.from('team_members')
+      .select('member_email, member_name')
+      .eq('owner_id', _currentUser.id);
+
+    if (!members || members.length === 0) {
+      msg.innerHTML = '<span style="color:#ef4444">Nemáš žiadnych učiteľov v tíme</span>';
+      btn.disabled = false;
+      btn.textContent = '🎣 Spustiť kampaň';
+      return;
+    }
+
+    // Vytvor kampaň
+    const { data: campaign } = await _sb.from('phishing_campaigns')
+      .insert({ owner_id: _currentUser.id, name, template, status: 'running' })
+      .select('id')
+      .single();
+
+    if (!campaign) throw new Error('Nepodarilo sa vytvoriť kampaň');
+
+    // Zavolaj Edge Function
+    const res = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/send-phishing-campaign', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${(await _sb.auth.getSession()).data.session?.access_token}`
+      },
+      body: JSON.stringify({
+        campaign_id: campaign.id,
+        targets: members.map(m => ({ email: m.member_email, name: m.member_name })),
+        template
+      })
+    });
+
+    const result = await res.json();
+    if (result.ok) {
+      msg.innerHTML = `<span style="color:#22c55e">✅ Kampaň spustená! Odoslaných ${result.sent} emailov.</span>`;
+      document.getElementById('phishingCampaignName').value = '';
+      loadPhishingCampaigns();
+      document.getElementById('phishingResultsCard').style.display = 'block';
+    } else {
+      throw new Error(result.error || 'Chyba pri odosielaní');
+    }
+  } catch(e) {
+    msg.innerHTML = `<span style="color:#ef4444">❌ ${e.message}</span>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🎣 Spustiť kampaň';
+}
+
+async function loadPhishingCampaigns() {
+  const el = document.getElementById('phishingCampaignsList');
+  if (!el || !_currentUser) return;
+
+  const { data: campaigns } = await _sb.from('phishing_campaigns')
+    .select('*')
+    .eq('owner_id', _currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (!campaigns || campaigns.length === 0) {
+    el.innerHTML = '<div class="team-empty">Zatiaľ žiadne kampane</div>';
+    return;
+  }
+
+  document.getElementById('phishingResultsCard').style.display = 'block';
+
+  el.innerHTML = campaigns.map(c => {
+    const rate = c.sent_count > 0 ? Math.round((c.click_count / c.sent_count) * 100) : 0;
+    const rateColor = rate === 0 ? '#22c55e' : rate < 30 ? '#f59e0b' : '#ef4444';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div>
+          <div style="font-size:.9rem;font-weight:600;color:#eeeef5">${c.name}</div>
+          <div style="font-size:.75rem;color:#7a82a0;margin-top:2px">${new Date(c.created_at).toLocaleDateString('sk-SK')} · ${c.template}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.85rem;color:#7a82a0">${c.sent_count} odoslaných</div>
+          <div style="font-size:1rem;font-weight:700;color:${rateColor}">${c.click_count} kliklo (${rate}%)</div>
+        </div>
+      </div>`;
+  }).join('');
+}
 </script>
 
 <!-- Export Filter Modal -->
