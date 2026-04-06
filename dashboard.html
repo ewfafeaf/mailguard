@@ -7514,7 +7514,7 @@ async function launchPhishingCampaign() {
   btn.textContent = '⏳ Spúšťam…';
   msg.innerHTML = '';
   try {
-    const { data: members } = await _sb.from('team_members').select('member_email, full_name').eq('owner_id', _currentUser.id).eq('status', 'joined');
+    const { data: members } = await _sb.from('team_members').select('member_email, full_name').eq('owner_id', _currentUser.id).in('status', ['joined', 'active', 'invited']);
     if (!members || members.length === 0) {
       msg.innerHTML = '<span style="color:#ef4444">Nemáš žiadnych učiteľov v tíme</span>';
       btn.disabled = false;
