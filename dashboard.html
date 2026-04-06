@@ -7514,7 +7514,7 @@ async function launchPhishingCampaign() {
   btn.textContent = '⏳ Spúšťam…';
   msg.innerHTML = '';
   try {
-    const { data: members } = await _sb.from('team_members').select('member_email, member_name').eq('owner_id', _currentUser.id);
+    const { data: members } = await _sb.from('team_members').select('member_email, full_name').eq('owner_id', _currentUser.id).eq('status', 'joined');
     if (!members || members.length === 0) {
       msg.innerHTML = '<span style="color:#ef4444">Nemáš žiadnych učiteľov v tíme</span>';
       btn.disabled = false;
@@ -7527,7 +7527,7 @@ async function launchPhishingCampaign() {
     const res = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/send-phishing-campaign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.data.session?.access_token}` },
-      body: JSON.stringify({ campaign_id: campaign.id, targets: members.map(m => ({ email: m.member_email, name: m.member_name })), template })
+      body: JSON.stringify({ campaign_id: campaign.id, targets: members.map(m => ({ email: m.member_email, name: m.full_name })), template })
     });
     const result = await res.json();
     if (result.ok) {
