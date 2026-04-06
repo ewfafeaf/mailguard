@@ -2520,41 +2520,51 @@ body::before{content:'';position:fixed;inset:0;
             </div>
           </div>
           <div class="card-content">
-            <div class="team-invite-inputs" style="margin-bottom:16px">
-              <div class="ws-input-wrapper">
-                <label class="ws-label">Názov kampane</label>
-                <input type="text" id="phishingCampaignName" class="ws-input" placeholder="Test 1 – Apríl 2026"/>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+
+              <!-- Ľavý stĺpec: formulár -->
+              <div>
+                <div style="margin-bottom:14px">
+                  <label class="ws-label">Názov kampane</label>
+                  <input type="text" id="phishingCampaignName" class="ws-input" placeholder="Test 1 – Apríl 2026" style="margin-top:6px"/>
+                </div>
+                <div style="margin-bottom:16px">
+                  <label class="ws-label">Šablóna emailu</label>
+                  <select id="phishingTemplate" class="ws-input" style="cursor:pointer;margin-top:6px">
+                    <option value="password">🔐 Obnovenie hesla (IT Správa)</option>
+                    <option value="invoice">📄 Faktúra na schválenie</option>
+                    <option value="package">📦 Balík čaká na vyzdvihnutie</option>
+                  </select>
+                </div>
+                <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.8rem;color:#f87171">
+                  ⚠️ Emaily budú odoslané všetkým učiteľom v tíme.
+                </div>
+                <button class="ws-btn primary" onclick="launchPhishingCampaign()" id="phishingLaunchBtn" style="width:100%">
+                  🎣 Spustiť kampaň
+                </button>
+                <div class="sc-msg" id="phishingMsg" style="margin-top:8px"></div>
               </div>
-              <div class="ws-input-wrapper">
-                <label class="ws-label">Šablóna emailu</label>
-                <select id="phishingTemplate" class="ws-input" style="cursor:pointer">
-                  <option value="password">🔐 Obnovenie hesla</option>
-                  <option value="invoice">📄 Faktúra na schválenie</option>
-                  <option value="package">📦 Balík čaká na vyzdvihnutie</option>
-                </select>
+
+              <!-- Pravý stĺpec: história kampaní -->
+              <div>
+                <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">História kampaní</div>
+                <div id="phishingCampaignsList" style="display:flex;flex-direction:column;gap:8px">
+                  <div class="team-empty">Zatiaľ žiadne kampane</div>
+                </div>
               </div>
+
             </div>
-            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.82rem;color:#f87171">
-              ⚠️ Emaily budú odoslané všetkým učiteľom v tíme. Používaj zodpovedne.
-            </div>
-            <button class="ws-btn primary" onclick="launchPhishingCampaign()" id="phishingLaunchBtn">
-              🎣 Spustiť kampaň
-            </button>
-            <div class="sc-msg" id="phishingMsg" style="margin-top:8px"></div>
           </div>
         </div>
 
-        <!-- Phishing Výsledky -->
-        <div class="team-card" id="phishingResultsCard" style="display:none">
-          <div class="card-header">
-            <div class="card-icon">📊</div>
-            <div>
-              <h3 class="card-title">Výsledky kampaní</h3>
-              <p class="card-subtitle">Prehľad phishing testov a ich výsledkov</p>
+        <!-- Phishing Detail Modal -->
+        <div id="phishingDetailModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
+          <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:14px;width:min(600px,95vw);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+            <div style="padding:18px 20px;border-bottom:1px solid #2e3350;display:flex;align-items:center;justify-content:space-between">
+              <div id="phishingDetailTitle" style="font-weight:700;font-size:.95rem;color:#eeeef5"></div>
+              <button onclick="document.getElementById('phishingDetailModal').style.display='none'" style="background:none;border:none;color:#7a82a0;font-size:1.3rem;cursor:pointer">×</button>
             </div>
-          </div>
-          <div class="card-content">
-            <div id="phishingCampaignsList" class="team-empty">Načítavam kampane…</div>
+            <div id="phishingDetailBody" style="overflow-y:auto;padding:20px"></div>
           </div>
         </div>
 
@@ -7555,21 +7565,61 @@ async function loadPhishingCampaigns() {
     el.innerHTML = '<div class="team-empty">Zatiaľ žiadne kampane</div>';
     return;
   }
-  document.getElementById('phishingResultsCard').style.display = 'block';
   el.innerHTML = campaigns.map(c => {
     const rate = c.sent_count > 0 ? Math.round((c.click_count / c.sent_count) * 100) : 0;
     const rateColor = rate === 0 ? '#22c55e' : rate < 30 ? '#f59e0b' : '#ef4444';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div>
-        <div style="font-size:.9rem;font-weight:600;color:#eeeef5">${c.name}</div>
-        <div style="font-size:.75rem;color:#7a82a0;margin-top:2px">${new Date(c.created_at).toLocaleDateString('sk-SK')} · ${c.template}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:.85rem;color:#7a82a0">${c.sent_count} odoslaných</div>
-        <div style="font-size:1rem;font-weight:700;color:${rateColor}">${c.click_count} kliklo (${rate}%)</div>
+    const templateLabels = { password: '🔐 Obnovenie hesla', invoice: '📄 Faktúra', package: '📦 Balík' };
+    return `<div onclick="showPhishingDetail('${c.id}')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(79,142,247,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="min-width:0">
+          <div style="font-size:.88rem;font-weight:600;color:#eeeef5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+          <div style="font-size:.73rem;color:#7a82a0;margin-top:2px">${new Date(c.created_at).toLocaleDateString('sk-SK')} · ${templateLabels[c.template] || c.template}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:.8rem;color:#7a82a0">${c.sent_count} odoslaných</div>
+          <div style="font-size:.9rem;font-weight:700;color:${rateColor}">${c.click_count} kliklo (${rate}%)</div>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+async function showPhishingDetail(campaignId) {
+  const modal = document.getElementById('phishingDetailModal');
+  const title = document.getElementById('phishingDetailTitle');
+  const body = document.getElementById('phishingDetailBody');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div class="team-empty">Načítavam...</div>';
+  const { data: campaign } = await _sb.from('phishing_campaigns').select('*').eq('id', campaignId).single();
+  const { data: targets } = await _sb.from('phishing_targets').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: true });
+  if (!campaign) return;
+  const templateLabels = { password: '🔐 Obnovenie hesla', invoice: '📄 Faktúra', package: '📦 Balík' };
+  title.textContent = campaign.name;
+  const rate = campaign.sent_count > 0 ? Math.round((campaign.click_count / campaign.sent_count) * 100) : 0;
+  const rateColor = rate === 0 ? '#22c55e' : rate < 30 ? '#f59e0b' : '#ef4444';
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:#eeeef5">${campaign.sent_count}</div>
+        <div style="font-size:.75rem;color:#7a82a0">Odoslaných</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:${rateColor}">${campaign.click_count}</div>
+        <div style="font-size:.75rem;color:#7a82a0">Kliklo</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:${rateColor}">${rate}%</div>
+        <div style="font-size:.75rem;color:#7a82a0">Miera klikov</div>
+      </div>
+    </div>
+    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Šablóna: ${templateLabels[campaign.template] || campaign.template}</div>
+    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Individuálne výsledky</div>
+    ${targets && targets.length > 0 ? targets.map(t => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div style="font-size:.85rem;color:#eeeef5">${t.member_email}</div>
+        <div style="font-size:.8rem;font-weight:600;color:${t.clicked ? '#ef4444' : '#22c55e'}">${t.clicked ? '❌ Klikol' : '✅ Neklikol'}</div>
+      </div>`).join('') : '<div class="team-empty">Žiadne záznamy</div>'}
+  `;
 }
 </script>
 </body>
