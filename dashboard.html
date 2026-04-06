@@ -7523,10 +7523,12 @@ async function launchPhishingCampaign() {
     }
     const { data: campaign } = await _sb.from('phishing_campaigns').insert({ owner_id: _currentUser.id, name, template, status: 'running' }).select('id').single();
     if (!campaign) throw new Error('Nepodarilo sa vytvoriť kampaň');
-    const session = await _sb.auth.getSession();
+    const { data: { session } } = await _sb.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error('Nie si prihlásený');
     const res = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/send-phishing-campaign', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.data.session?.access_token}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ campaign_id: campaign.id, targets: members.map(m => ({ email: m.member_email, name: m.full_name })), template })
     });
     const result = await res.json();
