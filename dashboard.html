@@ -3646,7 +3646,44 @@ async function webScan(){
     const fakeObs = { tests: { 'strict-transport-security': {pass:true}, 'content-security-policy': {pass:true}, 'x-frame-options': {pass:true}, 'x-content-type-options': {pass:true}, 'referrer-policy': {pass:true}, 'permissions-policy': {pass:true} } };
     const fakeReport = { url: 'https://nondox.com', hostname: 'nondox.com', score: 100, recs: [], gsbChecked: true, sslResult: fakeSSL, whoisResult: fakeWhois, vtResult: fakeVT };
     showTerminalOverlay();
-    await new Promise(res => setTimeout(res, 6000));
+    const _tLines = [
+      {type:'info', text:'Initializing NonDox security scan...'},
+      {type:'info', text:'Resolving hostname: nondox.com'},
+      {type:'ok',   text:'DNS resolved → 76.76.21.21 (Vercel Inc.)'},
+      {type:'info', text:'Fetching SSL certificate...'},
+      {type:'ok',   text:'TLS Grade: A+ (TLSv1.3) — Certificate valid 89d'},
+      {type:'info', text:'Checking WHOIS database...'},
+      {type:'ok',   text:'Domain age: 1.2 years (registered 2025-01-01)'},
+      {type:'info', text:'Querying VirusTotal (90 engines)...'},
+      {type:'ok',   text:'Clean: 0/90 detections'},
+      {type:'info', text:'Querying Shodan intelligence database...'},
+      {type:'ok',   text:'2 open ports — no dangerous services exposed'},
+      {type:'info', text:'Scanning security headers...'},
+      {type:'ok',   text:'HSTS: PRESENT'},
+      {type:'ok',   text:'CSP: PRESENT'},
+      {type:'info', text:'Calculating security score...'},
+      {type:'ok',   text:'Final score: 100/100'},
+      {type:'ok',   text:'Scan complete! ✓'},
+    ];
+    let _tDelay = 300;
+    for (const line of _tLines) {
+      await new Promise(r => setTimeout(r, _tDelay));
+      _tDelay = 280 + Math.random() * 200;
+      const prefix = line.type === 'ok' ? '[+]' : '[*]';
+      const color = line.type === 'ok' ? '#3fb950' : '#58a6ff';
+      const overlay = document.getElementById('wsTerminalOverlay');
+      if (overlay) {
+        const lineEl = overlay.querySelector('.wst-lines') || overlay.querySelector('div');
+        if (lineEl) {
+          const span = document.createElement('div');
+          span.style.cssText = `color:${color};font-family:monospace;font-size:.82rem;padding:1px 0`;
+          span.textContent = `${prefix} ${line.text}`;
+          lineEl.appendChild(span);
+          lineEl.scrollTop = lineEl.scrollHeight;
+        }
+      }
+    }
+    await new Promise(res => setTimeout(res, 800));
     const overlay = document.getElementById('wsTerminalOverlay');
     if (overlay) overlay.remove();
     _resultEl.style.display = 'block';
