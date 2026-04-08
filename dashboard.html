@@ -7258,6 +7258,20 @@ async function submitTicket(){
     const cc=document.getElementById('charCount');if(cc) cc.textContent='0';
     showToast('Ticket odoslaný','success');
     loadTickets();
+    const currentUserEmail = _currentUser.email;
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer re_ATz3hTR1_QJ8kSBxfDFnGCpPU2iadNtvm'
+      },
+      body: JSON.stringify({
+        from: 'NonDox Support <noreply@nondox.com>',
+        to: 'nondox.support@gmail.com',
+        subject: `[NonDox Ticket] ${type} — ${selectedPriority}`,
+        html: `<div style="font-family:sans-serif;max-width:600px"><h2>Nový support ticket</h2><p><b>Od:</b> ${currentUserEmail}</p><p><b>Typ:</b> ${type}</p><p><b>Priorita:</b> ${selectedPriority}</p><p><b>Popis:</b></p><p>${description}</p></div>`
+      })
+    });
   }
 }
 
