@@ -526,18 +526,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar-w);flex:1;padding:24px 36px;min-height:calc(100vh - var(--nav-h));overflow-x:hidden;
   position:relative;overflow:hidden}
-.main::before{content:'';position:fixed;top:-80%;left:-80%;width:260%;height:260%;
-  background:
-    radial-gradient(circle 1200px at 15% 25%,rgba(79,142,247,.85) 0%,rgba(79,142,247,.5) 20%,rgba(79,142,247,.2) 40%,transparent 60%),
-    radial-gradient(circle 1100px at 85% 75%,rgba(124,95,247,.75) 0%,rgba(124,95,247,.45) 20%,rgba(124,95,247,.18) 40%,transparent 60%),
-    radial-gradient(circle 1000px at 50% 50%,rgba(0,212,255,.6) 0%,rgba(0,212,255,.3) 20%,transparent 50%);
-  filter:blur(140px);animation:ultraMove 18s ease-in-out infinite;pointer-events:none;z-index:0}
-.main::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%;
-  background:
-    radial-gradient(ellipse 900px 1200px at 75% 25%,rgba(255,107,53,.6) 0%,rgba(255,107,53,.3) 25%,transparent 55%),
-    radial-gradient(ellipse 1000px 900px at 25% 75%,rgba(34,197,94,.5) 0%,rgba(34,197,94,.25) 25%,transparent 55%),
-    radial-gradient(circle 800px at 60% 40%,rgba(255,59,59,.4) 0%,transparent 50%);
-  filter:blur(150px);animation:ultraMove2 22s ease-in-out infinite reverse;pointer-events:none;z-index:0}
+.main::before{content:'';position:fixed;top:-200px;left:-200px;width:800px;height:800px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(59,130,246,.3),transparent 70%);
+  filter:blur(120px);animation:ultraMove 20s ease-in-out infinite;pointer-events:none;z-index:0}
+
+.main::after{content:'';position:fixed;bottom:-200px;right:-200px;width:800px;height:800px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(148,163,184,.15),transparent 70%);
+  filter:blur(120px);animation:ultraMove2 25s ease-in-out infinite reverse;pointer-events:none;z-index:0}
 @keyframes ultraMove{
   0%,100%{transform:translate(0,0) scale(1) rotate(0deg)}
   33%    {transform:translate(-30%,25%) scale(1.2) rotate(15deg)}
