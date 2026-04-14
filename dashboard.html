@@ -1739,12 +1739,27 @@ body::before{content:'';position:fixed;inset:0;
         <!-- Row 1: Stat karty -->
         <div style="grid-column:1/-1;display:flex;gap:12px">
           <div class="stat-card" style="flex:1.2">
-            <div class="stat-label">Bezpečnostné skóre</div>
-            <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px">
-              <div class="stat-score-big" id="statScore">—</div>
-              <div class="stat-score-sub">/ 100</div>
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">BEZPEČNOSTNÉ SKÓRE</div>
+            <div style="display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 120 120" width="110" height="110">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(79,142,247,.1)" stroke-width="10"/>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="url(#scoreGrad)" stroke-width="10"
+                  stroke-linecap="round"
+                  stroke-dasharray="314"
+                  stroke-dashoffset="80"
+                  transform="rotate(-90 60 60)"
+                  id="scoreRing"/>
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4f8ef7"/>
+                    <stop offset="100%" stop-color="#00ff88"/>
+                  </linearGradient>
+                </defs>
+                <text x="60" y="55" text-anchor="middle" font-size="26" font-weight="800" fill="#eeeef5" font-family="system-ui" id="scoreText">74</text>
+                <text x="60" y="72" text-anchor="middle" font-size="10" fill="rgba(120,130,160,.8)" font-family="system-ui">/100</text>
+              </svg>
             </div>
-            <div class="stat-icon">🛡️</div>
+            <div style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:4px">Celkové hodnotenie</div>
           </div>
           <div class="stat-card" style="flex:1.2">
             <div class="stat-label">Posledná aktivita</div>
@@ -4806,6 +4821,15 @@ async function loadStats(){
   if(scoreEl){
     scoreEl.textContent=score;
     scoreEl.style.color=score>=70?'#22c55e':score>=40?'#ff9500':'#ff3b3b';
+  }
+  const ring = document.getElementById('scoreRing');
+  const scoreSvgEl = document.getElementById('scoreText');
+  if (ring && scoreSvgEl) {
+    scoreSvgEl.textContent = score;
+    const circumference = 314;
+    const offset = circumference - (score / 100) * circumference;
+    ring.setAttribute('stroke-dashoffset', offset);
+    ring.style.stroke = score >= 70 ? 'url(#scoreGrad)' : score >= 40 ? '#ff9500' : '#ff3b3b';
   }
 
   // Threat breakdown badges
