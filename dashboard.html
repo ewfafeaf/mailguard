@@ -1868,105 +1868,102 @@ body::before{content:'';position:fixed;inset:0;
             </div>
           </div>
           <svg id="threatMapSvg" viewBox="0 0 800 360" style="width:100%;height:220px;border-radius:10px;background:rgba(10,12,20,.7)">
-            <!-- Ocean background -->
-            <rect width="800" height="360" fill="rgba(10,12,20,.0)"/>
+    <!-- Ocean background grid -->
+    <rect width="800" height="360" fill="rgba(8,10,18,.0)"/>
+    <line x1="0" y1="90" x2="800" y2="90" stroke="rgba(79,142,247,.05)" stroke-width=".5"/>
+    <line x1="0" y1="180" x2="800" y2="180" stroke="rgba(79,142,247,.05)" stroke-width=".5"/>
+    <line x1="0" y1="270" x2="800" y2="270" stroke="rgba(79,142,247,.05)" stroke-width=".5"/>
+    <line x1="200" y1="0" x2="200" y2="360" stroke="rgba(79,142,247,.05)" stroke-width=".5"/>
+    <line x1="400" y1="0" x2="400" y2="360" stroke="rgba(79,142,247,.05)" stroke-width=".5"/>
+    <line x1="600" y1="0" x2="600" y2="360" stroke="rgba(79,142,247,.05)" stroke-width=".5"/>
 
-            <!-- Grid lines -->
-            <line x1="0" y1="120" x2="800" y2="120" stroke="rgba(79,142,247,.06)" stroke-width=".5"/>
-            <line x1="0" y1="180" x2="800" y2="180" stroke="rgba(79,142,247,.06)" stroke-width=".5"/>
-            <line x1="0" y1="240" x2="800" y2="240" stroke="rgba(79,142,247,.06)" stroke-width=".5"/>
-            <line x1="200" y1="0" x2="200" y2="360" stroke="rgba(79,142,247,.06)" stroke-width=".5"/>
-            <line x1="400" y1="0" x2="400" y2="360" stroke="rgba(79,142,247,.06)" stroke-width=".5"/>
-            <line x1="600" y1="0" x2="600" y2="360" stroke="rgba(79,142,247,.06)" stroke-width=".5"/>
+    <!-- North America -->
+    <path d="M30,50 L130,40 L155,70 L160,120 L145,160 L120,175 L90,170 L60,150 L30,110 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- South America -->
+    <path d="M100,190 L155,185 L170,230 L165,290 L140,320 L110,315 L90,275 L85,225 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- Europe -->
+    <path d="M360,45 L430,40 L445,75 L435,110 L400,125 L365,115 L350,85 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- Africa -->
+    <path d="M355,135 L420,130 L440,175 L430,240 L400,268 L365,258 L340,215 L342,165 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- Russia -->
+    <path d="M450,30 L700,25 L720,70 L710,105 L650,115 L560,110 L470,100 L445,65 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- Middle East -->
+    <path d="M448,120 L510,115 L520,150 L505,175 L465,178 L445,155 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- China/East Asia -->
+    <path d="M570,100 L700,95 L720,140 L700,175 L650,185 L590,180 L560,150 L558,120 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- Southeast Asia -->
+    <path d="M630,190 L685,185 L695,220 L675,245 L640,248 L620,225 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
+    <!-- Australia -->
+    <path d="M630,265 L730,260 L745,305 L720,335 L665,338 L635,310 Z" fill="rgba(79,142,247,.13)" stroke="rgba(79,142,247,.35)" stroke-width="1"/>
 
-            <!-- North America -->
-            <path d="M80,60 L160,55 L175,80 L165,130 L140,160 L110,165 L85,145 L65,110 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
-            <!-- South America -->
-            <path d="M140,185 L175,180 L185,220 L175,275 L150,300 L125,285 L115,245 L120,205 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
-            <!-- Europe -->
-            <path d="M335,55 L390,50 L400,80 L385,110 L355,120 L330,105 L325,80 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
-            <!-- Africa -->
-            <path d="M340,130 L390,125 L405,165 L395,220 L370,250 L340,240 L320,200 L325,155 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
-            <!-- Russia/Asia -->
-            <path d="M410,40 L600,35 L620,80 L610,120 L560,130 L500,125 L440,115 L415,85 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
-            <!-- China/SE Asia -->
-            <path d="M520,130 L610,125 L625,160 L600,190 L555,195 L520,175 L510,150 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
-            <!-- Australia -->
-            <path d="M580,230 L660,225 L670,270 L645,295 L600,295 L575,270 Z" fill="rgba(79,142,247,.12)" stroke="rgba(79,142,247,.3)" stroke-width=".8"/>
+    <!-- ATTACK SOURCE DOTS -->
+    <!-- Russia cx=580 cy=65 -->
+    <circle cx="580" cy="65" r="5" fill="#ff3b3b" opacity=".95">
+      <animate attributeName="r" values="5;9;5" dur="2.1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".95;.4;.95" dur="2.1s" repeatCount="indefinite"/>
+    </circle>
+    <text x="580" y="57" font-size="9" fill="#ff3b3b" text-anchor="middle" font-family="system-ui" font-weight="700">RU</text>
 
-            <!-- Attack source dots -->
-            <!-- Russia -->
-            <circle cx="490" cy="70" r="5" fill="#ff3b3b" opacity=".9">
-              <animate attributeName="r" values="5;9;5" dur="2.1s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".9;.4;.9" dur="2.1s" repeatCount="indefinite"/>
-            </circle>
-            <text x="490" y="62" font-size="9" fill="#ff3b3b" text-anchor="middle" font-family="system-ui" font-weight="600">RU</text>
+    <!-- China cx=640 cy=138 -->
+    <circle cx="640" cy="138" r="5" fill="#ff3b3b" opacity=".95">
+      <animate attributeName="r" values="5;9;5" dur="1.8s" begin=".4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".95;.4;.95" dur="1.8s" begin=".4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="640" y="130" font-size="9" fill="#ff3b3b" text-anchor="middle" font-family="system-ui" font-weight="700">CN</text>
 
-            <!-- China -->
-            <circle cx="570" cy="150" r="5" fill="#ff3b3b" opacity=".9">
-              <animate attributeName="r" values="5;9;5" dur="1.8s" begin=".4s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".9;.4;.9" dur="1.8s" begin=".4s" repeatCount="indefinite"/>
-            </circle>
-            <text x="570" y="142" font-size="9" fill="#ff3b3b" text-anchor="middle" font-family="system-ui" font-weight="600">CN</text>
+    <!-- North Korea cx=710 cy=115 -->
+    <circle cx="710" cy="115" r="4" fill="#ff3b3b" opacity=".9">
+      <animate attributeName="r" values="4;7;4" dur="2.5s" begin=".8s" repeatCount="indefinite"/>
+    </circle>
+    <text x="710" y="107" font-size="9" fill="#ff3b3b" text-anchor="middle" font-family="system-ui" font-weight="700">KP</text>
 
-            <!-- North Korea -->
-            <circle cx="620" cy="110" r="4" fill="#ff3b3b" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2.5s" begin=".8s" repeatCount="indefinite"/>
-            </circle>
-            <text x="620" y="102" font-size="9" fill="#ff3b3b" text-anchor="middle" font-family="system-ui" font-weight="600">KP</text>
+    <!-- Iran cx=480 cy=148 -->
+    <circle cx="480" cy="148" r="4" fill="#ff9500" opacity=".9">
+      <animate attributeName="r" values="4;7;4" dur="2.2s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <text x="480" y="140" font-size="9" fill="#ff9500" text-anchor="middle" font-family="system-ui" font-weight="700">IR</text>
 
-            <!-- Iran -->
-            <circle cx="450" cy="130" r="4" fill="#ff9500" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2.2s" begin="1s" repeatCount="indefinite"/>
-            </circle>
-            <text x="450" y="122" font-size="9" fill="#ff9500" text-anchor="middle" font-family="system-ui" font-weight="600">IR</text>
+    <!-- USA cx=90 cy=115 -->
+    <circle cx="90" cy="115" r="4" fill="#ff9500" opacity=".9">
+      <animate attributeName="r" values="4;7;4" dur="3s" begin="1.3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="90" y="107" font-size="9" fill="#ff9500" text-anchor="middle" font-family="system-ui" font-weight="700">US</text>
 
-            <!-- USA (attacker) -->
-            <circle cx="115" cy="110" r="4" fill="#ff9500" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="3s" begin="1.3s" repeatCount="indefinite"/>
-            </circle>
-            <text x="115" y="102" font-size="9" fill="#ff9500" text-anchor="middle" font-family="system-ui" font-weight="600">US</text>
+    <!-- Brazil cx=130 cy=260 -->
+    <circle cx="130" cy="260" r="4" fill="#ff9500" opacity=".9">
+      <animate attributeName="r" values="4;7;4" dur="2.7s" begin=".6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="130" y="252" font-size="9" fill="#ff9500" text-anchor="middle" font-family="system-ui" font-weight="700">BR</text>
 
-            <!-- Brazil -->
-            <circle cx="155" cy="240" r="4" fill="#ff9500" opacity=".9">
-              <animate attributeName="r" values="4;7;4" dur="2.7s" begin=".6s" repeatCount="indefinite"/>
-            </circle>
-            <text x="155" y="232" font-size="9" fill="#ff9500" text-anchor="middle" font-family="system-ui" font-weight="600">BR</text>
+    <!-- TARGET: Slovakia/EU cx=400 cy=82 -->
+    <circle cx="400" cy="82" r="7" fill="#00ff88" opacity=".95">
+      <animate attributeName="r" values="7;13;7" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".95;.5;.95" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="400" y="72" font-size="10" fill="#00ff88" text-anchor="middle" font-family="system-ui" font-weight="800">SK</text>
 
-            <!-- Target: Slovakia/EU -->
-            <circle cx="368" cy="80" r="6" fill="#00ff88" opacity=".95">
-              <animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values=".95;.5;.95" dur="2s" repeatCount="indefinite"/>
-            </circle>
-            <text x="368" y="70" font-size="9" fill="#00ff88" text-anchor="middle" font-family="system-ui" font-weight="700">SK</text>
+    <!-- ATTACK LINES -->
+    <line x1="580" y1="65" x2="400" y2="82" stroke="rgba(255,59,59,.55)" stroke-width="1.5" stroke-dasharray="5 4">
+      <animate attributeName="stroke-dashoffset" values="100;0" dur="2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="640" y1="138" x2="400" y2="82" stroke="rgba(255,59,59,.5)" stroke-width="1.5" stroke-dasharray="5 4">
+      <animate attributeName="stroke-dashoffset" values="100;0" dur="2.5s" begin=".5s" repeatCount="indefinite"/>
+    </line>
+    <line x1="710" y1="115" x2="400" y2="82" stroke="rgba(255,59,59,.45)" stroke-width="1.5" stroke-dasharray="5 4">
+      <animate attributeName="stroke-dashoffset" values="100;0" dur="2.8s" begin=".8s" repeatCount="indefinite"/>
+    </line>
+    <line x1="480" y1="148" x2="400" y2="82" stroke="rgba(255,149,0,.5)" stroke-width="1.5" stroke-dasharray="5 4">
+      <animate attributeName="stroke-dashoffset" values="100;0" dur="2.2s" begin=".3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="90" y1="115" x2="400" y2="82" stroke="rgba(255,149,0,.45)" stroke-width="1.5" stroke-dasharray="5 4">
+      <animate attributeName="stroke-dashoffset" values="100;0" dur="3s" begin="1s" repeatCount="indefinite"/>
+    </line>
 
-            <!-- Animated attack lines (SVG animate) -->
-            <!-- RU -> SK -->
-            <line x1="490" y1="70" x2="368" y2="80" stroke="rgba(255,59,59,.5)" stroke-width="1.5" stroke-dasharray="4 4">
-              <animate attributeName="stroke-dashoffset" values="100;0" dur="2s" repeatCount="indefinite"/>
-            </line>
-            <!-- CN -> SK -->
-            <line x1="570" y1="150" x2="368" y2="80" stroke="rgba(255,59,59,.45)" stroke-width="1.5" stroke-dasharray="4 4">
-              <animate attributeName="stroke-dashoffset" values="100;0" dur="2.5s" begin=".5s" repeatCount="indefinite"/>
-            </line>
-            <!-- US -> SK -->
-            <line x1="115" y1="110" x2="368" y2="80" stroke="rgba(255,149,0,.45)" stroke-width="1.5" stroke-dasharray="4 4">
-              <animate attributeName="stroke-dashoffset" values="100;0" dur="3s" begin="1s" repeatCount="indefinite"/>
-            </line>
-            <!-- IR -> SK -->
-            <line x1="450" y1="130" x2="368" y2="80" stroke="rgba(255,149,0,.45)" stroke-width="1.5" stroke-dasharray="4 4">
-              <animate attributeName="stroke-dashoffset" values="100;0" dur="2.2s" begin=".3s" repeatCount="indefinite"/>
-            </line>
-            <!-- KP -> SK -->
-            <line x1="620" y1="110" x2="368" y2="80" stroke="rgba(255,59,59,.4)" stroke-width="1.5" stroke-dasharray="4 4">
-              <animate attributeName="stroke-dashoffset" values="100;0" dur="2.8s" begin=".7s" repeatCount="indefinite"/>
-            </line>
-
-            <!-- Stats overlay -->
-            <rect x="650" y="10" width="130" height="55" rx="6" fill="rgba(10,12,20,.7)" stroke="rgba(79,142,247,.15)" stroke-width=".5"/>
-            <text x="660" y="28" font-size="8" fill="rgba(79,142,247,.6)" font-family="system-ui" font-weight="700" letter-spacing="1">LIVE THREATS</text>
-            <text x="660" y="46" font-size="18" fill="#ff3b3b" font-family="system-ui" font-weight="800" id="liveThreatsCount">247</text>
-            <text x="660" y="58" font-size="7.5" fill="rgba(120,130,160,.7)" font-family="system-ui">blocked today</text>
+    <!-- LIVE THREATS box - pravý roh -->
+    <rect x="650" y="10" width="140" height="58" rx="6" fill="rgba(10,12,20,.8)" stroke="rgba(79,142,247,.2)" stroke-width=".8"/>
+    <text x="660" y="28" font-size="8" fill="rgba(79,142,247,.7)" font-family="system-ui" font-weight="700" letter-spacing="1">LIVE THREATS</text>
+    <text x="660" y="48" font-size="20" fill="#ff3b3b" font-family="system-ui" font-weight="800">247</text>
+    <text x="660" y="60" font-size="7.5" fill="rgba(120,130,160,.7)" font-family="system-ui">blocked today</text>
           </svg>
 
           <!-- Scrolling ticker -->
