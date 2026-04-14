@@ -4,6 +4,21 @@
 const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
 
+async function verifyToken(token) {
+  if (!token) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.id || null;
+  } catch(e) { return null; }
+}
+
 async function getCache(key) {
   try {
     const res = await fetch(
@@ -83,7 +98,10 @@ module.exports = async function handler(req, res) {
   const { host } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
 
-  const userId = req.headers['x-user-id'] || 'anonymous';
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '');
+  const userId = token ? await verifyToken(token) : null;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
   const rl = await checkRateLimit(userId);
   if (!rl.allowed) {
     return res.status(429).json({ error: 'Príliš veľa požiadaviek. Počkaj hodinu a skús znova.', retryAfter: 3600 });
