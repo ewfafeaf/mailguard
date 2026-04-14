@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
 
 module.exports = async function handler(req, res) {
   const { token } = req.query;
