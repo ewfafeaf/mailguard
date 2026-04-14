@@ -28,6 +28,14 @@ export default async function handler(req) {
       .replace(/^www\./, '')
       .replace(/\/.*$/, '');
 
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
+    const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
+      headers: { 'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06', 'Authorization': `Bearer ${token}` }
+    });
+    if (!authRes.ok) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
+
     const cacheKey = 'blacklist:' + clean;
     const sbRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache?cache_key=eq.' + encodeURIComponent(cacheKey) + '&expires_at=gt.' + new Date().toISOString() + '&select=data', {
       headers: {

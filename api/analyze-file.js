@@ -16,6 +16,14 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
+    headers: { 'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06', 'Authorization': `Bearer ${token}` }
+  });
+  if (!authRes.ok) return res.status(401).json({ error: 'Unauthorized' });
+
   const { filename = 'file', mimetype = '', data: b64, gsbKey } = req.body || {};
   if (!b64) return res.status(400).json({ error: 'Chýba parameter data (base64)' });
 

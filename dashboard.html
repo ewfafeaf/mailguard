@@ -3140,7 +3140,7 @@ async function analyzeDNS(){
     // API beží paralelne s terminálovou animáciou
     const response=await fetch('/api/dns-check',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${(await _sb.auth.getSession()).data.session?.access_token}`},
       body:JSON.stringify({domain})
     });
     const data=await response.json();
@@ -3272,7 +3272,7 @@ async function analyzeBlacklist(){
   try{
     const response=await fetch('/api/blacklist-check',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${(await _sb.auth.getSession()).data.session?.access_token}`},
       body:JSON.stringify({input})
     });
     const data=await response.json();
@@ -4177,7 +4177,7 @@ function renderRecsHTML(recs){
 async function runSSLCheck(hostname){
   console.log('[SSL] Checking:', hostname);
   try {
-    const res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`, { headers: { 'x-user-id': _currentUser?.id || 'anonymous' } });
+    const res = await fetch(`/api/ssl-check?host=${encodeURIComponent(hostname)}`, { headers: { 'Authorization': `Bearer ${(await _sb.auth.getSession()).data.session?.access_token}` } });
     if(!res.ok){ console.warn('[SSL] HTTP error:', res.status); return null; }
     const data = await res.json();
     console.log('[SSL] ok=', data.ok, 'grade=', data.grade, 'protocol=', data.protocol, 'daysLeft=', data.cert?.daysLeft);
@@ -4192,7 +4192,7 @@ async function runSSLCheck(hostname){
 async function runHeadersCheck(hostname){
   console.log('[Headers] Checking:', hostname);
   try {
-    const res = await fetch(`/api/headers-check?host=${encodeURIComponent(hostname)}`, { headers: { 'x-user-id': _currentUser?.id || 'anonymous' } });
+    const res = await fetch(`/api/headers-check?host=${encodeURIComponent(hostname)}`, { headers: { 'Authorization': `Bearer ${(await _sb.auth.getSession()).data.session?.access_token}` } });
     if(!res.ok){ console.warn('[Headers] HTTP error:', res.status); return null; }
     const data = await res.json();
     if(!data.ok || !data.headers){ console.warn('[Headers] no results'); return null; }
@@ -4213,7 +4213,7 @@ async function runHeadersCheck(hostname){
 async function runWhoisCheck(hostname){
   console.log('[WHOIS] Checking:', hostname);
   try {
-    const res = await fetch(`/api/whois-check?host=${encodeURIComponent(hostname)}`, { headers: { 'x-user-id': _currentUser?.id || 'anonymous' } });
+    const res = await fetch(`/api/whois-check?host=${encodeURIComponent(hostname)}`, { headers: { 'Authorization': `Bearer ${(await _sb.auth.getSession()).data.session?.access_token}` } });
     if(!res.ok){ console.warn('[WHOIS] HTTP error:', res.status); return null; }
     const data = await res.json();
     if(!data.ok){ console.warn('[WHOIS] no results:', data.error); return null; }
@@ -4359,7 +4359,7 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
 async function runVTCheck(hostname){
   try{
     console.log('[VT] calling /api/virustotal-check?host='+hostname);
-    const r=await fetch(`/api/virustotal-check?host=${encodeURIComponent(hostname)}`, { headers: { 'x-user-id': _currentUser?.id || 'anonymous' } });
+    const r=await fetch(`/api/virustotal-check?host=${encodeURIComponent(hostname)}`, { headers: { 'Authorization': `Bearer ${(await _sb.auth.getSession()).data.session?.access_token}` } });
     console.log('[VT] HTTP status:', r.status);
     if(!r.ok){
       console.warn('[VT] non-ok HTTP, returning null');
@@ -4425,7 +4425,7 @@ function renderVTPanel(vt){
 /* ── Shodan Runner ── */
 async function runShodanCheck(hostname){
   try{
-    const r=await fetch(`/api/shodan-check?host=${encodeURIComponent(hostname)}`, { headers: { 'x-user-id': _currentUser?.id || 'anonymous' } });
+    const r=await fetch(`/api/shodan-check?host=${encodeURIComponent(hostname)}`, { headers: { 'Authorization': `Bearer ${(await _sb.auth.getSession()).data.session?.access_token}` } });
     const data=await r.json();
     console.log('[Shodan] response:', data);
     return data; // vždy vráť objekt, renderShodanPanel spracuje ok:false
@@ -5920,7 +5920,7 @@ async function analyzeFile(file){
 
         const resp=await fetch('/api/analyze-file',{
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${(await _sb.auth.getSession()).data.session?.access_token}`},
           body:JSON.stringify({filename:file.name,mimetype:file.type,data:b64,gsbKey}),
         });
         const data=await resp.json();
@@ -6209,7 +6209,7 @@ async function analyzeEmailHeaders(){
   // Async pipeline — termLine volania sa pridávajú keď sa výsledky vrátia
   const pipeline=fetch('/api/analyze-headers',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${(await _sb.auth.getSession()).data.session?.access_token}`},
     body:JSON.stringify({headers:raw}),
   }).then(async resp=>{
     const data=await resp.json();
