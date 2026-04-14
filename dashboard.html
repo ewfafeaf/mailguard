@@ -3087,7 +3087,7 @@ function showSection(s){
   if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats(); }
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
-  if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else loadTeachers(); }
+  if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else { loadTeachers(); loadPhishingCampaigns(); } }
   if(s==='webskener') initWsPlaceholders();
   if(s==='files'        && !checkPlan('pro'))    showUpgradeModal('files');
   if(s==='headers'      && !checkPlan('pro'))    showUpgradeModal('headers');
