@@ -2663,8 +2663,22 @@ body::before{content:'';position:fixed;inset:0;
                     <option value="package">📦 Balík čaká na vyzdvihnutie</option>
                   </select>
                 </div>
-                <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.8rem;color:#f87171">
-                  ⚠️ Emaily budú odoslané všetkým učiteľom v tíme.
+                <div style="margin-bottom:12px">
+                  <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px">Odosielateľ</div>
+                  <select id="phishingFrom" class="ws-input" style="cursor:pointer;margin-top:6px">
+                    <option value="it">💻 IT Správa školy</option>
+                    <option value="edupage">🏫 EduPage</option>
+                    <option value="ms365">💼 Microsoft 365</option>
+                    <option value="reditel">👤 Riaditeľ školy</option>
+                  </select>
+                </div>
+                <div style="margin-bottom:12px">
+                  <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px">Ciele</div>
+                  <div style="display:flex;gap:10px;margin-bottom:8px">
+                    <button type="button" onclick="selectAllTeachers()" style="font-size:.75rem;padding:4px 10px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);border-radius:6px;color:#4f8ef7;cursor:pointer">Všetci</button>
+                    <button type="button" onclick="deselectAllTeachers()" style="font-size:.75rem;padding:4px 10px;background:rgba(79,142,247,.05);border:1px solid #2e3350;border-radius:6px;color:var(--muted);cursor:pointer">Zrušiť výber</button>
+                  </div>
+                  <div id="phishingTargetList" style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto"></div>
                 </div>
                 <button class="ws-btn primary" onclick="launchPhishingCampaign()" id="phishingLaunchBtn" style="width:100%">
                   🎣 Spustiť kampaň
@@ -6880,6 +6894,16 @@ async function loadTeachers(){
   if(fillEl)  fillEl.style.width  = Math.min(100, Math.round(data.length/limit*100))+'%';
   if(titleEl) titleEl.textContent = `Učitelia (${data.length})`;
 
+  // Naplniť checkboxy cieľov pre phishing
+  const targetList = document.getElementById('phishingTargetList');
+  if(targetList) {
+    targetList.innerHTML = data.length ? data.map(m => `
+      <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#22263a;border-radius:7px;cursor:pointer;font-size:.83rem">
+        <input type="checkbox" class="phishing-target-cb" value="${escHtml(m.member_email)}" checked style="accent-color:#4f8ef7">
+        ${escHtml(m.full_name || m.member_email)}
+      </label>`).join('') : '<div style="font-size:.8rem;color:var(--muted)">Žiadni učitelia v tíme</div>';
+  }
+
   // Remove old spinner
   tableEl.querySelector('.team-empty')?.remove();
 
@@ -7717,17 +7741,33 @@ function closeInfoModal() {
   document.getElementById('infoModalOverlay').classList.remove('active');
 }
 
+function selectAllTeachers() {
+  document.querySelectorAll('.phishing-target-cb').forEach(cb => cb.checked = true);
+}
+function deselectAllTeachers() {
+  document.querySelectorAll('.phishing-target-cb').forEach(cb => cb.checked = false);
+}
+
 async function launchPhishingCampaign() {
   const name = document.getElementById('phishingCampaignName').value.trim();
   const template = document.getElementById('phishingTemplate').value;
+  const fromType = document.getElementById('phishingFrom').value;
   const btn = document.getElementById('phishingLaunchBtn');
   const msg = document.getElementById('phishingMsg');
   if (!name) { msg.innerHTML = '<span style="color:#ef4444">Zadaj názov kampane</span>'; return; }
+
+  const checkedBoxes = [...document.querySelectorAll('.phishing-target-cb:checked')];
+  if (checkedBoxes.length === 0) {
+    msg.innerHTML = '<span style="color:#ef4444">Vyber aspoň jedného učiteľa</span>';
+    return;
+  }
+  const selectedEmails = checkedBoxes.map(cb => cb.value);
+
   btn.disabled = true;
   btn.textContent = '⏳ Spúšťam…';
   msg.innerHTML = '';
   try {
-    const { data: members } = await _sb.from('team_members').select('member_email, full_name').eq('owner_id', _currentUser.id).in('status', ['joined', 'active', 'invited']);
+    const { data: members } = await _sb.from('team_members').select('member_email, full_name').eq('owner_id', _currentUser.id).in('member_email', selectedEmails);
     if (!members || members.length === 0) {
       msg.innerHTML = '<span style="color:#ef4444">Nemáš žiadnych učiteľov v tíme</span>';
       btn.disabled = false;
@@ -7742,7 +7782,7 @@ async function launchPhishingCampaign() {
     const res = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/functions/v1/send-phishing-campaign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ campaign_id: campaign.id, targets: members.map(m => ({ email: m.member_email, name: m.full_name })), template })
+      body: JSON.stringify({ campaign_id: campaign.id, targets: members.map(m => ({ email: m.member_email, name: m.full_name })), template, fromType })
     });
     const result = await res.json();
     if (result.ok) {
