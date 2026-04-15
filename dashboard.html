@@ -6893,7 +6893,7 @@ async function loadTeachers(){
   if(targetList) {
     targetList.innerHTML = data.length ? data.map(m => `
       <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#22263a;border-radius:7px;cursor:pointer;font-size:.83rem">
-        <input type="checkbox" class="phishing-target-cb" value="${escHtml(m.member_email)}" checked style="accent-color:#4f8ef7">
+        <input type="checkbox" class="phishing-target-cb" value="${escHtml(m.member_email)}" data-name="${escHtml(m.full_name||'')}" checked style="accent-color:#4f8ef7">
         ${m.full_name ? `${escHtml(m.full_name)} <span style="color:var(--muted);font-size:.78rem">(${escHtml(m.member_email)})</span>` : escHtml(m.member_email)}
       </label>`).join('') : '<div style="font-size:.8rem;color:var(--muted)">Žiadni učitelia v tíme</div>';
   }
