@@ -7832,7 +7832,7 @@ async function runHibpCheck() {
   resultDiv.innerHTML = '<div style="color:var(--muted);font-size:.85rem">⏳ Kontrolujem...</div>';
 
   try {
-    const session = await _supabase.auth.getSession();
+    const session = await _sb.auth.getSession();
     const token = session?.data?.session?.access_token;
 
     const r = await fetch(`/api/hibp-check?domain=${encodeURIComponent(domain)}`, {
