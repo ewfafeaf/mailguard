@@ -7782,15 +7782,26 @@ async function launchPhishingCampaign() {
   btn.textContent = '🎣 Spustiť kampaň';
 }
 
-async function loadPhishingCampaigns(all = false) {
+const _PHISHING_PER_PAGE = 10;
+
+async function loadPhishingCampaigns(page = 1) {
   const el = document.getElementById('phishingCampaignsList');
   if (!el || !_currentUser) return;
-  const query = _sb.from('phishing_campaigns').select('*', { count: 'exact' }).eq('owner_id', _currentUser.id).order('created_at', { ascending: false });
-  const { data: campaigns, count } = all ? await query : await query.limit(10);
+  el.innerHTML = '<div class="team-empty">Načítavam…</div>';
+
+  const start = (page - 1) * _PHISHING_PER_PAGE;
+  const end = start + _PHISHING_PER_PAGE - 1;
+  const { data: campaigns, count } = await _sb.from('phishing_campaigns')
+    .select('*', { count: 'exact' })
+    .eq('owner_id', _currentUser.id)
+    .order('created_at', { ascending: false })
+    .range(start, end);
+
   if (!campaigns || campaigns.length === 0) {
     el.innerHTML = '<div class="team-empty">Zatiaľ žiadne kampane</div>';
     return;
   }
+
   const renderRow = c => {
     const rate = c.sent_count > 0 ? Math.round((c.click_count / c.sent_count) * 100) : 0;
     const rateColor = rate === 0 ? '#22c55e' : rate < 30 ? '#f59e0b' : '#ef4444';
@@ -7808,10 +7819,16 @@ async function loadPhishingCampaigns(all = false) {
       </div>
     </div>`;
   };
-  el.innerHTML = campaigns.map(renderRow).join('');
-  if (!all && count > 10) {
-    el.insertAdjacentHTML('beforeend', `<button onclick="loadPhishingCampaigns(true)" style="width:100%;margin-top:8px;padding:9px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);border-radius:8px;color:#4f8ef7;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit">Zobraziť všetky (${count} kampaní)</button>`);
-  }
+
+  const totalPages = Math.ceil((count || 0) / _PHISHING_PER_PAGE);
+  const pagination = totalPages > 1 ? `
+    <div class="pagination">
+      <button onclick="loadPhishingCampaigns(${page - 1})" ${page === 1 ? 'disabled' : ''}>← Predošlá</button>
+      <span>Strana ${page} z ${totalPages}</span>
+      <button onclick="loadPhishingCampaigns(${page + 1})" ${page === totalPages ? 'disabled' : ''}>Ďalšia →</button>
+    </div>` : '';
+
+  el.innerHTML = campaigns.map(renderRow).join('') + pagination;
 }
 
 async function showPhishingDetail(campaignId) {
