@@ -6952,7 +6952,7 @@ async function loadTeachers(){
       <div class="col-teacher">
         <div class="teacher-avatar">${initials}</div>
         <div class="teacher-info">
-          <div class="teacher-name">${escHtml(m.member_email)}</div>
+          ${m.full_name ? `<div class="teacher-name">${escHtml(m.full_name)}</div><div class="teacher-email">${escHtml(m.member_email)}</div>` : `<div class="teacher-name">${escHtml(m.member_email)}</div>`}
           <div class="teacher-email">Pridaný ${addedDate}</div>
         </div>
       </div>
