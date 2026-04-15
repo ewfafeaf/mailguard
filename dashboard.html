@@ -2825,17 +2825,39 @@ body::before{content:'';position:fixed;inset:0;
     </div>
 
     <div id="sectionHibp" class="dash-section" style="display:none">
-      <div class="az-layout" style="max-width:800px">
-        <div class="dg-input-card">
-          <div class="dg-input-heading">🔓 Breach Monitor</div>
-          <div class="dg-input-sub">Skontroluj či emaily z domény školy unikli v known data breachoch (Adobe, LinkedIn, atď.)</div>
-          <div style="display:flex;gap:10px;margin-top:16px">
-            <input id="hibpInput" type="text" placeholder="zsskosice.sk" style="flex:1;padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
-            <button onclick="runHibpCheck()" style="padding:12px 20px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:9px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Skontrolovať</button>
-          </div>
-          <div id="hibpResult" style="margin-top:20px"></div>
+      <div class="dash-section-title"><div class="dot" style="background:#ff3b3b"></div>Breach Monitor</div>
+
+      <!-- Feature cards -->
+      <div class="ws-feature-grid">
+        <div class="ws-fc">
+          <div class="ws-fc-icon">💾</div>
+          <div class="ws-fc-title">Data Breaches</div>
+          <div class="ws-fc-desc">Kontrolujeme či doména figuruje v known data breachoch ako Adobe, LinkedIn, RockYou a stovkách ďalších.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">📧</div>
+          <div class="ws-fc-title">Uniknuté emaily</div>
+          <div class="ws-fc-desc">Zobrazíme zoznam emailov z domény ktoré boli kompromitované vrátane zdrojov úniku.</div>
+        </div>
+        <div class="ws-fc">
+          <div class="ws-fc-icon">🔍</div>
+          <div class="ws-fc-title">Breach Sources</div>
+          <div class="ws-fc-desc">Každý breach má meno, dátum a typ uniknutých dát (heslá, mená, telefóny...).</div>
         </div>
       </div>
+
+      <!-- Input -->
+      <div class="ws-fancy-wrap">
+        <div class="ws-fancy-inner">
+          <span class="ws-fancy-icon">🔓</span>
+          <input type="text" id="hibpInput" class="ws-fancy-input"
+            placeholder="skola.sk"
+            onkeydown="if(event.key==='Enter')runHibpCheck()"/>
+          <button class="ws-scan-btn" onclick="runHibpCheck()">Skontrolovať →</button>
+        </div>
+      </div>
+
+      <div id="hibpResult"></div>
     </div>
 
   </main>
