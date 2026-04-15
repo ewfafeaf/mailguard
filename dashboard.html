@@ -1589,6 +1589,10 @@ body::before{content:'';position:fixed;inset:0;
         </svg>
         <span>Blacklist Checker</span>
       </button>
+      <a class="nav-link" onclick="showSection('hibp')">
+        <span class="nav-icon">🔓</span>
+        <span>Breach Monitor</span>
+      </a>
     </div>
 
     <!-- ACCOUNT -->
@@ -2820,6 +2824,20 @@ body::before{content:'';position:fixed;inset:0;
       <div id="plansGrid" class="plans-grid"></div>
     </div>
 
+    <div id="sectionHibp" class="dash-section" style="display:none">
+      <div class="az-layout" style="max-width:800px">
+        <div class="dg-input-card">
+          <div class="dg-input-heading">🔓 Breach Monitor</div>
+          <div class="dg-input-sub">Skontroluj či emaily z domény školy unikli v known data breachoch (Adobe, LinkedIn, atď.)</div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <input id="hibpInput" type="text" placeholder="zsskosice.sk" style="flex:1;padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
+            <button onclick="runHibpCheck()" style="padding:12px 20px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:9px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Skontrolovať</button>
+          </div>
+          <div id="hibpResult" style="margin-top:20px"></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -3174,7 +3192,7 @@ async function signOut(){
 
 /* ── NAVIGATION ── */
 function showSection(s){
-  ['nova','analyze','historia','nastavenia','podpora','webskener','files','headers','team','plans','dns-checker','blacklist-checker'].forEach(id=>{
+  ['nova','analyze','historia','nastavenia','podpora','webskener','files','headers','team','plans','dns-checker','blacklist-checker','hibp'].forEach(id=>{
     const el=document.getElementById('section'+id.charAt(0).toUpperCase()+id.slice(1));
     if(!el) return;
     if(id===s){
@@ -3199,13 +3217,13 @@ function showSection(s){
       el.style.display='none';
     }
   });
-  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans','navDnsChecker','navBlacklistChecker'].forEach(id=>{
+  ['navDashboard','navAnalyza','navHistoria','navNastavenia','navPodpora','navWebskener','navFiles','navHeaders','navTeam','navPlans','navDnsChecker','navBlacklistChecker','navHibp'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const map={nova:'navDashboard',analyze:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans','dns-checker':'navDnsChecker','blacklist-checker':'navBlacklistChecker'};
+  const map={nova:'navDashboard',analyze:'navAnalyza',historia:'navHistoria',nastavenia:'navNastavenia',podpora:'navPodpora',webskener:'navWebskener',files:'navFiles',headers:'navHeaders',team:'navTeam',plans:'navPlans','dns-checker':'navDnsChecker','blacklist-checker':'navBlacklistChecker',hibp:'navHibp'};
   if(map[s]){const el=document.getElementById(map[s]);if(el)el.classList.add('active');}
-  const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans','dns-checker','blacklist-checker'].includes(s);
+  const hideWelcome=['nastavenia','podpora','webskener','files','headers','team','plans','dns-checker','blacklist-checker','hibp'].includes(s);
   document.querySelector('.welcome-row').style.display=hideWelcome?'none':'flex';
   if(s==='nova')       loadNovaExtras();
   if(s==='analyze')    loadAnalyzeSection();
@@ -7782,6 +7800,52 @@ async function showPhishingDetail(campaignId) {
         <div style="font-size:.8rem;font-weight:600;color:${t.clicked ? '#ef4444' : '#22c55e'}">${t.clicked ? '❌ Klikol' : '✅ Neklikol'}</div>
       </div>`).join('') : '<div class="team-empty">Žiadne záznamy</div>'}
   `;
+}
+
+async function runHibpCheck() {
+  const domain = document.getElementById('hibpInput').value.trim();
+  const resultDiv = document.getElementById('hibpResult');
+  if (!domain) return;
+
+  resultDiv.innerHTML = '<div style="color:var(--muted);font-size:.85rem">⏳ Kontrolujem...</div>';
+
+  try {
+    const session = await _supabase.auth.getSession();
+    const token = session?.data?.session?.access_token;
+
+    const r = await fetch(`/api/hibp-check?domain=${encodeURIComponent(domain)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await r.json();
+
+    if (!data.ok) {
+      resultDiv.innerHTML = `<div style="color:var(--red)">${data.error}</div>`;
+      return;
+    }
+
+    if (data.breachCount === 0) {
+      resultDiv.innerHTML = `<div style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:16px;color:#00ff88">✅ Žiadne uniknuté emaily nenájdené pre doménu <b>${data.domain}</b></div>`;
+      return;
+    }
+
+    let html = `<div style="background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.2);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="color:#ff3b3b;font-weight:700;font-size:1rem">⚠️ Nájdených ${data.breachCount} uniknutých emailov</div>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:4px">Doména: ${data.domain}</div>
+    </div>`;
+
+    html += '<div style="display:flex;flex-direction:column;gap:8px">';
+    for (const item of data.breachedEmails) {
+      html += `<div style="background:#22263a;border:1px solid #2e3350;border-radius:8px;padding:12px">
+        <div style="font-size:.85rem;color:#e8eaf0;margin-bottom:4px">📧 ${item.email}</div>
+        <div style="font-size:.75rem;color:var(--muted)">Breaches: ${item.breaches.join(', ')}</div>
+      </div>`;
+    }
+    html += '</div>';
+
+    resultDiv.innerHTML = html;
+  } catch(err) {
+    resultDiv.innerHTML = `<div style="color:var(--red)">Chyba: ${err.message}</div>`;
+  }
 }
 </script>
 </body>
