@@ -2658,21 +2658,12 @@ body::before{content:'';position:fixed;inset:0;
                 <div style="margin-bottom:16px">
                   <label class="ws-label">Šablóna emailu</label>
                   <select id="phishingTemplate" class="ws-input" style="cursor:pointer;margin-top:6px">
-                    <option value="password">🔐 Obnovenie hesla (IT Správa)</option>
-                    <option value="invoice">📄 Faktúra na schválenie</option>
-                    <option value="package">📦 Balík čaká na vyzdvihnutie</option>
+                    <option value="password">🔐 IT Správa školy — Obnovenie hesla</option>
+                    <option value="invoice">📄 Ekonomické odd. — Faktúra na schválenie</option>
+                    <option value="package">📦 Slovenská pošta — Balík čaká</option>
                     <option value="edupage">🏫 EduPage — Správa od rodiča</option>
                     <option value="ms365">💼 Microsoft 365 — Vypršala licencia</option>
                     <option value="reditel">📋 Riaditeľ — Povinné BOZP školenie</option>
-                  </select>
-                </div>
-                <div style="margin-bottom:12px">
-                  <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px">Odosielateľ</div>
-                  <select id="phishingFrom" class="ws-input" style="cursor:pointer;margin-top:6px">
-                    <option value="it">💻 IT Správa školy</option>
-                    <option value="edupage">🏫 EduPage</option>
-                    <option value="ms365">💼 Microsoft 365</option>
-                    <option value="reditel">👤 Riaditeľ školy</option>
                   </select>
                 </div>
                 <div style="margin-bottom:12px">
@@ -7754,7 +7745,7 @@ function deselectAllTeachers() {
 async function launchPhishingCampaign() {
   const name = document.getElementById('phishingCampaignName').value.trim();
   const template = document.getElementById('phishingTemplate').value;
-  const fromType = document.getElementById('phishingFrom').value;
+  const fromType = template;
   const btn = document.getElementById('phishingLaunchBtn');
   const msg = document.getElementById('phishingMsg');
   if (!name) { msg.innerHTML = '<span style="color:#ef4444">Zadaj názov kampane</span>'; return; }
