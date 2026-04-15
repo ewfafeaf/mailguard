@@ -7782,15 +7782,16 @@ async function launchPhishingCampaign() {
   btn.textContent = '🎣 Spustiť kampaň';
 }
 
-async function loadPhishingCampaigns() {
+async function loadPhishingCampaigns(all = false) {
   const el = document.getElementById('phishingCampaignsList');
   if (!el || !_currentUser) return;
-  const { data: campaigns } = await _sb.from('phishing_campaigns').select('*').eq('owner_id', _currentUser.id).order('created_at', { ascending: false });
+  const query = _sb.from('phishing_campaigns').select('*', { count: 'exact' }).eq('owner_id', _currentUser.id).order('created_at', { ascending: false });
+  const { data: campaigns, count } = all ? await query : await query.limit(10);
   if (!campaigns || campaigns.length === 0) {
     el.innerHTML = '<div class="team-empty">Zatiaľ žiadne kampane</div>';
     return;
   }
-  el.innerHTML = campaigns.map(c => {
+  const renderRow = c => {
     const rate = c.sent_count > 0 ? Math.round((c.click_count / c.sent_count) * 100) : 0;
     const rateColor = rate === 0 ? '#22c55e' : rate < 30 ? '#f59e0b' : '#ef4444';
     const templateLabels = { password: '🔐 Obnovenie hesla', invoice: '📄 Faktúra', package: '📦 Balík' };
@@ -7806,7 +7807,11 @@ async function loadPhishingCampaigns() {
         </div>
       </div>
     </div>`;
-  }).join('');
+  };
+  el.innerHTML = campaigns.map(renderRow).join('');
+  if (!all && count > 10) {
+    el.insertAdjacentHTML('beforeend', `<button onclick="loadPhishingCampaigns(true)" style="width:100%;margin-top:8px;padding:9px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);border-radius:8px;color:#4f8ef7;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit">Zobraziť všetky (${count} kampaní)</button>`);
+  }
 }
 
 async function showPhishingDetail(campaignId) {
