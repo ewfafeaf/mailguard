@@ -4638,6 +4638,30 @@ async function runShodanCheck(hostname){
   }
 }
 
+/* ── Cloudflare IP range check ── */
+function ipInRange(ip, cidr){
+  try{
+    const [range, bits] = cidr.split('/');
+    const mask = ~((1 << (32 - parseInt(bits))) - 1) >>> 0;
+    const ipNum  = ip.split('.').reduce((acc,o)=>(acc<<8)|parseInt(o),0) >>> 0;
+    const rangeNum = range.split('.').reduce((acc,o)=>(acc<<8)|parseInt(o),0) >>> 0;
+    return (ipNum & mask) === (rangeNum & mask);
+  } catch(e){ return false; }
+}
+
+const CF_RANGES=[
+  '103.21.244.0/22','103.22.200.0/22','103.31.4.0/22',
+  '104.16.0.0/13','104.24.0.0/14','108.162.192.0/18',
+  '131.0.72.0/22','141.101.64.0/18','162.158.0.0/15',
+  '172.64.0.0/13','173.245.48.0/20','188.114.96.0/20',
+  '190.93.240.0/20','197.234.240.0/22','198.41.128.0/17'
+];
+
+function isCloudflareIP(ip){
+  if(!ip) return false;
+  return CF_RANGES.some(cidr=>ipInRange(ip,cidr));
+}
+
 /* ── Shodan Panel Render ── */
 function renderShodanPanel(sh){
   const RISK_COLOR={high:'var(--red)',medium:'var(--yellow)',low:'var(--muted)',safe:'var(--green)',unknown:'var(--muted)'};
@@ -4687,6 +4711,20 @@ function renderShodanPanel(sh){
     dangerous.length?`<div style="margin-top:10px;font-size:.8rem;color:var(--yellow)">⚠️ Port ${dangerous.map(p=>p.port).join(', ')} – zvýšená opatrnosť</div>`:
     `<div style="margin-top:8px;font-size:.8rem;color:var(--green)">✅ Žiadne nebezpečné porty</div>`;
 
+  const isCF = isCloudflareIP(sh.ip);
+  const cfBanner = isCF
+    ? `<div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;gap:10px;font-size:.83rem">
+        <span style="font-size:1.1rem;flex-shrink:0">✅</span>
+        <div style="font-weight:600;color:var(--green)">DDoS ochrana aktívna — Web je chránený cez Cloudflare</div>
+      </div>`
+    : `<div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);display:flex;align-items:flex-start;gap:10px;font-size:.83rem">
+        <span style="font-size:1.1rem;flex-shrink:0">⚠️</span>
+        <div>
+          <div style="font-weight:700;color:var(--red);margin-bottom:2px">Chýba DDoS ochrana</div>
+          <div style="color:var(--muted);line-height:1.5">Web nie je za reverznou proxy. Pri útoku môže byť server vyradený z prevádzky do 60 sekúnd. Odporúčame nasadiť Cloudflare ochranu.</div>
+        </div>
+      </div>`;
+
   const meta=[
     sh.webserver?`<div><span style="color:var(--muted)">Webserver:</span> <b>${escHtml(sh.webserver)}</b></div>`:'',
     sh.os       ?`<div><span style="color:var(--muted)">OS:</span> <b>${escHtml(sh.os)}</b></div>`:'',
@@ -4703,6 +4741,7 @@ function renderShodanPanel(sh){
     </div>`:
     `<div style="font-size:.84rem;color:var(--muted)">Žiadne otvorené porty nenájdené</div>`}
     ${warningBanner}
+    ${cfBanner}
   </div>`;
 }
 
