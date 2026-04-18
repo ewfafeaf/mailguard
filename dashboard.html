@@ -7017,6 +7017,23 @@ async function generatePoliceReport(){
 }
 
 /* ══════════════════════════════════════════
+   PDF HELPERS
+══════════════════════════════════════════ */
+function removeDiacritics(str){
+  if(typeof str!=='string') return str;
+  return str
+    .replace(/[áÁ]/g,'a').replace(/[äÄ]/g,'a')
+    .replace(/[čČ]/g,'c').replace(/[ďĎ]/g,'d')
+    .replace(/[éÉ]/g,'e').replace(/[íÍ]/g,'i')
+    .replace(/[ľĽ]/g,'l').replace(/[ĺĹ]/g,'l')
+    .replace(/[ňŇ]/g,'n').replace(/[óÓ]/g,'o')
+    .replace(/[ôÔ]/g,'o').replace(/[ŕŔ]/g,'r')
+    .replace(/[šŠ]/g,'s').replace(/[ťŤ]/g,'t')
+    .replace(/[úÚ]/g,'u').replace(/[ýÝ]/g,'y')
+    .replace(/[žŽ]/g,'z');
+}
+
+/* ══════════════════════════════════════════
    WEB AUDIT PDF
 ══════════════════════════════════════════ */
 async function generateAuditPDF(){
@@ -7028,6 +7045,7 @@ async function generateAuditPDF(){
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const W=210, margin=18, contentW=W-2*margin;
   let y=margin;
+  { const _t=doc.text.bind(doc); doc.text=(t,...a)=>_t(Array.isArray(t)?t.map(removeDiacritics):removeDiacritics(t),...a); }
 
   const now=new Date();
   const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -7209,6 +7227,7 @@ async function generateIncidentReport(){
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const W=210, margin=18, contentW=W-2*margin;
   let y=margin;
+  { const _t=doc.text.bind(doc); doc.text=(t,...a)=>_t(Array.isArray(t)?t.map(removeDiacritics):removeDiacritics(t),...a); }
 
   const now=new Date();
   const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
