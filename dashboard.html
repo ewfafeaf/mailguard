@@ -4423,7 +4423,7 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   // ── HTTPS ──────────────────────────────
   const isHttps = url.startsWith('https://');
   if(isHttps) score += 10;
-  else { score -= 10; recs.push('Configure HTTPS – free TLS certificate available via Let\'s Encrypt.'); }
+  else { score -= 10; recs.push('Nakonfigurujte HTTPS – bezplatný TLS certifikát je dostupný cez Let\'s Encrypt.'); }
 
   // ── SSL Grade ──────────────────────────
   if(sslResult?.ok){
@@ -4434,10 +4434,10 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     else if(grade === 'F') score -= 20;
     const dl = sslResult.cert?.daysLeft;
     if(dl !== null && dl !== undefined && dl < 30)
-      recs.push(`SSL certificate expires in ${dl} days – renew it as soon as possible.`);
+      recs.push(`SSL certifikát expiruje za ${dl} dní – obnovte ho čo najskôr.`);
     if(sslResult.cert?.expired){
       score -= 20;
-      recs.push('SSL certificate has expired – renew immediately!');
+      recs.push('SSL certifikát je expirovaný – obnovte ho okamžite!');
     }
   }
 
@@ -4445,14 +4445,14 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   if(gsbResult !== null){
     const gsbOk = !gsbResult || gsbResult.length === 0;
     if(gsbOk) score += 10;
-    else { score -= 30; recs.push('URL is flagged in Google Safe Browsing – do not share, report immediately.'); }
+    else { score -= 30; recs.push('URL je v databáze Google Safe Browsing – nezdieľajte ju, okamžite nahláste.'); }
   }
 
   // ── VirusTotal ─────────────────────────
   if(vtResult?.ok && !vtResult.unknown){
     const threats = (vtResult.malicious || 0) + (vtResult.suspicious || 0);
     if(threats === 0) score += 10;
-    else { score -= 30; recs.push(`VirusTotal: ${threats} antivirus engines flagged this domain as malicious.`); }
+    else { score -= 30; recs.push(`VirusTotal: ${threats} antivírusových skenerov označilo túto doménu ako nebezpečnú.`); }
   }
 
   // ── URL risk / Typosquatting / Subdomain / TLD ────────────
@@ -4462,14 +4462,14 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   const hasTyposquat = urlFindings.some(f => f.sev === 'high' && f.text.includes('typosquatting'));
   if(hasTyposquat){
     score -= 30;
-    recs.push('⚠️ Domain imitates a known brand (typosquatting) – high phishing risk.');
+    recs.push('⚠️ Doména imituje známu značku (typosquatting) – vysoké riziko phishingu.');
   }
 
   // 2. Ostatné high-sev URL flags (IP adresa, @, skrátená URL…) ale nie typosquat
   const otherHighFlags = urlFindings.filter(f => f.sev === 'high' && !f.text.includes('typosquatting'));
   if(otherHighFlags.length){
     score -= 15;
-    recs.push('Suspicious URL: ' + otherHighFlags.map(f => f.text).join(' | '));
+    recs.push('Podozrivá URL: ' + otherHighFlags.map(f => f.text).join(' | '));
   }
 
   // 3. Počet subdomén (>2 = podozrivé, napr. paypal.secure.login.ru)
@@ -4478,7 +4478,7 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   const subdomainCount = Math.max(0, hostParts.length - 2);
   if(subdomainCount > 2){
     score -= 20;
-    recs.push(`Domain has ${subdomainCount} subdomain levels – a common phishing technique.`);
+    recs.push(`Doména má ${subdomainCount} úrovní subdomén – typická technika phishingu.`);
   }
 
   // 4. Riziková TLD
@@ -4486,14 +4486,14 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   const tldStr = hostname ? '.'+hostname.split('.').pop() : '';
   if(riskyTLDs.includes(tldStr)){
     score -= 15;
-    recs.push(`Risky TLD "${tldStr}" – high prevalence of phishing domains with this extension.`);
+    recs.push(`Riziková TLD "${tldStr}" – vysoký výskyt phishingových domén s touto príponou.`);
   }
 
   // ── WHOIS – vek domény ─────────────────
   if(whoisResult?.age_days != null){
     const age = whoisResult.age_days;
     if(age > 730)        score += 5;
-    else if(age < 180){  score -= 15; recs.push(`Domain is only ${Math.round(age/30)} months old – exercise increased caution.`); }
+    else if(age < 180){  score -= 15; recs.push(`Doména má len ${Math.round(age/30)} mesiacov – zvýšená opatrnosť.`); }
   }
 
   // ── Shodan – nebezpečné porty ──────────
@@ -4502,7 +4502,7 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
     const dangerMed =(shodanResult.openDangerous||[]).filter(p=>p.risk==='medium');
     if(dangerHigh.length){
       score -= dangerHigh.length * 20;
-      recs.push(`Shodan: dangerous ports publicly exposed – ${dangerHigh.map(p=>p.port+' ('+p.label+')').join(', ')}. Restrict access via firewall.`);
+      recs.push(`Shodan: nebezpečné porty sú verejne dostupné – ${dangerHigh.map(p=>p.port+' ('+p.label+')').join(', ')}. Obmedzte prístup firewallom.`);
     }
     if(dangerMed.length){
       score -= dangerMed.length * 5;
@@ -4512,10 +4512,10 @@ function buildWebReport(url, hostname, urlRisk, gsbResult, obsResult, sslResult=
   // ── Bezpečnostné hlavičky ──────────────
   const hdr = obsResult?.tests || {};
   const hdrDefs = [
-    { key:'strict-transport-security', label:'HSTS',                pts:5,  desc:'Enforces HTTPS. Protects against downgrade attacks.', rec:'Configure HSTS header on your server to enforce HTTPS connections.' },
-    { key:'content-security-policy',   label:'CSP',                 pts:5,  desc:'Restricts script sources. Protects against XSS.',      rec:'Configure Content Security Policy (CSP) header to prevent XSS attacks.' },
-    { key:'x-frame-options',           label:'X-Frame-Options',     pts:3,  desc:'Prevents clickjacking attacks.',                       rec:'Add X-Frame-Options header to prevent your site from being embedded in iframes.' },
-    { key:'x-content-type-options',    label:'X-Content-Type-Options', pts:3, desc:'Prevents MIME sniffing.',                            rec:'Add X-Content-Type-Options header to prevent MIME type sniffing.' },
+    { key:'strict-transport-security', label:'HSTS',                pts:5,  desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.',         rec:'Nastavte HSTS hlavičku na serveri – vynutí šifrované HTTPS spojenie.' },
+    { key:'content-security-policy',   label:'CSP',                 pts:5,  desc:'Obmedzuje zdroje skriptov. Ochrana proti XSS.',         rec:'Nastavte CSP hlavičku na serveri – ochrana proti škodlivým skriptom (XSS).' },
+    { key:'x-frame-options',           label:'X-Frame-Options',     pts:3,  desc:'Zabraňuje clickjacking útokom.',                        rec:'Nastavte X-Frame-Options hlavičku – zabraňuje vkladaniu webu do iFrame.' },
+    { key:'x-content-type-options',    label:'X-Content-Type-Options', pts:3, desc:'Zabraňuje MIME sniffingu.',                           rec:'Nastavte X-Content-Type-Options hlavičku – zabraňuje MIME sniffingu.' },
   ];
   for(const d of hdrDefs){
     if(hdr[d.key]?.pass === true){
