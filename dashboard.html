@@ -4721,6 +4721,27 @@ function renderShodanPanel(sh){
         ⚠️ <strong>Chýba DDoS ochrana</strong> — Web nevyužíva známe komerčné DDoS ochrany (Cloudflare, Akamai). Ak server nemá vlastnú robustnú infraštruktúru, hrozí vyradenie z prevádzky do <strong>60 sekúnd</strong>.
       </div>`;
 
+  const IOT_PORTS = {
+    554:  { label:'RTSP',        device:'IP kamera',          risk:'critical' },
+    8080: { label:'HTTP-alt',    device:'Kamera/Router',      risk:'high' },
+    8443: { label:'HTTPS-alt',   device:'Kamera/Router',      risk:'high' },
+    9100: { label:'JetDirect',   device:'Tlačiareň',          risk:'high' },
+    5555: { label:'ADB',         device:'Android/IoT',        risk:'critical' },
+    23:   { label:'Telnet',      device:'Starý router/IoT',   risk:'critical' },
+    2323: { label:'Telnet-alt',  device:'IoT zariadenie',     risk:'critical' },
+    1883: { label:'MQTT',        device:'IoT sensor',         risk:'high' },
+  };
+
+  const iotFound=(sh.ports||[]).map(p=>IOT_PORTS[p.port]?{port:p.port,...IOT_PORTS[p.port]}:null).filter(Boolean);
+
+  const iotBanner = iotFound.length
+    ? `<div style="background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.25);border-radius:10px;padding:14px 16px;margin:12px 0">
+        <div style="color:#ff3b3b;font-weight:700;margin-bottom:8px">🎥 Zistené nezabezpečené IoT zariadenia</div>
+        ${iotFound.map(d=>`<div style="font-size:.83rem;color:#f87171;margin:4px 0">⚠️ Port ${d.port} (${escHtml(d.label)}) — pravdepodobne ${escHtml(d.device)}. Toto zariadenie môže byť zneužité ako súčasť botnetu.</div>`).join('')}
+        <div style="font-size:.8rem;color:#9ca3af;margin-top:8px">Odporúčame zablokovať tieto porty vo firewalle školy.</div>
+      </div>`
+    : `<div style="font-size:.78rem;color:var(--green);margin-top:8px">✅ Žiadne IoT zariadenia detekované</div>`;
+
   const meta=[
     sh.webserver?`<div><span style="color:var(--muted)">Webserver:</span> <b>${escHtml(sh.webserver)}</b></div>`:'',
     sh.os       ?`<div><span style="color:var(--muted)">OS:</span> <b>${escHtml(sh.os)}</b></div>`:'',
@@ -4737,6 +4758,7 @@ function renderShodanPanel(sh){
     </div>`:
     `<div style="font-size:.84rem;color:var(--muted)">Žiadne otvorené porty nenájdené</div>`}
     ${warningBanner}
+    ${iotBanner}
     ${cfBanner}
   </div>`;
 }
