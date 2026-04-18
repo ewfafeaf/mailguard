@@ -5,6 +5,7 @@
 <link rel="icon" type="image/png" href="nondox.png">
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>O nás – NonDox</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#000000;
@@ -22,17 +23,55 @@
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
 
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 32px;height:var(--nav-h);background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)}
-.nav-left{display:flex;align-items:center;gap:0}
-.nav-left a{color:#ffffff;text-decoration:none;font-size:.84rem;padding:8px 14px;border-radius:8px;transition:all .2s}
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;
+  background:#000000;border-bottom:1px solid rgba(255,255,255,.09);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:0.75rem 2rem}
+.nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-left{display:flex;justify-content:flex-start;align-items:center;gap:0}
+.nav-left a{color:#ffffff;text-decoration:none;font-size:.84rem;
+  padding:6px 13px;border-radius:7px;transition:color .18s,background .18s;font-weight:500;white-space:nowrap}
 .nav-left a:hover{color:#fff;background:rgba(255,255,255,.06)}
-.nav-logo img{height:44px;width:auto;display:block}
 .nav-right{display:flex;align-items:center;gap:8px;justify-self:end}
-.btn-signin{background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;padding:8px 18px;border-radius:8px;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-signin:hover{background:rgba(79,142,247,.25)}
-.btn-start{background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;color:#fff;padding:8px 18px;border-radius:8px;font-size:.84rem;font-weight:700;cursor:pointer;transition:all .2s}
-.btn-start:hover{opacity:.9;transform:translateY(-1px)}
+.btn-signin{background:transparent;border:none;color:rgba(255,255,255,.5);
+  padding:6px 12px;font-size:.84rem;font-weight:500;cursor:pointer;
+  font-family:inherit;transition:color .18s;white-space:nowrap}
+.btn-signin:hover{color:#fff}
+.btn-signup{background:#fff;color:#111;
+  border:1px solid #e4e4e7;
+  padding:6px 16px;border-radius:99px;font-size:.82rem;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:background .18s,border-color .18s;white-space:nowrap}
+.btn-signup:hover{background:#f4f4f5;border-color:#d4d4d8}
+.nav-hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer}
+.user-menu{position:relative}
+.user-avatar{width:40px;height:40px;border-radius:50%;
+  background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#4f8ef7;transition:all .2s}
+.user-avatar:hover{background:rgba(79,142,247,.25);border-color:#4f8ef7}
+.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:240px;
+  background:rgba(18,18,26,.98);border:1px solid rgba(79,142,247,.2);
+  border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);
+  backdrop-filter:blur(10px);
+  opacity:0;visibility:hidden;transform:translateY(-10px);
+  transition:all .2s;z-index:1000}
+.user-dropdown.active{opacity:1;visibility:visible;transform:translateY(0)}
+.user-dropdown-email{padding:12px 16px;font-size:.85rem;color:#8888aa;word-break:break-all}
+.user-dropdown-divider{height:1px;background:rgba(79,142,247,.1);margin:4px 0}
+.user-dropdown-item{width:100%;padding:12px 16px;display:flex;align-items:center;
+  gap:12px;font-size:.9rem;color:#eeeef5;background:transparent;border:none;
+  text-decoration:none;cursor:pointer;transition:background .15s;font-family:inherit}
+.user-dropdown-item:hover{background:rgba(79,142,247,.1)}
+.user-dropdown-item:last-child{border-radius:0 0 12px 12px;color:#ef4444}
+.user-dropdown-item svg{flex-shrink:0}
+@media(max-width:700px){
+  nav{grid-template-columns:auto 1fr}
+  .nav-left{display:none}
+  .nav-right{display:none}
+  .nav-hamburger{display:block;justify-self:end}
+}
 
 /* HERO */
 .about-hero{padding:calc(var(--nav-h) + 80px) 20px 60px;text-align:center;position:relative;overflow:hidden}
@@ -64,8 +103,6 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:32px 0
 .footer-links-row a:hover{color:#4f8ef7}
 
 @media(max-width:640px){
-  nav{padding:0 16px}
-  .nav-left{display:none}
   .about-body p{font-size:.97rem}
   .about-card{min-width:calc(50% - 7px)}
 }
@@ -74,20 +111,23 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:32px 0
 <body>
 
 <!-- NAV -->
-<nav>
+<nav id="mainNav">
   <div class="nav-left">
     <a href="index.html">Nástroj</a>
     <a href="index.html#how">Ako to funguje</a>
     <a href="index.html#pricing">Cenník</a>
+    <a href="index.html#faq">FAQ</a>
     <a href="about.html" style="color:#4f8ef7">O nás</a>
+    <a href="dashboard.html" id="navDashboardLink" style="display:none">Dashboard</a>
   </div>
-  <a href="index.html" style="display:flex;align-items:center;text-decoration:none;justify-self:center">
-    <img src="nondox.png" alt="NonDox" style="height:44px;width:auto"/>
+  <a class="nav-logo" href="index.html">
+    <img src="nondox.png" alt="NonDox" style="height:44px;width:auto;"/>
   </a>
-  <div class="nav-right">
-    <button class="btn-signin" onclick="location.href='dashboard.html'">Prihlásiť sa</button>
-    <button class="btn-start" onclick="location.href='dashboard.html'">Začať zadarmo →</button>
+  <div class="nav-right" id="navRight">
+    <button class="btn-signin" onclick="openAuthModal('login')">Prihlásiť sa</button>
+    <button class="btn-signup" onclick="openAuthModal('register')">Registrovať</button>
   </div>
+  <button class="nav-hamburger" aria-label="Menu">☰</button>
 </nav>
 
 <!-- HERO -->
@@ -136,5 +176,81 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:32px 0
   </div>
 </footer>
 
+<script>
+const _sb = supabase.createClient(
+  'https://qalcsmnvyuujsmnreglt.supabase.co',
+  'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+);
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function openAuthModal(mode){
+  location.href='index.html#' + (mode==='login' ? 'login' : 'register');
+}
+
+function updateNavAuth(user){
+  const navRight=document.getElementById('navRight');
+  const dashLink=document.getElementById('navDashboardLink');
+  if(user){
+    navRight.innerHTML=`
+      <div class="user-menu">
+        <button class="user-avatar" onclick="toggleUserDropdown()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-email" id="userDropdownEmail">${escHtml(user.email)}</div>
+          <div class="user-dropdown-divider"></div>
+          <a href="dashboard.html" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Dashboard
+          </a>
+          <button class="user-dropdown-item" onclick="doSignOut()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Log out
+          </button>
+        </div>
+      </div>`;
+    if(dashLink) dashLink.style.display='none';
+  } else {
+    navRight.innerHTML=`
+      <button class="btn-signin" onclick="openAuthModal('login')">Prihlásiť sa</button>
+      <button class="btn-signup" onclick="openAuthModal('register')">Registrovať</button>`;
+    if(dashLink) dashLink.style.display='none';
+  }
+}
+
+function toggleUserDropdown(){
+  const dropdown=document.getElementById('userDropdown');
+  if(dropdown) dropdown.classList.toggle('active');
+}
+
+document.addEventListener('click',e=>{
+  const menu=document.querySelector('.user-menu');
+  const dropdown=document.getElementById('userDropdown');
+  if(menu&&!menu.contains(e.target)) dropdown?.classList.remove('active');
+});
+
+async function doSignOut(){
+  await _sb.auth.signOut();
+}
+
+_sb.auth.onAuthStateChange((_event,session)=>{
+  updateNavAuth(session?.user ?? null);
+});
+
+_sb.auth.getSession().then(({data:{session}})=>{
+  updateNavAuth(session?.user ?? null);
+});
+</script>
 </body>
 </html>
