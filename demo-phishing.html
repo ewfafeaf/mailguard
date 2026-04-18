@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="nondox.png">
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bezpečnostný test – NonDox</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#000000;
+  --surface:#12121a;
+  --surface2:#1a1a28;
+  --border:#2a2a45;
+  --accent:#4f8ef7;
+  --accent2:#7c5ff7;
+  --teal:#00d4ff;
+  --red:#ef4444;
+  --red-dim:rgba(239,68,68,.12);
+  --red-border:rgba(239,68,68,.3);
+  --yellow:#f59e0b;
+  --yellow-dim:rgba(245,158,11,.1);
+  --yellow-border:rgba(245,158,11,.28);
+  --text:#eeeef5;
+  --muted:#8888aa;
+  --nav-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* WARNING BANNER */
+.warn-banner{position:fixed;top:0;left:0;right:0;z-index:200;
+  background:#7f1d1d;border-bottom:2px solid #ef4444;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px 20px;font-size:.88rem;font-weight:700;letter-spacing:.06em;
+  color:#fecaca;text-transform:uppercase;text-align:center}
+.warn-banner-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;
+  animation:blink 1s ease-in-out infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* NAV */
+nav{position:fixed;top:calc(var(--nav-h));left:0;right:0;z-index:100;
+  background:#000;border-bottom:1px solid rgba(255,255,255,.09);
+  display:flex;align-items:center;justify-content:center;
+  padding:0.6rem 2rem;height:52px}
+.nav-logo{display:flex;align-items:center;text-decoration:none}
+.nav-logo img{height:30px;width:auto;display:block}
+
+/* PAGE */
+.page{padding:calc(var(--nav-h) + 52px + 60px) 20px 80px;
+  display:flex;flex-direction:column;align-items:center;gap:32px;
+  max-width:680px;margin:0 auto}
+
+/* HERO */
+.hero-label{display:inline-flex;align-items:center;gap:8px;
+  background:var(--red-dim);border:1px solid var(--red-border);
+  border-radius:99px;padding:5px 18px;font-size:.72rem;font-weight:800;
+  color:#f87171;letter-spacing:.1em;text-transform:uppercase}
+h1{font-size:clamp(2rem,5vw,2.9rem);font-weight:900;line-height:1.08;
+  letter-spacing:-1.5px;text-align:center;color:#fff}
+h1 span{color:#ef4444}
+.subtext{font-size:1.05rem;color:var(--muted);text-align:center;line-height:1.7;max-width:540px}
+
+/* STATS CARD */
+.stats-card{width:100%;background:var(--red-dim);border:1px solid var(--red-border);
+  border-radius:16px;overflow:hidden}
+.stats-card-header{display:flex;align-items:center;gap:10px;
+  padding:16px 24px;border-bottom:1px solid var(--red-border);
+  font-size:.8rem;font-weight:800;color:#f87171;letter-spacing:.08em;text-transform:uppercase}
+.stats-card-header svg{flex-shrink:0}
+.stats-rows{display:flex;flex-direction:column}
+.stat-row{display:grid;grid-template-columns:180px 1fr;align-items:center;
+  gap:12px;padding:14px 24px;border-bottom:1px solid rgba(239,68,68,.1)}
+.stat-row:last-child{border-bottom:none}
+.stat-label{font-size:.8rem;color:#f87171;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.stat-value{font-size:.95rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;
+  font-family:'Courier New',monospace}
+.stat-value.loading{color:var(--muted);font-weight:400}
+
+/* STRESS CARD */
+.stress-card{width:100%;background:rgba(239,68,68,.06);border:1px solid var(--red-border);
+  border-radius:16px;padding:28px 28px 24px}
+.stress-card h3{font-size:1rem;font-weight:700;color:#f87171;margin-bottom:18px;line-height:1.5}
+.stress-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.stress-item{display:flex;align-items:flex-start;gap:10px;font-size:.95rem;
+  color:#fca5a5;line-height:1.5}
+.stress-item .dot{flex-shrink:0;margin-top:3px}
+.stress-legal{font-size:.82rem;color:rgba(252,165,165,.65);
+  border-top:1px solid rgba(239,68,68,.15);padding-top:16px;line-height:1.6}
+.stress-legal strong{color:#fca5a5}
+
+/* INFO CARD */
+.info-card{width:100%;background:var(--yellow-dim);border:1px solid var(--yellow-border);
+  border-radius:16px;padding:24px 28px;display:flex;gap:14px;align-items:flex-start}
+.info-icon{font-size:1.4rem;flex-shrink:0;margin-top:2px}
+.info-text{font-size:.92rem;color:#fde68a;line-height:1.7}
+.info-text strong{color:#fcd34d;font-weight:700}
+
+/* CTA */
+.cta-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+.btn-cta{display:inline-block;width:100%;max-width:440px;
+  background:linear-gradient(90deg,#ef4444,#dc2626);
+  color:#fff;border:none;padding:18px 32px;border-radius:14px;
+  font-size:1.08rem;font-weight:800;cursor:pointer;text-decoration:none;
+  text-align:center;letter-spacing:.01em;
+  box-shadow:0 0 32px rgba(239,68,68,.35);
+  transition:opacity .2s,transform .1s}
+.btn-cta:hover{opacity:.92;transform:translateY(-2px)}
+.btn-cta:active{transform:scale(.98)}
+.cta-meta{font-size:.8rem;color:var(--muted);text-align:center;line-height:1.8}
+.cta-meta a{color:var(--accent);text-decoration:none}
+.cta-meta a:hover{text-decoration:underline}
+
+/* FOOTER */
+footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0;text-align:center}
+.footer-copy{font-size:.78rem;color:#4a5070}
+
+@media(max-width:600px){
+  .stat-row{grid-template-columns:1fr;gap:4px}
+  .stats-card-header,.stat-row{padding:12px 18px}
+  .stress-card,.info-card{padding:20px 18px}
+}
+</style>
+</head>
+<body>
+
+<!-- WARNING BANNER -->
+<div class="warn-banner">
+  <div class="warn-banner-dot"></div>
+  ⚠️ BEZPEČNOSTNÝ TEST — NONDOX AUDIT
+  <div class="warn-banner-dot"></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <img src="nondox.png" alt="NonDox"/>
+  </a>
+</nav>
+
+<!-- PAGE -->
+<div class="page">
+
+  <div class="hero-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Simulácia phishingového útoku
+  </div>
+
+  <h1>Práve ste klikli<br>na <span>phishingový link</span>.</h1>
+
+  <p class="subtext">Pred týždňom sme vám poslali email. Neodpovedali ste. Rozhodli sme sa ukázať prečo je to problém.</p>
+
+  <!-- STATS CARD -->
+  <div class="stats-card">
+    <div class="stats-card-header">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Čo sme zaznamenali:
+    </div>
+    <div class="stats-rows">
+      <div class="stat-row">
+        <span class="stat-label">Čas kliknutia</span>
+        <span class="stat-value" id="statTime">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Vaša IP adresa</span>
+        <span class="stat-value loading" id="statIp">Načítavam…</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Zariadenie</span>
+        <span class="stat-value" id="statDevice">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Krajina</span>
+        <span class="stat-value loading" id="statCountry">Načítavam…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRESS CARD -->
+  <div class="stress-card">
+    <h3>Keby toto bol reálny útok, útočník by teraz mal:</h3>
+    <div class="stress-list">
+      <div class="stress-item"><span class="dot">🔴</span><span>Prístup k vašim prihlasovacím údajom</span></div>
+      <div class="stress-item"><span class="dot">🔴</span><span>Prístup k osobným údajom žiakov</span></div>
+      <div class="stress-item"><span class="dot">🔴</span><span>Možnosť zašifrovať všetky školské dáta (ransomware)</span></div>
+    </div>
+    <p class="stress-legal">Podľa <strong>GDPR</strong> a <strong>zákona č. 69/2018 Z.z.</strong> za únik dát osobne zodpovedáte vy.</p>
+  </div>
+
+  <!-- INFO CARD -->
+  <div class="info-card">
+    <div class="info-icon">💡</div>
+    <div class="info-text">
+      <strong>Ak na tento link klikli vaši učitelia</strong> — dostanete report.<br>
+      <strong>Ak naň klikli ste</strong> — je čas konať ihneď.
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-wrap">
+    <a class="btn-cta" href="index.html">Chcem ochranu pre svoju školu →</a>
+    <div class="cta-meta">
+      Bezplatná konzultácia &nbsp;•&nbsp; Bez záväzkov &nbsp;•&nbsp; Odpoveď do 24 hodín<br>
+      Kontakt: <a href="mailto:peter@nondox.com">peter@nondox.com</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-copy">© 2026 NonDox. Všetky práva vyhradené.</div>
+</footer>
+
+<script>
+// Time
+(function(){
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const str = `${pad(now.getDate())}.${pad(now.getMonth()+1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  document.getElementById('statTime').textContent = str;
+})();
+
+// Device
+(function(){
+  const ua = navigator.userAgent;
+  let device = 'Desktop';
+  if(/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) device = 'Mobile';
+  else if(/Tablet|iPad/i.test(ua)) device = 'Tablet';
+  document.getElementById('statDevice').textContent = device;
+})();
+
+// IP + Country via ipapi.co (free, no key needed, returns JSON with ip + country_name)
+fetch('https://ipapi.co/json/')
+  .then(r => r.json())
+  .then(data => {
+    const ipEl = document.getElementById('statIp');
+    const countryEl = document.getElementById('statCountry');
+    ipEl.textContent = data.ip || 'Nedostupné';
+    ipEl.classList.remove('loading');
+    countryEl.textContent = data.country_name || 'Nedostupné';
+    countryEl.classList.remove('loading');
+  })
+  .catch(() => {
+    document.getElementById('statIp').textContent = 'Nedostupné';
+    document.getElementById('statIp').classList.remove('loading');
+    document.getElementById('statCountry').textContent = 'Nedostupné';
+    document.getElementById('statCountry').classList.remove('loading');
+  });
+</script>
+</body>
+</html>
