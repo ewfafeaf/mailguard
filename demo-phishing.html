@@ -285,7 +285,7 @@ async function submitContactForm() {
 
   msg.innerHTML = '<span style="color:#7a82a0">Odosielam...</span>';
 
-  await fetch('https://nondox.com/api/send-ticket-email', {
+  await fetch('https://www.nondox.com/api/send-ticket-email', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
