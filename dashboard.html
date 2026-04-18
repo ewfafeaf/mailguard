@@ -3974,6 +3974,9 @@ async function webScan(){
   // Vyrenderuj výsledky POD overlayom (žiadne blikanie keď overlay zmizne)
   console.log('[webScan] FINAL score:', report.score);
   resultEl.style.display='block';
+  _lastWsReport=report;
+  _lastWsScanUrl=scanUrl;
+  _lastWsObsResult=obsResult;
   resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report,shodanResult);
 
   // Až potom zavrieme overlay — obsah je už pripravený pod ním
@@ -4098,6 +4101,9 @@ const _WS_STEPS=[
 ];
 let _wsScanStart=0;
 let _wsProgressChain=Promise.resolve(); // sériová fronta krokov
+let _lastWsReport=null;
+let _lastWsScanUrl='';
+let _lastWsObsResult=null;
 
 function wsProgressHTML(){
   return`<div id="wsProgressSection" class="ws-scan-progress">
@@ -4334,6 +4340,7 @@ function renderFinalScore(r){
     <div class="dns-score-circle">${s}<span style="font-size:.95rem;font-weight:400;color:rgba(255,255,255,.4)">/100</span></div>
     <div style="margin-top:10px;font-size:.9rem;font-weight:700;color:${verdictCol};letter-spacing:.02em">${verdict}</div>
     ${r.gsbChecked?'<div style="margin-top:4px;font-size:.68rem;color:#555e70;letter-spacing:.06em;text-transform:uppercase">GSB checked</div>':''}
+    <button onclick="generateAuditPDF()" style="margin-top:14px;padding:8px 18px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.35);border-radius:8px;color:#4f8ef7;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s" onmouseover="this.style.background='rgba(79,142,247,.28)'" onmouseout="this.style.background='rgba(79,142,247,.15)'">📄 Stiahnuť PDF audit</button>
   </div>`;
 }
 
@@ -6837,6 +6844,186 @@ async function generatePoliceReport(){
   }
 
   doc.save('nondox-police-report-'+dateStr.replace(/\./g,'-')+'.pdf');
+}
+
+/* ══════════════════════════════════════════
+   WEB AUDIT PDF
+══════════════════════════════════════════ */
+async function generateAuditPDF(){
+  const report=_lastWsReport;
+  const scanUrl=_lastWsScanUrl;
+  if(!report){ alert('Najprv spustite skenovanie webu.'); return; }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, margin=18, contentW=W-2*margin;
+  let y=margin;
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+
+  const BLK=[0,0,0], WHT=[255,255,255], GRY=[100,100,100];
+  const CLR_GREEN=[34,197,94], CLR_ORG=[249,115,22], CLR_RED=[239,68,68], CLR_BLUE=[79,142,247];
+  const TH_BG=[235,240,255];
+
+  const sf=(sz,style='normal',rgb=BLK)=>{ doc.setFontSize(sz);doc.setFont('helvetica',style);doc.setTextColor(...rgb); };
+  const ln=(x1,y1,x2,y2,w=0.3,rgb=BLK)=>{ doc.setDrawColor(...rgb);doc.setLineWidth(w);doc.line(x1,y1,x2,y2); };
+  const box=(x,bY,bW,bH,fill=WHT,stroke=BLK,sw=0.3)=>{
+    doc.setFillColor(...fill);doc.setDrawColor(...stroke);doc.setLineWidth(sw);doc.rect(x,bY,bW,bH,'FD');
+  };
+  const checkY=(need=12)=>{ if(y+need>278){ doc.addPage();y=margin;drawHeader(); } };
+
+  const scoreColor=(s)=>s>=80?CLR_GREEN:s>=60?CLR_BLUE:s>=40?CLR_ORG:CLR_RED;
+  const passColor=(pass)=>pass?CLR_GREEN:CLR_RED;
+
+  // ── Page header ──
+  const drawHeader=async()=>{
+    try{
+      const img=new Image(); img.src='nondox.png';
+      await new Promise(r=>{ img.onload=r; img.onerror=r; });
+      const h=10; const w=h*(img.naturalWidth/img.naturalHeight)||40;
+      doc.addImage(img,'PNG',margin,margin,w,h);
+    }catch(e){
+      sf(16,'bold',CLR_BLUE); doc.text('NonDox',margin,margin+8);
+    }
+    sf(11,'bold',BLK);
+    doc.text('Bezpečnostný audit webu',W-margin,margin+4,{align:'right'});
+    sf(8,'normal',GRY);
+    doc.text(dateStr+' '+timeStr,W-margin,margin+9,{align:'right'});
+    ln(margin,margin+13,W-margin,margin+13,0.5,BLK);
+    y=margin+20;
+  };
+
+  await drawHeader();
+
+  // ── Doména ──
+  sf(9,'bold',GRY); doc.text('Skenovaná URL:',margin,y); y+=5;
+  box(margin,y,contentW,9,WHT,BLK,0.3);
+  sf(9,'bold',CLR_BLUE); doc.text(scanUrl,margin+3,y+6.2);
+  y+=13;
+
+  // ── Skóre ──
+  const s=report.score;
+  const sc=scoreColor(s);
+  const verdict=s>=80?'Výborná bezpečnosť':s>=60?'Dobrá bezpečnosť':s>=40?'Vyžaduje zlepšenie':'Slabá bezpečnosť';
+  box(margin,y,contentW,22,[245,247,255],BLK,0.4);
+  sf(26,'bold',sc); doc.text(String(s),margin+8,y+16);
+  sf(11,'normal',GRY); doc.text('/100',margin+20,y+16);
+  sf(12,'bold',sc); doc.text(verdict,margin+40,y+13);
+  y+=27;
+
+  // ── Tabuľka výsledkov ──
+  sf(9,'bold',BLK); doc.text('Výsledky kontrol',margin,y); y+=4;
+  ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+
+  const colW=[90,30,contentW-120];
+  const colX=[margin,margin+90,margin+120];
+  const thH=8;
+  box(margin,y,contentW,thH,TH_BG,BLK,0.3);
+  sf(7,'bold',BLK);
+  ['Kontrola','Výsledok','Detail'].forEach((h,i)=>{
+    doc.text(h,colX[i]+2,y+5.5);
+    if(i<2) ln(colX[i+1],y,colX[i+1],y+thH,0.2,BLK);
+  });
+  y+=thH;
+
+  const hdr=(_lastWsObsResult?.tests)||report.obsResult?.tests||{};
+
+  const hdrDefs=[
+    {key:'strict-transport-security', label:'HSTS'},
+    {key:'content-security-policy',   label:'CSP'},
+    {key:'x-frame-options',           label:'X-Frame-Options'},
+    {key:'x-content-type-options',    label:'X-Content-Type-Options'},
+    {key:'referrer-policy',           label:'Referrer-Policy'},
+    {key:'permissions-policy',        label:'Permissions-Policy'},
+  ];
+
+  const tableRows=[];
+
+  // SSL
+  const ssl=report.ssl||report._ssl||null;
+  if(ssl){
+    const grade=ssl.grade||'?';
+    const days=ssl.cert?.daysLeft;
+    tableRows.push(['SSL Certifikát', grade, days!=null?`Platnosť: ${days} dní`:'Aktívny']);
+  } else {
+    tableRows.push(['SSL Certifikát','N/A','Nedostupné']);
+  }
+
+  // HTTPS
+  const isHttps=scanUrl.startsWith('https://');
+  tableRows.push(['HTTPS',isHttps?'PASS':'FAIL',isHttps?'Spojenie je šifrované':'Nešifrované HTTP spojenie']);
+
+  // Security headers
+  hdrDefs.forEach(d=>{
+    const t=hdr[d.key];
+    const pass=t?.pass;
+    tableRows.push([d.label, pass===true?'PASS':pass===false?'FAIL':'N/A', pass===true?'Hlavička prítomná':'Hlavička chýba']);
+  });
+
+  // VirusTotal
+  const vt=report.vt||report._vt||null;
+  if(vt){
+    const malicious=vt.malicious||0;
+    tableRows.push(['VirusTotal',malicious===0?'CLEAN':malicious+' detections',`${malicious} / ${vt.total||0} skenerov`]);
+  }
+
+  // WHOIS / vek domény
+  const whois=report.whois||report._whois||null;
+  if(whois?.createdDate){
+    const age=whois.domainAge||'—';
+    tableRows.push(['Vek domény','INFO',`Registrovaná: ${whois.createdDate} (${age})`]);
+  }
+
+  tableRows.forEach(([check,result,detail],idx)=>{
+    const rH=9;
+    checkY(rH);
+    const bg=idx%2===0?WHT:[248,250,255];
+    box(margin,y,contentW,rH,bg,BLK,0.2);
+    ln(colX[1],y,colX[1],y+rH,0.2,BLK);
+    ln(colX[2],y,colX[2],y+rH,0.2,BLK);
+    sf(7,'normal',BLK); doc.text(check,colX[0]+2,y+5.8);
+    const isPASS=result==='PASS'||result==='CLEAN'||result==='A'||result==='A+';
+    const isFAIL=result==='FAIL'||result.includes('detection');
+    const rc=isPASS?CLR_GREEN:isFAIL?CLR_RED:GRY;
+    sf(7,'bold',rc); doc.text(result,colX[1]+2,y+5.8);
+    sf(7,'normal',GRY);
+    const detailLines=doc.splitTextToSize(detail,colW[2]-4);
+    doc.text(detailLines[0]||'',colX[2]+2,y+5.8);
+    y+=rH;
+  });
+  y+=8;
+
+  // ── Odporúčania ──
+  if(report.recs&&report.recs.length){
+    checkY(14);
+    sf(9,'bold',BLK); doc.text('Odporúčania',margin,y); y+=4;
+    ln(margin,y,W-margin,y,0.4,BLK); y+=5;
+    report.recs.forEach((rec,i)=>{
+      const lines=doc.splitTextToSize(`${i+1}. ${rec}`,contentW-6);
+      const rH=lines.length*4.8+4;
+      checkY(rH);
+      box(margin,y,contentW,rH,[255,252,235],[249,115,22],0.3);
+      sf(7,'normal',[120,80,0]);
+      doc.text(lines,margin+3,y+4.5);
+      y+=rH+2;
+    });
+    y+=4;
+  }
+
+  // ── Footer ──
+  const pageCount=doc.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    ln(margin,285,W-margin,285,0.4,BLK);
+    sf(6,'normal',GRY);
+    doc.text(`Vygenerované cez NonDox  •  nondox.com  •  ${dateStr}`,margin,289);
+    doc.text('Strana '+p+' / '+pageCount,W-margin,289,{align:'right'});
+  }
+
+  const filename='nondox-audit-'+scanUrl.replace(/https?:\/\//,'').replace(/[^a-z0-9]/gi,'-').slice(0,30)+'-'+dateStr.replace(/\./g,'-')+'.pdf';
+  doc.save(filename);
 }
 
 /* ══════════════════════════════════════════
