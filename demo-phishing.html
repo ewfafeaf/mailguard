@@ -168,7 +168,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
       </div>
       <div class="stat-row">
         <span class="stat-label">Vaša IP adresa</span>
-        <span class="stat-value loading" id="statIp">Načítavam…</span>
+        <span class="stat-value loading" id="ip-value">Načítavam…</span>
       </div>
       <div class="stat-row">
         <span class="stat-label">Zariadenie</span>
@@ -176,7 +176,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
       </div>
       <div class="stat-row">
         <span class="stat-label">Krajina</span>
-        <span class="stat-value loading" id="statCountry">Načítavam…</span>
+        <span class="stat-value loading" id="country-value">Načítavam…</span>
       </div>
     </div>
   </div>
@@ -240,21 +240,15 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
 })();
 
 // IP + Country via ipapi.co (free, no key needed, returns JSON with ip + country_name)
-fetch('https://ipapi.co/json/')
+fetch('https://freeipapi.com/api/json')
   .then(r => r.json())
   .then(data => {
-    const ipEl = document.getElementById('statIp');
-    const countryEl = document.getElementById('statCountry');
-    ipEl.textContent = data.ip || 'Nedostupné';
-    ipEl.classList.remove('loading');
-    countryEl.textContent = data.country_name || 'Nedostupné';
-    countryEl.classList.remove('loading');
+    document.getElementById('ip-value').textContent = data.ipAddress || 'Nedostupné';
+    document.getElementById('country-value').textContent = data.countryName || 'Nedostupné';
   })
   .catch(() => {
-    document.getElementById('statIp').textContent = 'Nedostupné';
-    document.getElementById('statIp').classList.remove('loading');
-    document.getElementById('statCountry').textContent = 'Nedostupné';
-    document.getElementById('statCountry').classList.remove('loading');
+    document.getElementById('ip-value').textContent = 'Nedostupné';
+    document.getElementById('country-value').textContent = 'Nedostupné';
   });
 </script>
 </body>
