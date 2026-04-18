@@ -4353,7 +4353,10 @@ function renderFinalScore(r){
     <div class="dns-score-circle">${s}<span style="font-size:.95rem;font-weight:400;color:rgba(255,255,255,.4)">/100</span></div>
     <div style="margin-top:10px;font-size:.9rem;font-weight:700;color:${verdictCol};letter-spacing:.02em">${verdict}</div>
     ${r.gsbChecked?'<div style="margin-top:4px;font-size:.68rem;color:#555e70;letter-spacing:.06em;text-transform:uppercase">GSB checked</div>':''}
-    <button onclick="generateAuditPDF()" style="margin-top:14px;padding:8px 18px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.35);border-radius:8px;color:#4f8ef7;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s" onmouseover="this.style.background='rgba(79,142,247,.28)'" onmouseout="this.style.background='rgba(79,142,247,.15)'">📄 Stiahnuť PDF audit</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px">
+      <button onclick="generateAuditPDF()" style="padding:8px 18px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.35);border-radius:8px;color:#4f8ef7;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s" onmouseover="this.style.background='rgba(79,142,247,.28)'" onmouseout="this.style.background='rgba(79,142,247,.15)'">📄 Stiahnuť PDF audit</button>
+      <button onclick="generateIncidentReport()" style="padding:8px 18px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:8px;color:#f87171;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s" onmouseover="this.style.background='rgba(239,68,68,.22)'" onmouseout="this.style.background='rgba(239,68,68,.12)'">📋 Generovať hlásenie o incidente</button>
+    </div>
   </div>`;
 }
 
@@ -7188,6 +7191,191 @@ async function generateAuditPDF(){
 
   const filename='nondox-audit-'+scanUrl.replace(/https?:\/\//,'').replace(/[^a-z0-9]/gi,'-').slice(0,30)+'-'+dateStr.replace(/\./g,'-')+'.pdf';
   doc.save(filename);
+}
+
+/* ══════════════════════════════════════════
+   INCIDENT REPORT PDF
+══════════════════════════════════════════ */
+async function generateIncidentReport(){
+  const report=_lastWsReport;
+  const scanUrl=_lastWsScanUrl;
+  const sh=_lastWsObsResult?._shodan||null;
+  if(!report){ alert('Najprv spustite skenovanie webu.'); return; }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, margin=18, contentW=W-2*margin;
+  let y=margin;
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+  const incidentId='NDX-'+now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+Math.floor(Math.random()*90000+10000);
+
+  const BLK=[0,0,0], WHT=[255,255,255], GRY=[100,100,100];
+  const CLR_RED=[239,68,68], CLR_ORG=[249,115,22], CLR_YELLOW=[234,179,8];
+  const CLR_GREEN=[34,197,94], CLR_BLUE=[79,142,247];
+  const CLR_REDBG=[255,245,245], CLR_THBG=[240,240,248];
+
+  const sf=(sz,style='normal',rgb=BLK)=>{ doc.setFontSize(sz);doc.setFont('helvetica',style);doc.setTextColor(...rgb); };
+  const ln=(x1,y1,x2,y2,w=0.3,rgb=BLK)=>{ doc.setDrawColor(...rgb);doc.setLineWidth(w);doc.line(x1,y1,x2,y2); };
+  const box=(x,bY,bW,bH,fill=WHT,stroke=BLK,sw=0.3)=>{ doc.setFillColor(...fill);doc.setDrawColor(...stroke);doc.setLineWidth(sw);doc.rect(x,bY,bW,bH,'FD'); };
+  const checkY=(need=12)=>{ if(y+need>278){ doc.addPage();y=margin;drawHeader(); } };
+
+  const drawHeader=async()=>{
+    try{
+      const img=new Image(); img.src='nondox.png';
+      await new Promise(r=>{ img.onload=r; img.onerror=r; });
+      const h=10; const w=h*(img.naturalWidth/img.naturalHeight)||40;
+      doc.addImage(img,'PNG',margin,margin,w,h);
+    }catch(e){
+      sf(16,'bold',CLR_BLUE); doc.text('NonDox',margin,margin+8);
+    }
+    sf(11,'bold',CLR_RED);
+    doc.text('HLÁSENIE O KYBERNETICKOM INCIDENTE',W-margin,margin+4,{align:'right'});
+    sf(8,'normal',GRY);
+    doc.text(`${dateStr}  ${timeStr}   č. ${incidentId}`,W-margin,margin+9,{align:'right'});
+    ln(margin,margin+13,W-margin,margin+13,0.6,CLR_RED);
+    y=margin+20;
+  };
+
+  await drawHeader();
+
+  // ── Pomocník: sekcia ──
+  const section=(num,title)=>{
+    checkY(14);
+    sf(9,'bold',BLK); doc.text(`${num}. ${title}`,margin,y); y+=4;
+    ln(margin,y,W-margin,y,0.35,[180,180,200]); y+=5;
+  };
+
+  const infoRow=(label,val,labelW=55)=>{
+    const rH=8;
+    checkY(rH);
+    box(margin,y,contentW,rH,WHT,BLK,0.2);
+    box(margin,y,labelW,rH,[245,245,250],BLK,0.2);
+    sf(7,'bold',GRY); doc.text(label,margin+2,y+5.2);
+    sf(7,'normal',BLK);
+    const lines=doc.splitTextToSize(String(val||'—'),contentW-labelW-4);
+    doc.text(lines[0]||'—',margin+labelW+2,y+5.2);
+    y+=rH;
+  };
+
+  // Zbieranie problémov
+  const hdr=(_lastWsObsResult?.tests)||report.obsResult?.tests||{};
+  const hdrDefs=[
+    {key:'strict-transport-security',label:'HSTS'},
+    {key:'content-security-policy',  label:'CSP'},
+    {key:'x-frame-options',          label:'X-Frame-Options'},
+    {key:'x-content-type-options',   label:'X-Content-Type-Options'},
+    {key:'referrer-policy',          label:'Referrer-Policy'},
+    {key:'permissions-policy',       label:'Permissions-Policy'},
+  ];
+  const failedHeaders=hdrDefs.filter(d=>hdr[d.key]?.pass===false);
+  const isHttps=scanUrl.startsWith('https://');
+  const sslResult=report.sslResult;
+  const vtResult=report.vtResult;
+  const whoisResult=report.whoisResult;
+
+  const problems=[];
+  if(!isHttps) problems.push({sev:'KRITICKÁ', text:'Chýba HTTPS – komunikácia nie je šifrovaná', rec:'Nasadiť TLS certifikát (napr. Let\'s Encrypt) a presmerovať HTTP na HTTPS.'});
+  if(sslResult?.cert?.expired) problems.push({sev:'KRITICKÁ', text:'SSL certifikát je expirovaný', rec:'Okamžite obnoviť SSL certifikát.'});
+  failedHeaders.forEach(d=> problems.push({sev:'VYSOKÁ', text:`Chýbajúca bezpečnostná hlavička: ${d.label}`, rec:`Nakonfigurovať hlavičku ${d.label} na webserveri.`}));
+  if(vtResult?.ok && (vtResult.malicious||0)>0) problems.push({sev:'KRITICKÁ', text:`VirusTotal: ${vtResult.malicious} detections – doména označená ako škodlivá`, rec:'Okamžite kontaktovať SK-CERT a preveriť kompromitáciu.'});
+  if(report.recs) report.recs.filter(r=>/Telnet|ADB|MQTT|JetDirect|RTSP|IoT/i.test(r)).forEach(r=>problems.push({sev:'VYSOKÁ', text:r, rec:'Zablokovať port vo firewalle školy.'}));
+
+  const critCount=problems.filter(p=>p.sev==='KRITICKÁ').length;
+  const sevLabel=critCount>=2?'KRITICKÁ':critCount===1?'VYSOKÁ':problems.length>=3?'VYSOKÁ':'STREDNÁ';
+  const sevColor=sevLabel==='KRITICKÁ'?CLR_RED:sevLabel==='VYSOKÁ'?CLR_ORG:CLR_YELLOW;
+
+  // ── Závažnosť box ──
+  box(margin,y,contentW,14,[255,245,245],CLR_RED,0.5);
+  sf(10,'bold',CLR_RED); doc.text(`Úroveň závažnosti: ${sevLabel}`,margin+4,y+9);
+  sf(8,'normal',GRY); doc.text(`Počet identifikovaných problémov: ${problems.length}`,W-margin-4,y+9,{align:'right'});
+  y+=18;
+
+  // ── Sekcia 1: Identifikácia ──
+  section('1','Identifikácia cieľa');
+  const hostname=scanUrl.replace(/https?:\/\//,'').split('/')[0];
+  infoRow('Doménové meno:', hostname);
+  infoRow('URL:', scanUrl);
+  infoRow('IP adresa:', _lastWsObsResult?._ip || report.sslResult?.ip || '—');
+  infoRow('Organizácia:', _lastWsObsResult?._org || '—');
+  infoRow('Dátum skenu:', `${dateStr} ${timeStr}`);
+  infoRow('Číslo hlásenia:', incidentId);
+  y+=6;
+
+  // ── Sekcia 2: Zistené problémy ──
+  section('2','Zistené bezpečnostné problémy');
+  if(!problems.length){
+    checkY(10);
+    sf(8,'normal',CLR_GREEN); doc.text('✓ Žiadne kritické problémy neboli zistené.',margin,y); y+=10;
+  } else {
+    const colX=[margin,margin+18,margin+78];
+    const colW=[18,60,contentW-78];
+    box(margin,y,contentW,8,CLR_THBG,BLK,0.3);
+    sf(7,'bold',BLK);
+    ['Závažnosť','Problém','Popis'].forEach((h,i)=>{ doc.text(h,colX[i]+2,y+5.5); if(i<2) ln(colX[i+1],y,colX[i+1],y+8,0.2,BLK); });
+    y+=8;
+    problems.forEach((p,idx)=>{
+      const descLines=doc.splitTextToSize(p.text,colW[2]-4);
+      const rH=Math.max(8,descLines.length*4.5+3);
+      checkY(rH);
+      box(margin,y,contentW,rH,idx%2===0?WHT:[248,248,252],BLK,0.2);
+      ln(colX[1],y,colX[1],y+rH,0.2,BLK); ln(colX[2],y,colX[2],y+rH,0.2,BLK);
+      const sc=p.sev==='KRITICKÁ'?CLR_RED:p.sev==='VYSOKÁ'?CLR_ORG:CLR_YELLOW;
+      sf(6,'bold',sc); doc.text(p.sev,colX[0]+2,y+5.5);
+      sf(7,'normal',BLK); doc.text(descLines,colX[2]+2,y+5.5);
+      y+=rH;
+    });
+  }
+  y+=6;
+
+  // ── Sekcia 3: Odporúčané opatrenia ──
+  section('3','Odporúčané opatrenia (termín: 30 dní — zákon č. 69/2018 Z.z.)');
+  if(problems.length){
+    problems.forEach((p,i)=>{
+      const lines=doc.splitTextToSize(`${i+1}. ${p.rec}`,contentW-6);
+      const rH=lines.length*4.8+4;
+      checkY(rH);
+      box(margin,y,contentW,rH,[255,252,235],[249,115,22],0.3);
+      sf(7,'normal',[120,80,0]); doc.text(lines,margin+3,y+4.5);
+      y+=rH+2;
+    });
+  } else {
+    sf(8,'normal',CLR_GREEN); doc.text('Žiadne opatrenia nie sú potrebné.',margin,y); y+=8;
+  }
+  y+=6;
+
+  // ── Sekcia 4: Kontaktné informácie ──
+  section('4','Kontaktné informácie pre nahlásenie incidentu');
+  const contacts=[
+    ['SK-CERT',       '+421 2 3235 9701 | sk-cert@nbu.gov.sk'],
+    ['NBÚ SR',        'www.nbu.gov.sk'],
+    ['NonDox podpora','peter@nondox.com'],
+  ];
+  contacts.forEach(([label,val])=>infoRow(label+':',val,48));
+  y+=6;
+
+  // ── Legislatívny rámec ──
+  checkY(20);
+  box(margin,y,contentW,18,[245,247,255],CLR_BLUE,0.4);
+  sf(7,'bold',CLR_BLUE); doc.text('Legislatívny rámec',margin+4,y+5.5);
+  sf(7,'normal',[60,70,100]);
+  doc.text('Zákon č. 69/2018 Z.z. o kybernetickej bezpečnosti ukladá povinnosť nahlásiť kybernetický incident',margin+4,y+10.5);
+  doc.text('Národnému bezpečnostnému úradu SR (NBÚ) do 24 hodín od jeho zistenia.',margin+4,y+15);
+  y+=22;
+
+  // ── Footer ──
+  const pageCount=doc.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    ln(margin,284,W-margin,284,0.4,BLK);
+    sf(6,'normal',GRY);
+    doc.text('Dokument vygenerovaný systémom NonDox  |  nondox.com  |  V súlade so zákonom č. 69/2018 Z.z.',margin,288);
+    doc.text('Strana '+p+' / '+pageCount,W-margin,288,{align:'right'});
+  }
+
+  doc.save(`nondox-incident-${incidentId}-${dateStr.replace(/\./g,'-')}.pdf`);
 }
 
 /* ══════════════════════════════════════════
