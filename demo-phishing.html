@@ -293,8 +293,12 @@ async function submitContactForm() {
     body: JSON.stringify({
       type: 'Záujem o NonDox — Demo phishing',
       priority: 'Vysoká',
-      description: `Škola: ${school}\nMeno: ${name}\nTelefón: ${phone}\nSpráva: ${message}`,
-      userEmail: email
+      userEmail: email,
+      name: name,
+      school: school,
+      phone: phone,
+      message: message,
+      description: 'Škola: ' + school + '\nMeno: ' + name + '\nTelefón: ' + phone + '\nSpráva: ' + message
     })
   });
 
