@@ -393,6 +393,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .ws-check-body{flex:1}
 .ws-check-title{font-size:.88rem;font-weight:600}
 .ws-check-desc{font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.45}
+.tooltip-wrap{position:relative;display:inline-block;cursor:help;margin-left:6px}
+.tooltip-wrap .tooltip-text{visibility:hidden;background:#1a1d27;color:#e8eaf0;font-size:.75rem;border-radius:8px;padding:8px 12px;position:absolute;z-index:100;bottom:125%;left:50%;transform:translateX(-50%);width:220px;border:1px solid #2e3350;line-height:1.5;font-weight:400}
+.tooltip-wrap:hover .tooltip-text{visibility:visible}
 .ws-recs{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.18);
   border-radius:10px;padding:14px 16px}
 .ws-recs-title{font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:8px;
@@ -4168,10 +4171,11 @@ function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,ob
   const urlOk=!urlRisk||urlRisk.score<30;
 
   // Helper: riadok kontroly
-  const cr=(pass,title,desc)=>`<div class="ws-check ${pass===null?'skip':pass?'pass':'fail'}">
+  const cr=(pass,title,desc,tooltip)=>`<div class="ws-check ${pass===null?'skip':pass?'pass':'fail'}">
     <div class="ws-check-icon">${pass===null?'⏭️':pass?'✅':'❌'}</div>
     <div class="ws-check-body">
-      <div class="ws-check-title">${escHtml(title)}</div>
+      <div class="ws-check-title">${escHtml(title)}${tooltip?`<span class="tooltip-wrap">ⓘ<span class="tooltip-text">${escHtml(tooltip)}</span></span>`:''}
+      </div>
       <div class="ws-check-desc">${escHtml(desc)}</div>
     </div></div>`;
 
@@ -4200,15 +4204,17 @@ function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,ob
   // Hlavičky
   const hdr=obsResult?.tests||{};
   const hdrDefs=[
-    {key:'strict-transport-security',label:'HSTS',              desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.'},
-    {key:'content-security-policy',  label:'Content-Security-Policy',desc:'Obmedzuje zdroje skriptov. Chráni pred XSS.'},
-    {key:'x-frame-options',          label:'X-Frame-Options',   desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.'},
-    {key:'x-content-type-options',   label:'X-Content-Type-Options',desc:'Zabraňuje MIME sniffingu.'},
+    {key:'strict-transport-security',label:'HSTS',                  desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.',        tooltip:'Chýba ochrana proti presmerovaniu na nezabezpečené stránky. Útočník môže zachytiť heslá učiteľov.'},
+    {key:'content-security-policy',  label:'CSP',                   desc:'Obmedzuje zdroje skriptov. Chráni pred XSS.',           tooltip:'Chýba ochrana proti vkladaniu cudzích škodlivých skriptov na web školy.'},
+    {key:'x-frame-options',          label:'X-Frame-Options',        desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.',tooltip:'Web školy môže byť vložený do inej stránky a zneužitý na phishing.'},
+    {key:'x-content-type-options',   label:'X-Content-Type-Options', desc:'Zabraňuje MIME sniffingu.',                             tooltip:'Prehliadač môže byť oklamaný pri načítaní súborov zo školského webu.'},
+    {key:'referrer-policy',          label:'Referrer-Policy',        desc:'Obmedzuje zdieľanie URL pri navigácii.',                tooltip:'Web školy zbytočne zdieľa citlivé informácie pri každom kliknutí.'},
+    {key:'permissions-policy',       label:'Permissions-Policy',     desc:'Kontroluje prístup k zariadeniam prehliadača.',         tooltip:'Chýba kontrola nad kamerou, mikrofónom a polohou na školskom webe.'},
   ];
   const hdrRows=hdrDefs.map(d=>{
     const t=hdr[d.key];
-    return t!=null?cr(t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc)
-                  :cr(null,d.label+' (nedostupné)',d.desc);
+    return t!=null?cr(t.pass===true,(t.pass?'✓ ':'✗ ')+d.label,d.desc,d.tooltip)
+                  :cr(null,d.label+' (nedostupné)',d.desc,d.tooltip);
   }).join('');
 
   return`<div class="hres" style="padding:20px">
