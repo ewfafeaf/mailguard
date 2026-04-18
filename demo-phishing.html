@@ -231,6 +231,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
       <input type="text" id="cf-school" placeholder="Názov školy" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
       <input type="email" id="cf-email" placeholder="Váš email" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
       <input type="tel" id="cf-phone" placeholder="Telefónne číslo (nepovinné)" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
+      <textarea id="cf-message" placeholder="Správa (nepovinné)" rows="3" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none;resize:vertical;width:100%"></textarea>
       <button onclick="submitContactForm()" style="padding:13px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit">Odoslať žiadosť →</button>
       <div id="cf-msg" style="text-align:center;font-size:.82rem"></div>
     </div>
@@ -276,6 +277,7 @@ async function submitContactForm() {
   const school = document.getElementById('cf-school').value.trim();
   const email = document.getElementById('cf-email').value.trim();
   const phone = document.getElementById('cf-phone').value.trim();
+  const message = document.getElementById('cf-message').value.trim();
   const msg = document.getElementById('cf-msg');
 
   if (!name || !school || !email) {
@@ -289,9 +291,9 @@ async function submitContactForm() {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
-      type: 'Demo phishing kontakt',
+      type: 'Záujem o NonDox — Demo phishing',
       priority: 'Vysoká',
-      description: 'Škola: ' + school + '\nMeno: ' + name + '\nTelefón: ' + phone,
+      description: `Škola: ${school}\nMeno: ${name}\nTelefón: ${phone}\nSpráva: ${message}`,
       userEmail: email
     })
   });

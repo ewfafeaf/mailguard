@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({
       from: 'NonDox Support <noreply@nondox.com>',
       to: 'nondox.support@gmail.com',
-      subject: `[NonDox Ticket] ${type} — ${priority}`,
+      subject: `🏫 Nová škola má záujem — ${type}`,
       html: `<div style="font-family:sans-serif;max-width:600px"><h2>Nový support ticket</h2><p><b>Od:</b> ${userEmail}</p><p><b>Typ:</b> ${type}</p><p><b>Priorita:</b> ${priority}</p><p><b>Popis:</b></p><p>${description}</p></div>`
     })
   });
