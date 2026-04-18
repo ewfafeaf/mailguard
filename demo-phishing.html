@@ -245,7 +245,7 @@ fetch('https://api64.ipify.org?format=json')
   .then(data => {
     const ip = data.ip;
     document.getElementById('ip-value').textContent = ip;
-    return fetch('https://ipwho.is/' + ip);
+    return fetch('https://ip-api.com/json/' + ip + '?fields=country&lang=sk');
   })
   .then(r => r.json())
   .then(data => {
