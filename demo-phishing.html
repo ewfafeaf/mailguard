@@ -245,11 +245,11 @@ fetch('https://api64.ipify.org?format=json')
   .then(data => {
     const ip = data.ip;
     document.getElementById('ip-value').textContent = ip;
-    return fetch('https://ip-api.com/json/' + ip + '?fields=country&lang=sk');
+    return fetch('https://ipapi.co/' + ip + '/country_name/');
   })
-  .then(r => r.json())
-  .then(data => {
-    document.getElementById('country-value').textContent = data.country || 'Nedostupné';
+  .then(r => r.text())
+  .then(country => {
+    document.getElementById('country-value').textContent = country || 'Nedostupné';
   })
   .catch(() => {
     document.getElementById('ip-value').textContent = 'Nedostupné';
