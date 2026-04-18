@@ -2120,8 +2120,21 @@ body::before{content:'';position:fixed;inset:0;
 
       <div class="hist-layout">
 
-        <!-- LEFT: Table -->
+        <!-- LEFT: Score trend chart + Table -->
         <div>
+          <!-- Score trend chart -->
+          <div id="scoreTrendWrap" style="background:rgba(26,29,39,.7);border:1px solid rgba(79,142,247,.2);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+            <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">
+              Vývoj bezpečnostného skóre (posledných 30 analýz)
+            </div>
+            <div id="scoreTrendChart" style="position:relative;height:140px">
+              <canvas id="scoreTrendCanvas"></canvas>
+            </div>
+            <div id="scoreTrendEmpty" style="display:none;padding:24px 0;text-align:center;color:var(--muted);font-size:.85rem">
+              Spustite viac analýz pre zobrazenie trendu
+            </div>
+          </div>
+
           <div class="hist-table-wrap">
             <div id="historyContent"><div class="history-empty">Načítavam históriu…</div></div>
           </div>
@@ -3261,7 +3274,7 @@ function showSection(s){
   if(s==='nova')       loadNovaExtras();
   if(s==='analyze')    loadAnalyzeSection();
   if(s==='nastavenia') refreshGsbKeyStatus();
-  if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats(); }
+  if(s==='historia'){ _histCalYear=new Date().getFullYear();_histCalMonth=new Date().getMonth();renderHistCalendar();loadHistory();loadHistStats();loadScoreTrendChart(); }
   if(s==='podpora') loadTickets();
   if(s==='plans') renderPlans();
   if(s==='team')    { if(!checkPlan('school')) showUpgradeModal('team'); else { loadTeachers(); loadPhishingCampaigns(); } }
@@ -5254,6 +5267,100 @@ function renderHistCalendar(){
   }
 
   el('histCalGrid').innerHTML=html;
+}
+
+let _scoreTrendChart=null;
+async function loadScoreTrendChart(){
+  if(!_currentUser) return;
+
+  const canvas=document.getElementById('scoreTrendCanvas');
+  const chartWrap=document.getElementById('scoreTrendChart');
+  const emptyMsg=document.getElementById('scoreTrendEmpty');
+  if(!canvas) return;
+
+  const{data,error}=await _sb.from('analyses')
+    .select('created_at,score')
+    .eq('user_id',_currentUser.id)
+    .not('score','is',null)
+    .order('created_at',{ascending:true})
+    .limit(30);
+
+  if(error||!data||data.length<2){
+    chartWrap.style.display='none';
+    emptyMsg.style.display='block';
+    return;
+  }
+
+  chartWrap.style.display='block';
+  emptyMsg.style.display='none';
+
+  const labels=data.map(r=>{
+    const d=new Date(r.created_at);
+    return d.toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'});
+  });
+  const scores=data.map(r=>r.score);
+
+  if(_scoreTrendChart){ _scoreTrendChart.destroy(); _scoreTrendChart=null; }
+
+  const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,140);
+  grad.addColorStop(0,'rgba(79,142,247,.45)');
+  grad.addColorStop(1,'rgba(79,142,247,.0)');
+
+  _scoreTrendChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{
+      data:scores,
+      fill:true,
+      backgroundColor:grad,
+      borderColor:'#4f8ef7',
+      borderWidth:2.5,
+      tension:.4,
+      pointBackgroundColor:'#4f8ef7',
+      pointBorderColor:'rgba(15,17,23,1)',
+      pointBorderWidth:2,
+      pointRadius:3,
+      pointHoverRadius:6
+    }]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(18,18,26,.98)',
+          titleColor:'#eeeef5',
+          bodyColor:'#8888aa',
+          borderColor:'rgba(79,142,247,.4)',
+          borderWidth:1,
+          padding:12,
+          displayColors:false,
+          callbacks:{
+            title:items=>labels[items[0].dataIndex],
+            label:c=>`Skóre: ${c.raw}/100`
+          }
+        }
+      },
+      scales:{
+        y:{
+          min:0,max:100,
+          grid:{color:'rgba(255,255,255,.04)'},
+          ticks:{color:'#8888aa',font:{size:10},stepSize:25}
+        },
+        x:{
+          grid:{display:false},
+          ticks:{
+            color:'#8888aa',
+            font:{size:10},
+            maxTicksLimit:10,
+            maxRotation:0
+          }
+        }
+      },
+      interaction:{intersect:false,mode:'index'},
+      animation:{duration:700}
+    }
+  });
 }
 
 function filterByDate(year, month, day){
