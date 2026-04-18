@@ -4639,23 +4639,17 @@ async function runShodanCheck(hostname){
 }
 
 /* ── Cloudflare IP range check ── */
-function ipInRange(ip, cidr){
-  try{
-    const [range, bits] = cidr.split('/');
-    const mask = ~((1 << (32 - parseInt(bits))) - 1) >>> 0;
-    const ipNum  = ip.split('.').reduce((acc,o)=>(acc<<8)|parseInt(o),0) >>> 0;
-    const rangeNum = range.split('.').reduce((acc,o)=>(acc<<8)|parseInt(o),0) >>> 0;
-    return (ipNum & mask) === (rangeNum & mask);
-  } catch(e){ return false; }
+function ipInRange(ip, cidr) {
+  const [range, bits] = cidr.split('/');
+  const ipParts = ip.split('.').map(Number);
+  const rangeParts = range.split('.').map(Number);
+  const ipInt = (ipParts[0]<<24)|(ipParts[1]<<16)|(ipParts[2]<<8)|ipParts[3];
+  const rangeInt = (rangeParts[0]<<24)|(rangeParts[1]<<16)|(rangeParts[2]<<8)|rangeParts[3];
+  const mask = ~((1<<(32-parseInt(bits)))-1);
+  return (ipInt & mask) === (rangeInt & mask);
 }
 
-const CF_RANGES=[
-  '103.21.244.0/22','103.22.200.0/22','103.31.4.0/22',
-  '104.16.0.0/13','104.24.0.0/14','108.162.192.0/18',
-  '131.0.72.0/22','141.101.64.0/18','162.158.0.0/15',
-  '172.64.0.0/13','173.245.48.0/20','188.114.96.0/20',
-  '190.93.240.0/20','197.234.240.0/22','198.41.128.0/17'
-];
+const CF_RANGES = ["103.21.244.0/22","103.22.200.0/22","103.31.4.0/22","104.16.0.0/13","104.24.0.0/14","108.162.192.0/18","131.0.72.0/22","141.101.64.0/18","162.158.0.0/15","172.64.0.0/13","173.245.48.0/20","188.114.96.0/20","190.93.240.0/20","197.234.240.0/22","198.41.128.0/17"];
 
 function isCloudflareIP(ip){
   if(!ip) return false;
@@ -4713,16 +4707,11 @@ function renderShodanPanel(sh){
 
   const isCF = isCloudflareIP(sh.ip);
   const cfBanner = isCF
-    ? `<div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;gap:10px;font-size:.83rem">
-        <span style="font-size:1.1rem;flex-shrink:0">✅</span>
-        <div style="font-weight:600;color:var(--green)">DDoS ochrana aktívna — Web je chránený cez Cloudflare</div>
+    ? `<div style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);border-radius:10px;padding:14px 16px;margin:12px 0;font-size:.85rem;color:#00ff88">
+        ✅ <strong>DDoS ochrana aktívna</strong> — Web je chránený cez Cloudflare reverznou proxy.
       </div>`
-    : `<div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);display:flex;align-items:flex-start;gap:10px;font-size:.83rem">
-        <span style="font-size:1.1rem;flex-shrink:0">⚠️</span>
-        <div>
-          <div style="font-weight:700;color:var(--red);margin-bottom:2px">Chýba DDoS ochrana</div>
-          <div style="color:var(--muted);line-height:1.5">Web nie je za reverznou proxy. Pri útoku môže byť server vyradený z prevádzky do 60 sekúnd. Odporúčame nasadiť Cloudflare ochranu.</div>
-        </div>
+    : `<div style="background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.25);border-radius:10px;padding:14px 16px;margin:12px 0;font-size:.85rem;color:#ff3b3b">
+        ⚠️ <strong>Chýba DDoS ochrana</strong> — Web nie je za reverznou proxy. Pri útoku môže byť server vyradený z prevádzky do <strong>60 sekúnd</strong>. Odporúčame nasadiť Cloudflare ochranu.
       </div>`;
 
   const meta=[
