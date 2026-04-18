@@ -207,10 +207,9 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
 
   <!-- CTA -->
   <div class="cta-wrap">
-    <a class="btn-cta" href="index.html">Chcem ochranu pre svoju školu →</a>
+    <button class="btn-cta" onclick="document.getElementById('contactModal').style.display='flex'">Chcem ochranu pre svoju školu →</button>
     <div class="cta-meta">
-      Bezplatná konzultácia &nbsp;•&nbsp; Bez záväzkov &nbsp;•&nbsp; Odpoveď do 24 hodín<br>
-      Kontakt: <a href="mailto:peter@nondox.com">peter@nondox.com</a>
+      Bezplatná konzultácia &nbsp;•&nbsp; Bez záväzkov &nbsp;•&nbsp; Odpoveď do 24 hodín
     </div>
   </div>
 
@@ -220,6 +219,23 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
 <footer>
   <div class="footer-copy">© 2026 NonDox. Všetky práva vyhradené.</div>
 </footer>
+
+<!-- CONTACT MODAL -->
+<div id="contactModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:16px;padding:36px;max-width:480px;width:100%;position:relative">
+    <button onclick="document.getElementById('contactModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#7a82a0;font-size:1.2rem;cursor:pointer">✕</button>
+    <h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px">Chcem ochranu pre svoju školu</h3>
+    <p style="font-size:.85rem;color:#7a82a0;margin-bottom:24px">Vyplňte formulár a ozveme sa vám do 24 hodín.</p>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input type="text" id="cf-name" placeholder="Vaše meno a priezvisko" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
+      <input type="text" id="cf-school" placeholder="Názov školy" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
+      <input type="email" id="cf-email" placeholder="Váš email" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
+      <input type="tel" id="cf-phone" placeholder="Telefónne číslo (nepovinné)" style="padding:12px 14px;background:#22263a;border:1px solid #2e3350;border-radius:9px;color:#e8eaf0;font-family:inherit;font-size:.92rem;outline:none"/>
+      <button onclick="submitContactForm()" style="padding:13px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit">Odoslať žiadosť →</button>
+      <div id="cf-msg" style="text-align:center;font-size:.82rem"></div>
+    </div>
+  </div>
+</div>
 
 <script>
 // Time
@@ -254,6 +270,38 @@ fetch('https://api.ipify.org?format=json')
     document.getElementById('ip-value').textContent = 'Nedostupné';
     document.getElementById('country-value').textContent = 'Nedostupné';
   });
+
+async function submitContactForm() {
+  const name = document.getElementById('cf-name').value.trim();
+  const school = document.getElementById('cf-school').value.trim();
+  const email = document.getElementById('cf-email').value.trim();
+  const phone = document.getElementById('cf-phone').value.trim();
+  const msg = document.getElementById('cf-msg');
+
+  if (!name || !school || !email) {
+    msg.innerHTML = '<span style="color:#ef4444">Vyplňte meno, školu a email.</span>';
+    return;
+  }
+
+  msg.innerHTML = '<span style="color:#7a82a0">Odosielam...</span>';
+
+  await fetch('/api/send-ticket-email', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      type: 'Demo phishing kontakt',
+      priority: 'Vysoká',
+      description: 'Škola: ' + school + '\nMeno: ' + name + '\nTelefón: ' + phone,
+      userEmail: email
+    })
+  });
+
+  msg.innerHTML = '<span style="color:#22c55e">✅ Ďakujeme! Ozveme sa do 24 hodín.</span>';
+  document.getElementById('cf-name').value = '';
+  document.getElementById('cf-school').value = '';
+  document.getElementById('cf-email').value = '';
+  document.getElementById('cf-phone').value = '';
+}
 </script>
 </body>
 </html>
