@@ -4711,7 +4711,7 @@ function renderShodanPanel(sh){
         ✅ <strong>DDoS ochrana aktívna</strong> — Web je chránený cez Cloudflare reverznou proxy.
       </div>`
     : `<div style="background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.25);border-radius:10px;padding:14px 16px;margin:12px 0;font-size:.85rem;color:#ff3b3b">
-        ⚠️ <strong>Chýba DDoS ochrana</strong> — Web nie je za reverznou proxy. Pri útoku môže byť server vyradený z prevádzky do <strong>60 sekúnd</strong>. Odporúčame nasadiť Cloudflare ochranu.
+        ⚠️ <strong>Chýba DDoS ochrana</strong> — Web nevyužíva známe komerčné DDoS ochrany (Cloudflare, Akamai). Ak server nemá vlastnú robustnú infraštruktúru, hrozí vyradenie z prevádzky do <strong>60 sekúnd</strong>.
       </div>`;
 
   const meta=[
