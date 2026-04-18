@@ -1,0 +1,33 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{"type": "host", "value": "portal-skol.sk"}],
+      "destination": "https://nondox.com/skolenie",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/skolenie",
+      "destination": "/demo-phishing.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/o-nas",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/reset-hesla",
+      "destination": "/reset-password.html"
+    },
+    {
+      "source": "/phishing-vysledok",
+      "destination": "/phishing-result.html"
+    }
+  ]
+}
