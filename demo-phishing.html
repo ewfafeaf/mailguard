@@ -240,11 +240,16 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:28px 0
 })();
 
 // IP + Country via ipapi.co (free, no key needed, returns JSON with ip + country_name)
-fetch('https://freeipapi.com/api/json')
+fetch('https://api64.ipify.org?format=json')
   .then(r => r.json())
   .then(data => {
-    document.getElementById('ip-value').textContent = data.ipAddress || 'Nedostupné';
-    document.getElementById('country-value').textContent = data.countryName || 'Nedostupné';
+    const ip = data.ip;
+    document.getElementById('ip-value').textContent = ip;
+    return fetch('https://ipwho.is/' + ip);
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('country-value').textContent = data.country || 'Nedostupné';
   })
   .catch(() => {
     document.getElementById('ip-value').textContent = 'Nedostupné';
