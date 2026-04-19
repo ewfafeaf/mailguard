@@ -460,8 +460,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .nav-hamburger{display:flex;align-items:center}
   #mobileMenuBtn{display:block!important}
   nav{grid-template-columns:auto 1fr;padding:0 16px}
-  .nav-left{display:none;position:fixed;top:68px;left:0;right:0;background:#000;flex-direction:column;padding:20px;gap:8px;z-index:99}
-  .nav-left.open{display:flex}
+  .nav-left{display:none;position:fixed;top:0;right:0;bottom:0;width:80%;max-width:320px;background:#0a0a0f;flex-direction:column;padding:80px 24px 32px;gap:4px;z-index:999;transform:translateX(100%);transition:transform .3s ease;border-left:1px solid rgba(255,255,255,.08)}
+  .nav-left.open{display:flex;transform:translateX(0)}
   .nav-left a{padding:10px 14px;font-size:.95rem}
   .mobile-auth-btns{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);width:100%}
   .mobile-auth-btns .btn-signin{color:rgba(255,255,255,.7);font-size:.92rem;text-align:left;padding:10px 14px}
@@ -793,6 +793,7 @@ input#heroInput:-webkit-autofill:focus {
 <!-- ── NAV ── -->
 <nav id="mainNav">
   <div class="nav-left">
+    <button onclick="toggleMobileMenu()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1">✕</button>
     <a href="#hero">Nástroj</a>
     <a href="#how">Ako to funguje</a>
     <a href="#pricing">Cenník</a>
@@ -813,6 +814,7 @@ input#heroInput:-webkit-autofill:focus {
   </div>
   <button id="mobileMenuBtn" class="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">☰</button>
 </nav>
+<div id="mobileOverlay" onclick="toggleMobileMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998"></div>
 
 <!-- ── HERO ── -->
 <div class="particles" id="particles"></div>
@@ -2102,7 +2104,9 @@ function toggleFeature(btn){
 
 function toggleMobileMenu() {
   const menu = document.querySelector('.nav-left');
+  const overlay = document.getElementById('mobileOverlay');
   menu.classList.toggle('open');
+  if(overlay) overlay.style.display = menu.classList.contains('open') ? 'block' : 'none';
 }
 
 function openModal(type){
