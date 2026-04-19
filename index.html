@@ -63,10 +63,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 
 
 /* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;
-  background:#000000;border-bottom:1px solid rgba(255,255,255,.09);
-  display:grid;grid-template-columns:auto 1fr auto;align-items:center;
-  padding:0 32px;height:var(--nav-h)}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:var(--nav-h);background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
 .nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
 .nav-logo img{height:32px;width:auto;display:block}
 /* left links — left-aligned, close to left edge */
@@ -461,8 +458,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:flex!important}
   nav{grid-template-columns:auto 1fr auto;padding:0 16px}
-  .nav-left{display:none;position:fixed;top:0;right:-100%;bottom:0;width:85%;max-width:300px;background:#0a0a0f;flex-direction:column;padding:72px 24px 32px;gap:4px;z-index:999;transition:right .3s ease;border-left:1px solid rgba(255,255,255,.08)}
-  .nav-left.open{display:flex;right:0}
+  .nav-left{display:none;position:fixed;top:0;right:0;bottom:0;left:auto;width:75%;max-width:280px;background:#0a0a0f;flex-direction:column;padding:60px 20px 32px;gap:4px;z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);border-left:1px solid rgba(255,255,255,.1);box-shadow:-20px 0 60px rgba(0,0,0,.8)}
+  .nav-left.open{display:flex;transform:translateX(0)}
   .mobile-auth-btns{display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);width:100%}
   .mobile-auth-btns .btn-signin{color:rgba(255,255,255,.7);font-size:.92rem;text-align:left;padding:10px 14px;background:none;border:none;cursor:pointer}
   .mobile-auth-btns .btn-signup{background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;border:none;border-radius:9px;padding:11px 14px;font-size:.92rem;font-weight:700;text-align:center;cursor:pointer}
@@ -800,7 +797,7 @@ input#heroInput:-webkit-autofill:focus {
   </div>
   <button id="mobileMenuBtn" class="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">☰</button>
 </nav>
-<div id="mobileOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:998" onclick="toggleMobileMenu()"></div>
+<div id="mobileOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:999" onclick="toggleMobileMenu()"></div>
 
 <!-- ── HERO ── -->
 <div class="particles" id="particles"></div>
