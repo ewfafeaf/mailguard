@@ -65,8 +65,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 /* ── NAV ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;
   background:#000000;border-bottom:1px solid rgba(255,255,255,.09);
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-  padding:0.75rem 2rem}
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+  padding:0 32px;height:var(--nav-h)}
 .nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
 .nav-logo img{height:32px;width:auto;display:block}
 /* left links — left-aligned, close to left edge */
@@ -457,7 +457,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 @media(max-width:768px){
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:flex!important}
-  nav{grid-template-columns:auto 1fr;padding:0 16px}
+  nav{grid-template-columns:auto 1fr auto;padding:0 16px}
   .nav-left{display:none;position:fixed;top:0;right:-100%;bottom:0;width:85%;max-width:300px;background:#0a0a0f;flex-direction:column;padding:72px 24px 32px;gap:4px;z-index:999;transition:right .3s ease;border-left:1px solid rgba(255,255,255,.08)}
   .nav-left.open{display:flex;right:0}
   .mobile-auth-btns{display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);width:100%}
@@ -467,8 +467,9 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .hero-input-wrap{flex-direction:column;gap:8px;padding:0 4px}
   .hero-input{width:100%;-webkit-appearance:none;appearance:none;-webkit-box-shadow:0 0 0 30px #1a1d27 inset!important;box-shadow:0 0 0 30px #1a1d27 inset!important;-webkit-text-fill-color:#fff!important;color:#fff!important}
   .hero-input-btn{width:100%;margin:0;background:linear-gradient(90deg,#4f8ef7,#7c5ff7)!important;color:#fff!important;border:none!important}
-  .hero-terminal-wrap{max-width:calc(100vw - 32px)!important;margin:24px 16px 0!important;overflow:hidden!important}
-  .hero-terminal{font-size:.62rem!important;overflow:hidden!important;border-radius:10px!important}
+  .hero-terminal-wrap{max-width:calc(100vw - 32px)!important;margin:24px 16px 0!important;overflow:hidden!important;border-radius:10px!important}
+  .hero-terminal{font-size:.58rem!important;line-height:1.4!important;overflow:hidden!important;border-radius:10px!important}
+  .hero-terminal .t-line{white-space:pre-wrap!important;word-break:break-word!important}
   .hero-terminal *{white-space:pre-wrap!important;word-break:break-all!important;overflow-wrap:break-word!important}
   .how-steps{grid-template-columns:1fr!important}
   .features-grid{grid-template-columns:1fr!important}
