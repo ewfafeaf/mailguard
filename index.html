@@ -63,7 +63,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 
 
 /* ── NAV ── */
-nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:var(--nav-h);background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:var(--nav-h);background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:10000}
 .nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
 .nav-logo img{height:32px;width:auto;display:block}
 /* left links — left-aligned, close to left edge */
@@ -458,7 +458,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:flex!important}
   nav{grid-template-columns:auto 1fr auto;padding:0 16px}
-  .nav-left{position:fixed!important;top:0!important;right:0!important;left:auto!important;bottom:0!important;width:75%!important;max-width:280px!important;height:100vh!important;background:#0a0a0f!important;flex-direction:column!important;padding:60px 20px 32px!important;gap:4px!important;z-index:1000!important;transform:translateX(100%)!important;transition:transform .3s ease!important;border-left:1px solid rgba(255,255,255,.1)!important;display:flex!important;visibility:hidden!important}
+  .nav-left{position:fixed!important;top:0!important;right:0!important;left:auto!important;bottom:0!important;width:75%!important;max-width:280px!important;height:100vh!important;background:rgba(10,10,15,.97)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;flex-direction:column!important;padding:80px 20px 32px!important;gap:4px!important;z-index:9999!important;transform:translateX(100%)!important;transition:transform .3s ease!important;border-left:1px solid rgba(255,255,255,.1)!important;display:flex!important;visibility:hidden!important}
   .nav-left.open{transform:translateX(0)!important;visibility:visible!important}
   .mobile-auth-btns{display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);width:100%}
   .mobile-auth-btns .btn-signin{color:rgba(255,255,255,.7);font-size:.92rem;text-align:left;padding:10px 14px;background:none;border:none;cursor:pointer}
