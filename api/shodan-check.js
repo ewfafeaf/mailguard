@@ -90,6 +90,51 @@ async function checkRateLimit(userId) {
   } catch(e) { return { allowed: true, remaining: limit }; }
 }
 
+async function checkCensys(ip) {
+  try {
+    const apiKey = process.env.CENSYS_API_KEY;
+    if (!apiKey) return null;
+
+    const r = await fetch(`https://search.censys.io/api/v2/hosts/${ip}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json'
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!r.ok) return null;
+    const data = await r.json();
+    const result = data.result;
+
+    const ports = (result.services || []).map(s => s.port).filter(Boolean);
+    const services = (result.services || []).map(s => ({
+      port: s.port,
+      transport: s.transport_protocol || 'tcp',
+      product: s.service_name || null,
+      version: null
+    }));
+
+    return {
+      ok: true,
+      ip,
+      inShodan: true,
+      source: 'censys',
+      ports: ports.map(p => ({ port: p, label: String(p), risk: 'unknown' })),
+      services,
+      webserver: null,
+      os: null,
+      org: result.autonomous_system?.name || null,
+      isp: null,
+      openDangerous: [],
+      tags: [],
+      lastUpdate: null
+    };
+  } catch(e) {
+    return null;
+  }
+}
+
 const DANGEROUS_PORTS = {
   21:    { label:'FTP',           risk:'high' },
   23:    { label:'Telnet',        risk:'high' },
@@ -161,8 +206,14 @@ module.exports = async function handler(req, res) {
     if (r.status === 404) {
       return res.status(200).json({ ok: true, ip, inShodan: false, ports: [], services: [], openDangerous: [] });
     }
-    if (r.status === 401) {
-      return res.status(200).json({ ok: false, error: 'Neplatný Shodan API kľúč' });
+    if (r.status === 401 || r.status === 403) {
+      console.log('[shodan] 403 - skusam Censys fallback');
+      const censysResult = await checkCensys(ip);
+      if (censysResult) {
+        await setCache(cacheKey, censysResult, 6);
+        return res.status(200).json(censysResult);
+      }
+      return res.status(200).json({ ok: false, error: 'Shodan ani Censys nedostupne' });
     }
     if (!r.ok) {
       return res.status(200).json({ ok: false, error: `Shodan HTTP ${r.status}` });
