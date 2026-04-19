@@ -143,7 +143,7 @@ section{position:relative;z-index:1}
 .social-label{font-size:.8rem;color:var(--muted);line-height:1}
 /* terminal */
 .hero-terminal-wrap{max-width:760px;width:100%;margin:52px auto 0;
-  perspective:900px;perspective-origin:50% 50%}
+  perspective:900px;perspective-origin:50% 50%;overflow:hidden}
 .hero-terminal{width:100%;
   background:#0e0e10;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;
   box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),0 0 60px rgba(79,142,247,.06);
@@ -463,12 +463,13 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .mobile-auth-btns{display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);width:100%}
   .mobile-auth-btns .btn-signin{color:rgba(255,255,255,.7);font-size:.92rem;text-align:left;padding:10px 14px;background:none;border:none;cursor:pointer}
   .mobile-auth-btns .btn-signup{background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;border:none;border-radius:9px;padding:11px 14px;font-size:.92rem;font-weight:700;text-align:center;cursor:pointer}
-  .hero-title{font-size:2.2rem;letter-spacing:-1px}
-  .hero-input-wrap{flex-direction:column;gap:8px}
+  .hero-title{font-size:clamp(1.8rem,8vw,2.8rem)!important}
+  .hero-input-wrap{flex-direction:column;gap:8px;padding:0 4px}
   .hero-input{width:100%;-webkit-appearance:none;appearance:none;-webkit-box-shadow:0 0 0 30px #1a1d27 inset!important;box-shadow:0 0 0 30px #1a1d27 inset!important;-webkit-text-fill-color:#fff!important;color:#fff!important}
   .hero-input-btn{width:100%;margin:0;background:linear-gradient(90deg,#4f8ef7,#7c5ff7)!important;color:#fff!important;border:none!important}
-  .hero-terminal-wrap{max-width:100%;overflow:hidden}
-  .hero-terminal{font-size:.65rem;overflow:hidden}
+  .hero-terminal-wrap{max-width:calc(100vw - 32px)!important;margin:24px 16px 0!important;overflow:hidden!important}
+  .hero-terminal{font-size:.62rem!important;overflow:hidden!important;border-radius:10px!important}
+  .hero-terminal *{white-space:pre-wrap!important;word-break:break-all!important;overflow-wrap:break-word!important}
   .how-steps{grid-template-columns:1fr!important}
   .features-grid{grid-template-columns:1fr!important}
   .plans-grid{grid-template-columns:1fr!important}
@@ -476,6 +477,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .stats-row{flex-direction:column!important;align-items:center;gap:24px!important}
   .footer-grid{grid-template-columns:1fr}
   footer .footer-bottom{flex-direction:column;text-align:center}
+  *{max-width:100%;box-sizing:border-box}
 }
 
 /* ── MARQUEE REVIEWS ── */
@@ -773,7 +775,7 @@ input#heroInput:-webkit-autofill:focus {
 <!-- ── NAV ── -->
 <nav id="mainNav">
   <div class="nav-left">
-    <button onclick="toggleMobileMenu()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1">✕</button>
+    <button onclick="toggleMobileMenu()" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer">✕</button>
     <a href="#hero">Nástroj</a>
     <a href="#how">Ako to funguje</a>
     <a href="#pricing">Cenník</a>
@@ -794,7 +796,7 @@ input#heroInput:-webkit-autofill:focus {
   </div>
   <button id="mobileMenuBtn" class="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">☰</button>
 </nav>
-<div id="mobileOverlay" onclick="toggleMobileMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998"></div>
+<div id="mobileOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:998" onclick="toggleMobileMenu()"></div>
 
 <!-- ── HERO ── -->
 <div class="particles" id="particles"></div>
