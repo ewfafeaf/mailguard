@@ -110,17 +110,23 @@ section{position:relative;z-index:1}
 .hero-input-icon{display:none}
 .hero-input{flex:1;min-width:0;height:56px;
   padding:14px 16px;
-  background:#ffffff !important;border:1px solid #e4e4e7 !important;border-radius:12px;
-  font-size:1rem;color:#111111 !important;font-family:inherit;
-  outline:none !important;caret-color:#111111 !important;
+  background:rgba(255,255,255,.08) !important;
+  border:1px solid rgba(255,255,255,.15) !important;
+  border-radius:12px;
+  font-size:1rem;
+  color:#ffffff !important;
+  font-family:inherit;
+  outline:none !important;
+  caret-color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
   transition:box-shadow .2s}
-.hero-input::placeholder{color:#a1a1aa}
-.hero-input:focus{outline:none !important;box-shadow:none !important;border-color:#e4e4e7 !important}
+.hero-input::placeholder{color:rgba(255,255,255,.4);-webkit-text-fill-color:rgba(255,255,255,.4)}
+.hero-input:focus{outline:none !important;box-shadow:none !important;border-color:rgba(255,255,255,.3) !important}
 .hero-input-btn{flex-shrink:0;height:56px;padding:0 24px;
-  background:#fff;color:#111;border:1px solid #e4e4e7;border-radius:12px;
+  background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;
   font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;
   white-space:nowrap;transition:background .15s,transform .1s}
-.hero-input-btn:hover{background:#f4f4f5;border-color:#d4d4d8}
+.hero-input-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.3)}
 .hero-input-btn:active{transform:scale(.98)}
 /* subtext */
 .hero-subtext{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
