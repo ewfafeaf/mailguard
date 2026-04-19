@@ -614,6 +614,27 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .header-feature-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-3px);
   box-shadow:0 8px 24px rgba(79,142,247,.12)}
 .pwc-check{font-size:.8rem;font-family:'JetBrains Mono',monospace;color:var(--red);transition:color .25s}
+
+/* ── PWC TERMINAL ── */
+.pwc-terminal{position:relative;background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden;cursor:text;user-select:none;font-family:'Courier New',monospace}
+.pwc-terminal:focus-within{border-color:#00ff41;box-shadow:0 0 0 2px rgba(0,255,65,.12)}
+.pwc-titlebar{display:flex;align-items:center;gap:10px;background:#161b22;border-bottom:1px solid #30363d;padding:10px 14px}
+.pwc-dots{display:flex;gap:6px;flex-shrink:0}
+.pwc-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.pwc-dot-red{background:#ff5f57}
+.pwc-dot-yellow{background:#ffbd2e}
+.pwc-dot-green{background:#28ca41}
+.pwc-title{flex:1;text-align:center;font-size:.75rem;color:#8b949e;letter-spacing:.05em}
+.pwc-clear-btn{background:none;border:1px solid #30363d;color:#8b949e;font-size:.7rem;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
+.pwc-clear-btn:hover{border-color:#00ff41;color:#00ff41}
+.pwc-body{padding:16px 20px 20px;min-height:160px}
+.pwc-line{font-size:.85rem;line-height:1.7;color:#00ff41;white-space:pre-wrap;word-break:break-all}
+.pwc-dim{color:#4a5568}
+.pwc-prompt{color:#00ff41;margin-right:6px;font-weight:700}
+.pwc-input-label{color:#8b949e}
+.pwc-masked{color:#00ff41;letter-spacing:.1em}
+.pwc-cursor{color:#00ff41;animation:pwc-blink 1s step-end infinite}
+@keyframes pwc-blink{0%,100%{opacity:1}50%{opacity:0}}
 .header-input-wrapper{background:rgba(18,18,26,.8);border:1px solid rgba(79,142,247,.2);
   border-radius:12px;overflow:hidden}
 .input-header-bar{display:flex;justify-content:space-between;align-items:center;
@@ -2920,88 +2941,107 @@ body::before{content:'';position:fixed;inset:0;
         </div>
       </div>
 
-      <!-- Input wrapper -->
-      <div class="header-input-wrapper">
-        <div class="input-header-bar">
-          <span class="input-label">
-            <span class="terminal-prompt">$</span> Zadajte heslo na analýzu
-          </span>
-          <button class="hdr-help-btn" onclick="pwcToggleVisible()" id="pwcEyeBtn" style="font-size:.78rem;display:flex;align-items:center;gap:5px">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Zobraziť
-          </button>
+      <!-- Terminal window -->
+      <div class="pwc-terminal" id="pwcTerminal" onclick="document.getElementById('pwcInput').focus()">
+        <!-- Title bar -->
+        <div class="pwc-titlebar">
+          <div class="pwc-dots">
+            <span class="pwc-dot pwc-dot-red"></span>
+            <span class="pwc-dot pwc-dot-yellow"></span>
+            <span class="pwc-dot pwc-dot-green"></span>
+          </div>
+          <span class="pwc-title">password-analyzer.exe</span>
+          <button class="pwc-clear-btn" onclick="event.stopPropagation();pwcClear()">&#x2715; clear</button>
         </div>
 
-        <div style="padding:0 16px 4px">
-          <input type="password" id="pwcInput"
-            style="width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:1rem;padding:14px 0;caret-color:var(--accent)"
-            placeholder="Zadajte heslo…"
-            oninput="pwcAnalyze()"
-            autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+        <!-- Terminal body -->
+        <div class="pwc-body">
+          <!-- Boot lines -->
+          <div class="pwc-line"><span class="pwc-dim">NonDox Password Analyzer v1.0</span></div>
+          <div class="pwc-line"><span class="pwc-dim">Copyright (c) 2025 NonDox Security. All rights reserved.</span></div>
+          <div class="pwc-line">&nbsp;</div>
+          <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Ready. Type your password below:</div>
+          <div class="pwc-line">&nbsp;</div>
+
+          <!-- Input line -->
+          <div class="pwc-line pwc-input-line">
+            <span class="pwc-prompt">&gt;</span>
+            <span class="pwc-input-label">Password: </span>
+            <span id="pwcMasked" class="pwc-masked"></span><span class="pwc-cursor" id="pwcCursor">_</span>
+          </div>
+
+          <!-- Live output — hidden until typing -->
+          <div id="pwcTermOutput" style="display:none">
+            <div class="pwc-line">&nbsp;</div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Analyzing: <span id="pwcTermMasked2" class="pwc-masked"></span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Entropy:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermEntropy">--</span> bits <span id="pwcTermEntropyBar"></span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Dictionary:&nbsp;&nbsp;&nbsp;<span id="pwcTermDict">--</span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Brute force:&nbsp; <span id="pwcTermBrute">--</span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Status:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermStatus">--</span></div>
+          </div>
         </div>
 
-        <div style="display:flex;justify-content:flex-end;padding:0 16px 12px">
-          <button class="hdr-analyze-btn" onclick="pwcClear()">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-            Vymazať
-          </button>
+        <!-- Hidden real input -->
+        <input type="password" id="pwcInput"
+          style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"
+          oninput="pwcAnalyze()"
+          autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+
+      <!-- Results panel -->
+      <div id="pwcResult" style="display:none;margin-top:16px">
+
+        <!-- Strength bar -->
+        <div style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:.8rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Sila hesla</span>
+            <span id="pwcLabel" style="font-size:.85rem;font-weight:700"></span>
+          </div>
+          <div style="background:var(--surface2);border-radius:99px;height:10px;overflow:hidden">
+            <div id="pwcBar" style="height:100%;border-radius:99px;transition:width .5s ease,background .5s ease;width:0%"></div>
+          </div>
         </div>
 
-        <!-- Results -->
-        <div id="pwcResult" style="display:none;border-top:1px solid var(--border);padding:20px 20px 4px">
-
-          <!-- Strength bar -->
-          <div style="margin-bottom:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <span style="font-size:.8rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Sila hesla</span>
-              <span id="pwcLabel" style="font-size:.85rem;font-weight:700"></span>
-            </div>
-            <div style="background:var(--surface2);border-radius:99px;height:10px;overflow:hidden">
-              <div id="pwcBar" style="height:100%;border-radius:99px;transition:width .5s ease,background .5s ease;width:0%"></div>
-            </div>
+        <!-- Checklist 2-col -->
+        <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px">
+          <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Bezpečnostné kritériá</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
+            <div id="pwc-len"     class="pwc-check">❌ Minimálne 12 znakov</div>
+            <div id="pwc-upper"   class="pwc-check">❌ Veľké písmeno (A–Z)</div>
+            <div id="pwc-lower"   class="pwc-check">❌ Malé písmeno (a–z)</div>
+            <div id="pwc-num"     class="pwc-check">❌ Číslo (0–9)</div>
+            <div id="pwc-special" class="pwc-check">❌ Špeciálny znak (!@#…)</div>
+            <div id="pwc-common"  class="pwc-check">❌ Nie je bežné heslo</div>
+            <div id="pwc-seq"     class="pwc-check">❌ Žiadne sekvencie (abc, 123)</div>
+            <div id="pwc-repeat"  class="pwc-check">❌ Žiadne opakujúce znaky (aaa)</div>
           </div>
+        </div>
 
-          <!-- Checklist 2-col -->
-          <div style="margin-bottom:20px">
-            <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Bezpečnostné kritériá</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
-              <div id="pwc-len"     class="pwc-check">❌ Minimálne 12 znakov</div>
-              <div id="pwc-upper"   class="pwc-check">❌ Veľké písmeno (A–Z)</div>
-              <div id="pwc-lower"   class="pwc-check">❌ Malé písmeno (a–z)</div>
-              <div id="pwc-num"     class="pwc-check">❌ Číslo (0–9)</div>
-              <div id="pwc-special" class="pwc-check">❌ Špeciálny znak (!@#…)</div>
-              <div id="pwc-common"  class="pwc-check">❌ Nie je bežné heslo</div>
-              <div id="pwc-seq"     class="pwc-check">❌ Žiadne sekvencie (abc, 123)</div>
-              <div id="pwc-repeat"  class="pwc-check">❌ Žiadne opakujúce znaky (aaa)</div>
-            </div>
-          </div>
+        <!-- Canvas visualization -->
+        <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px">
+          <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Vizualizácia bezpečnosti</div>
+          <canvas id="pwcCanvas" height="110" style="width:100%;border-radius:8px;background:rgba(10,10,15,.6);display:block"></canvas>
+        </div>
 
-          <!-- Canvas visualization -->
-          <div style="margin-bottom:20px">
-            <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Vizualizácia bezpečnosti</div>
-            <canvas id="pwcCanvas" height="110" style="width:100%;border-radius:8px;background:rgba(10,10,15,.6);display:block"></canvas>
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+          <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center">
+            <div id="pwcEntropy" style="font-size:1.3rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace">0</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Entropia (bity)</div>
           </div>
+          <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center">
+            <div id="pwcCrackTime" style="font-size:1rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1.25">—</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Čas prelomenia</div>
+          </div>
+          <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center">
+            <div id="pwcAttempts" style="font-size:1rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1.25">—</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Kombinácií</div>
+          </div>
+        </div>
 
-          <!-- Stats row -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
-            <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center">
-              <div id="pwcEntropy" style="font-size:1.3rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace">0</div>
-              <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Entropia (bity)</div>
-            </div>
-            <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center">
-              <div id="pwcCrackTime" style="font-size:1rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1.25">—</div>
-              <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Čas prelomenia</div>
-            </div>
-            <div style="background:rgba(18,18,26,.8);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center">
-              <div id="pwcAttempts" style="font-size:1rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1.25">—</div>
-              <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Kombinácií</div>
-            </div>
-          </div>
-
-          <!-- Tip -->
-          <div id="pwcTip" style="display:none;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 16px;font-size:.84rem;color:var(--muted);margin-bottom:20px">
-            💡 <strong style="color:var(--text)">Odporúčame použiť správcu hesiel</strong> — napr. <a href="https://bitwarden.com" target="_blank" style="color:var(--accent)">Bitwarden</a> alebo <a href="https://1password.com" target="_blank" style="color:var(--accent)">1Password</a>.
-          </div>
+        <!-- Tip -->
+        <div id="pwcTip" style="display:none;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 16px;font-size:.84rem;color:var(--muted);margin-bottom:16px">
+          💡 <strong style="color:var(--text)">Odporúčame použiť správcu hesiel</strong> — napr. <a href="https://bitwarden.com" target="_blank" style="color:var(--accent)">Bitwarden</a> alebo <a href="https://1password.com" target="_blank" style="color:var(--accent)">1Password</a>.
         </div>
       </div>
     </div>
@@ -7610,7 +7650,23 @@ function pwcDrawCanvas(pct,color){
 function pwcAnalyze(){
   const val=document.getElementById('pwcInput').value;
   const result=document.getElementById('pwcResult');
-  if(!val){result.style.display='none';return;}
+
+  // Update terminal masked display
+  const masked='*'.repeat(val.length);
+  const maskedEl=document.getElementById('pwcMasked');
+  const masked2El=document.getElementById('pwcTermMasked2');
+  if(maskedEl) maskedEl.textContent=masked;
+  if(masked2El) masked2El.textContent=masked;
+
+  if(!val){
+    result.style.display='none';
+    const out=document.getElementById('pwcTermOutput');
+    if(out) out.style.display='none';
+    return;
+  }
+
+  const out=document.getElementById('pwcTermOutput');
+  if(out) out.style.display='block';
   result.style.display='block';
 
   const okLen    = val.length>=12;
@@ -7644,12 +7700,12 @@ function pwcAnalyze(){
   const bar=document.getElementById('pwcBar');
   const label=document.getElementById('pwcLabel');
   bar.style.width=pct+'%';
-  let color,text;
-  if(pct<=25){color='#ef4444';text='Veľmi slabé';}
-  else if(pct<=50){color='#f97316';text='Slabé';}
-  else if(pct<=62){color='#eab308';text='Stredné';}
-  else if(pct<=87){color='#4f8ef7';text='Silné';}
-  else{color='#22c55e';text='Veľmi silné';}
+  let color,text,termColor;
+  if(pct<=25){color='#ef4444';text='Veľmi slabé';termColor='#ff4444';}
+  else if(pct<=50){color='#f97316';text='Slabé';termColor='#ff8800';}
+  else if(pct<=62){color='#eab308';text='Stredné';termColor='#ffcc00';}
+  else if(pct<=87){color='#4f8ef7';text='Silné';termColor='#00aaff';}
+  else{color='#22c55e';text='Veľmi silné';termColor='#00ff41';}
   bar.style.background=color;
   label.textContent=text;
   label.style.color=color;
@@ -7671,23 +7727,33 @@ function pwcAnalyze(){
   document.getElementById('pwcAttempts').textContent=pwcFormatBig(combinations);
   document.getElementById('pwcAttempts').style.color=color;
 
+  // Terminal live output
+  const barFilled=Math.round(pct/10);
+  const entropyBar='█'.repeat(barFilled)+'░'.repeat(10-barFilled);
+  const eEl=document.getElementById('pwcTermEntropy');
+  const dEl=document.getElementById('pwcTermDict');
+  const bEl=document.getElementById('pwcTermBrute');
+  const sEl=document.getElementById('pwcTermStatus');
+  if(eEl){eEl.textContent=entropy+' bits';eEl.style.color=termColor;}
+  const entropyBarEl=document.getElementById('pwcTermEntropyBar');
+  if(entropyBarEl){entropyBarEl.textContent=entropyBar;entropyBarEl.style.color=termColor;}
+  if(dEl){dEl.textContent=okCommon?'PASS ✓':'FAIL ✗ — common password detected';dEl.style.color=okCommon?'#00ff41':'#ff4444';}
+  if(bEl){bEl.textContent='~'+pwcFormatTime(crackSecs);bEl.style.color=termColor;}
+  if(sEl){sEl.textContent=text.toUpperCase();sEl.style.color=termColor;}
+
   requestAnimationFrame(()=>pwcDrawCanvas(pct,color));
   document.getElementById('pwcTip').style.display=pct<=50?'block':'none';
-}
-
-function pwcToggleVisible(){
-  const inp=document.getElementById('pwcInput');
-  const btn=document.getElementById('pwcEyeBtn');
-  inp.type=inp.type==='password'?'text':'password';
-  if(btn)btn.innerHTML=inp.type==='text'
-    ?'<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Skryť'
-    :'<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Zobraziť';
 }
 
 function pwcClear(){
   const inp=document.getElementById('pwcInput');
   inp.value='';
+  const maskedEl=document.getElementById('pwcMasked');
+  if(maskedEl) maskedEl.textContent='';
+  const out=document.getElementById('pwcTermOutput');
+  if(out) out.style.display='none';
   document.getElementById('pwcResult').style.display='none';
+  inp.focus();
 }
 
 /* ══════════════════════════════════════════
