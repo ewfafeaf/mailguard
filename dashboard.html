@@ -2952,7 +2952,10 @@ body::before{content:'';position:fixed;inset:0;
           </div>
           <span class="pwc-title">password-analyzer.exe</span>
           <div style="display:flex;gap:6px">
-            <button class="pwc-clear-btn" id="pwcEyeBtn" onclick="event.stopPropagation();pwcToggleVisible()">👁 Zobraziť</button>
+            <button class="pwc-clear-btn" id="pwcEyeBtn" onclick="event.stopPropagation();pwcToggleVisible()" style="display:flex;align-items:center;gap:4px">
+              <svg id="pwcEyeIcon" width="12" height="12" fill="none" stroke="#00ff41" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span id="pwcEyeLabel">Zobraziť</span>
+            </button>
             <button class="pwc-clear-btn" onclick="event.stopPropagation();pwcClear()">&#x2715; clear</button>
           </div>
         </div>
@@ -7757,7 +7760,12 @@ function pwcToggleVisible(){
   const masked2El=document.getElementById('pwcTermMasked2');
   const visible=inp.dataset.visible==='1';
   inp.dataset.visible=visible?'0':'1';
-  if(btn) btn.textContent=visible?'👁 Zobraziť':'🙈 Skryť';
+  const icon=document.getElementById('pwcEyeIcon');
+  const lbl=document.getElementById('pwcEyeLabel');
+  if(icon) icon.innerHTML=visible
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  if(lbl) lbl.textContent=visible?'Zobraziť':'Skryť';
   const display=visible?'*'.repeat(inp.value.length):inp.value;
   if(maskedEl) maskedEl.textContent=display;
   if(masked2El) masked2El.textContent=display;
