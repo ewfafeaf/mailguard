@@ -1653,10 +1653,14 @@ function analyzeUrl(url){
   const suspTLD=['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.club','.online','.site','.icu','.buzz'];
   const tld=host.slice(host.lastIndexOf('.'));
   if(suspTLD.includes(tld)){findings.push({icon:'⚠️',text:`Podozrivá doména najvyššej úrovne: "${tld}" – bežne zneužívaná pre phishing.`,sev:'high'});score+=25;}
-  const brands=[{name:'google',variants:/g[o0][o0]gle|g00gle|googie/},{name:'microsoft',variants:/micros[o0]ft|microsott|micrsoft/},{name:'paypal',variants:/payp[a4]l|paypai|peypal/},{name:'facebook',variants:/faceb[o0]{2}k|facbook|facebok/},{name:'apple',variants:/app[l1]e-id|appleaccount|app1e/},{name:'amazon',variants:/amaz[o0]n|arnazon/},{name:'netflix',variants:/netfl[i1]x|netfix/}];
-  for(const b of brands){if(b.variants.test(host)){findings.push({icon:'🚨',text:`Možná imitácia domény "${b.name}" (typosquatting).`,sev:'high'});score+=30;break;}}
-  const knownBrands=['google','microsoft','apple','paypal','facebook','amazon','netflix','tatra','sporitelna','vub'];
-  for(const b of knownBrands){if(host.includes(b)&&!host.endsWith(`.${b}.com`)&&!host.endsWith(`.${b}.sk`)){const root=host.split('.').slice(-2).join('.');if(!root.startsWith(b)){findings.push({icon:'⚠️',text:`Značka "${b}" je v URL, ale root doména nepatrí tejto firme.`,sev:'high'});score+=22;break;}}}
+  const TRUSTED_DOMAINS=['google.com','facebook.com','youtube.com','instagram.com','twitter.com','x.com','linkedin.com','microsoft.com','apple.com','amazon.com','netflix.com','tiktok.com','wikipedia.org','github.com','stackoverflow.com'];
+  const isTrusted=TRUSTED_DOMAINS.some(d=>host===d||host.endsWith('.'+d));
+  if(!isTrusted){
+    const brands=[{name:'google',variants:/g[o0][o0]gle|g00gle|googie/},{name:'microsoft',variants:/micros[o0]ft|microsott|micrsoft/},{name:'paypal',variants:/payp[a4]l|paypai|peypal/},{name:'facebook',variants:/faceb[o0]{2}k|facbook|facebok/},{name:'apple',variants:/app[l1]e-id|appleaccount|app1e/},{name:'amazon',variants:/amaz[o0]n|arnazon/},{name:'netflix',variants:/netfl[i1]x|netfix/}];
+    for(const b of brands){if(b.variants.test(host)){findings.push({icon:'🚨',text:`Možná imitácia domény "${b.name}" (typosquatting).`,sev:'high'});score+=30;break;}}
+    const knownBrands=['google','microsoft','apple','paypal','facebook','amazon','netflix','tatra','sporitelna','vub'];
+    for(const b of knownBrands){if(host.includes(b)&&!host.endsWith(`.${b}.com`)&&!host.endsWith(`.${b}.sk`)){const root=host.split('.').slice(-2).join('.');if(!root.startsWith(b)){findings.push({icon:'⚠️',text:`Značka "${b}" je v URL, ale root doména nepatrí tejto firme.`,sev:'high'});score+=22;break;}}}
+  }
   const sub=host.split('.').length-2;if(sub>=3){findings.push({icon:'⚠️',text:`Neobvyklý počet subdomén (${sub}) – môže skrývať pravú doménu.`,sev:'medium'});score+=10;}
   if(rawUrl.length>100){findings.push({icon:'⚠️',text:`Príliš dlhé URL (${rawUrl.length} znakov).`,sev:'low'});score+=6;}
   const shorteners=['bit.ly','tinyurl.com','t.co','ow.ly','goo.gl','is.gd','buff.ly','rebrand.ly'];
