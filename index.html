@@ -464,11 +464,12 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   /* ── Hero ── */
   .hero-title{font-size:2.4rem;letter-spacing:-1px}
   .hero-input-wrap{flex-direction:column;gap:8px;border-radius:14px}
-  .hero-input{width:100%;background:rgba(255,255,255,.08)!important;color:#fff!important;border-color:rgba(255,255,255,.15)!important;text-align:left}
-  .hero-input::placeholder{color:rgba(255,255,255,.4)}
+  .hero-input{width:100%;background:#1a1d27!important;-webkit-appearance:none!important;appearance:none!important;color:#ffffff!important;border:1px solid rgba(255,255,255,.2)!important;text-align:left!important;-webkit-text-fill-color:#ffffff!important}
+  .hero-input::placeholder{color:rgba(255,255,255,.4)!important;-webkit-text-fill-color:rgba(255,255,255,.4)!important}
   .hero-input-btn{width:100%;margin:0}
-  .hero-terminal-wrap{max-width:100%;overflow:hidden}
-  .hero-terminal{margin-top:24px;overflow:hidden}
+  .hero-terminal-wrap{max-width:calc(100vw - 32px);overflow:hidden;margin:0 auto}
+  .hero-terminal{margin-top:24px;overflow:hidden;max-width:100%;font-size:.7rem}
+  .hero-terminal pre,.hero-terminal code{white-space:pre-wrap;word-break:break-all}
 
   /* ── Grids ── */
   .how-steps{grid-template-columns:1fr!important}
