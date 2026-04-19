@@ -7375,9 +7375,8 @@ async function generateIncidentReport(){
   // ── Sekcia 4: Kontaktné informácie ──
   section('4','Incident Reporting Contacts');
   const contacts=[
-    ['SK-CERT',       '+421 2 3235 9701 | sk-cert@nbu.gov.sk'],
-    ['NBÚ SR',        'www.nbu.gov.sk'],
-    ['NonDox podpora','peter@nondox.com'],
+    ['SK-CERT', '+421 2 3235 9701 | sk-cert@nbu.gov.sk'],
+    ['NBÚ SR',  'www.nbu.gov.sk'],
   ];
   contacts.forEach(([label,val])=>infoRow(label+':',val,48));
   y+=6;
