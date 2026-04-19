@@ -766,6 +766,18 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
   50%  { transform: rotate(14deg); }
   100% { transform: rotate(20deg); }
 }
+input#heroInput {
+  background-color: #1a1d27 !important;
+  -webkit-box-shadow: 0 0 0 30px #1a1d27 inset !important;
+  box-shadow: 0 0 0 30px #1a1d27 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+input#heroInput:-webkit-autofill,
+input#heroInput:-webkit-autofill:hover,
+input#heroInput:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px #1a1d27 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
 </style>
 </head>
 <body>
@@ -815,6 +827,10 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
     <div class="hero-input-wrap">
       <input class="hero-input" id="heroInput" type="text"
         placeholder=""
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
         style="background:#ffffff !important;color:#111111 !important;caret-color:#111111 !important;border:1px solid #e4e4e7 !important;"
         onkeydown="if(event.key==='Enter')heroAnalyze()"/>
       <span id="heroPlaceholder" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#a1a1aa;pointer-events:none;font-size:1rem;">yoursite.com</span>
