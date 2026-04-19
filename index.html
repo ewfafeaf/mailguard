@@ -107,7 +107,7 @@ section{position:relative;z-index:1}
 .hero-input-icon{display:none}
 .hero-input{flex:1;border:none!important;background:transparent!important;outline:none!important;box-shadow:none!important;font-size:1rem;color:#111111!important;-webkit-text-fill-color:#111111!important;height:44px;padding:0 8px!important;caret-color:#111111!important;font-family:inherit}
 .hero-input::placeholder{color:#9ca3af!important;-webkit-text-fill-color:#9ca3af!important}
-.hero-input-btn{flex-shrink:0;height:44px;padding:0 20px;background:#111111;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.hero-input-btn{flex-shrink:0;height:44px;padding:0 20px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7)!important;color:#ffffff!important;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;white-space:nowrap}
 .hero-input-btn:hover{background:#333333}
 .hero-input-btn:active{transform:scale(.98)}
 /* subtext */
@@ -1534,14 +1534,13 @@ document.addEventListener('click',e=>{if(!e.target.closest('nav'))closeNav();});
 /* current logged-in user (set by Supabase listener) */
 let _currentUser=null;
 
-function heroAnalyze(){
-  const val=document.getElementById('heroInput').value.trim();
-  if(!val)return;
-  const container=document.getElementById('heroResults');
-  container.style.display='block';
-  container.innerHTML='<div style="padding:18px 20px;color:var(--muted);font-size:.85rem;display:flex;align-items:center;gap:10px"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div>Analyzujem…</div>';
-  container.innerHTML='<div class="hres">'+renderHeroResultHTML(val)+'</div>';
-  container.scrollIntoView({behavior:'smooth',block:'nearest'});
+function heroAnalyze() {
+  const val = document.getElementById('heroInput').value.trim();
+  if (!val) {
+    document.getElementById('heroInput').focus();
+    return;
+  }
+  document.getElementById('heroLoginModal').style.display = 'flex';
 }
 
 function renderHeroResultHTML(val){
@@ -2461,6 +2460,21 @@ buildFaq();
 
 
 </script>
+
+<div id="heroLoginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#13151f;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:40px 32px;max-width:420px;width:100%;text-align:center;position:relative">
+    <button onclick="document.getElementById('heroLoginModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#7a82a0;font-size:1.2rem;cursor:pointer">✕</button>
+    <div style="font-size:2.5rem;margin-bottom:16px">🔍</div>
+    <h3 style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:8px">Výsledky analýzy sú pripravené</h3>
+    <p style="font-size:.9rem;color:#7a82a0;margin-bottom:24px">Pre zobrazenie kompletného bezpečnostného reportu sa prihláste alebo vytvorte bezplatný účet.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="window.location.href='/dashboard'" style="padding:13px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer">Začať zadarmo →</button>
+      <button onclick="window.location.href='/dashboard'" style="padding:13px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:.95rem;cursor:pointer">Prihlásiť sa</button>
+    </div>
+    <p style="font-size:.75rem;color:#4a5068;margin-top:16px">Bezplatný účet • Bez kreditnej karty • Výsledky za sekundy</p>
+  </div>
+</div>
+
 </body>
 <script>
 (function(){
