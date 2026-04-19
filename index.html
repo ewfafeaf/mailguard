@@ -102,27 +102,11 @@ section{position:relative;z-index:1}
 .hero-tagline{font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--muted);margin-bottom:36px;letter-spacing:.01em}
 .hero-tagline strong{color:rgba(238,238,245,.7);font-weight:600}
 /* hero input */
-.hero-input-wrap{display:flex;align-items:center;gap:12px;
-  max-width:480px;width:100%;margin:0 auto;position:relative}
+.hero-input-wrap{display:flex;align-items:center;gap:8px;max-width:540px;width:100%;margin:32px auto 0;background:#ffffff;border:1px solid #e4e4e7;border-radius:14px;padding:6px 6px 6px 16px;box-shadow:0 4px 24px rgba(0,0,0,.12)}
 .hero-input-icon{display:none}
-.hero-input{flex:1;min-width:0;height:56px;
-  padding:14px 16px;
-  background:#ffffff!important;
-  border:1px solid #d1d5db!important;
-  border-radius:12px;
-  font-size:1rem;
-  color:#111111!important;
-  -webkit-text-fill-color:#111111!important;
-  font-family:inherit;
-  outline:none!important;
-  caret-color:#111111!important;
-  transition:border-color .2s,box-shadow .2s}
+.hero-input{flex:1;border:none!important;background:transparent!important;outline:none!important;font-size:1rem;color:#111111!important;-webkit-text-fill-color:#111111!important;height:44px;padding:0!important;caret-color:#111111;font-family:inherit}
 .hero-input::placeholder{color:#9ca3af!important;-webkit-text-fill-color:#9ca3af!important}
-.hero-input:focus{border-color:#4f8ef7!important;box-shadow:0 0 0 3px rgba(79,142,247,.15)!important}
-.hero-input-btn{flex-shrink:0;height:56px;padding:0 24px;
-  background:linear-gradient(90deg,#4f8ef7,#7c5ff7);
-  color:#fff;border:none;border-radius:12px;
-  font-size:.95rem;font-weight:600;cursor:pointer}
+.hero-input-btn{flex-shrink:0;height:44px;padding:0 20px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;white-space:nowrap}
 .hero-input-btn:hover{opacity:.9}
 .hero-input-btn:active{transform:scale(.98)}
 /* subtext */
@@ -811,15 +795,20 @@ input#heroInput:-webkit-autofill:focus {
     <p class="hero-tagline">86 % kybernetických útokov začína phishingovým emailom. Zákon č. 69/2018 Z.z. ukladá školám povinnosť aktívne chrániť dáta žiakov. Ste pripravení?</p>
 
     <div class="hero-input-wrap">
-      <input class="hero-input" id="heroInput" type="text"
-        placeholder="yoursite.com"
-        autocomplete="off"
-        autocorrect="off"
+      <input
+        class="hero-input"
+        id="heroInput"
+        type="text"
+        inputmode="url"
         autocapitalize="off"
+        autocorrect="off"
         spellcheck="false"
-        style="background:#ffffff;color:#111111;border:1px solid #d1d5db;border-radius:12px;-webkit-text-fill-color:#111111;caret-color:#111111;"
-        onkeydown="if(event.key==='Enter')heroAnalyze()"/>
-      <button class="hero-input-btn" onclick="heroAnalyze()">Analyzovať</button>
+        autocomplete="off"
+        placeholder="yoursite.com"
+        style="background:#ffffff;color:#111111;border:1px solid #e4e4e7;-webkit-text-fill-color:#111111;caret-color:#111111;"
+        onkeydown="if(event.key==='Enter')heroAnalyze()"
+      />
+      <button class="hero-input-btn" onclick="heroAnalyze()">Analyzovať →</button>
     </div>
 
     <div class="hero-subtext">
