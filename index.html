@@ -445,33 +445,50 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .footer-grid{grid-template-columns:1fr 1fr}
   .nav-center{display:none}
 }
+/* hide mobile auth buttons on desktop */
+.mobile-auth-btns{display:none}
+
 @media(max-width:768px){
+  /* ── Nav ── */
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:flex;align-items:center}
   #mobileMenuBtn{display:block!important}
   nav{grid-template-columns:auto 1fr;padding:0 16px}
   .nav-left{display:none;position:fixed;top:68px;left:0;right:0;background:#000;flex-direction:column;padding:20px;gap:8px;z-index:99}
   .nav-left.open{display:flex}
-  .nav-mobile-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;
-    background:rgba(8,8,18,.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);
-    border-radius:14px;padding:14px;flex-direction:column;gap:4px;z-index:99}
-  .nav-mobile-menu.open{display:flex}
-  .nav-mobile-menu a,.nav-mobile-menu button{color:var(--muted);text-decoration:none;font-size:.9rem;
-    padding:10px 14px;border-radius:9px;transition:background .2s,color .2s;border:none;
-    background:transparent;font-family:inherit;font-weight:500;cursor:pointer;text-align:left;width:100%}
-  .nav-mobile-menu a:hover,.nav-mobile-menu button:hover{background:rgba(255,255,255,.07);color:var(--text)}
-  .nav-mobile-menu .m-signup{background:linear-gradient(90deg,var(--accent),var(--accent2));
-    color:#fff!important;font-weight:700;border-radius:9px;margin-top:4px}
-  .hero h1{font-size:2rem}
-  .hero p{font-size:.9rem}
-  .plans-grid{grid-template-columns:1fr!important}
+  .nav-left a{padding:10px 14px;font-size:.95rem}
+  .mobile-auth-btns{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);width:100%}
+  .mobile-auth-btns .btn-signin{color:rgba(255,255,255,.7);font-size:.92rem;text-align:left;padding:10px 14px}
+  .mobile-auth-btns .btn-signup{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:9px;padding:11px 14px;font-size:.92rem;font-weight:700;text-align:center}
+
+  /* ── Hero ── */
+  .hero-title{font-size:2.4rem;letter-spacing:-1px}
+  .hero-input-wrap{flex-direction:column;gap:8px;border-radius:14px}
+  .hero-input{width:100%;background:rgba(255,255,255,.08)!important;color:#fff!important;border-color:rgba(255,255,255,.15)!important;text-align:left}
+  .hero-input::placeholder{color:rgba(255,255,255,.4)}
+  .hero-input-btn{width:100%;margin:0}
+  .hero-terminal-wrap{max-width:100%;overflow:hidden}
+  .hero-terminal{margin-top:24px;overflow:hidden}
+
+  /* ── Grids ── */
+  .how-steps{grid-template-columns:1fr!important}
+  .how-steps::before{display:none}
   .features-grid{grid-template-columns:1fr!important}
+  .plans-grid{grid-template-columns:1fr!important}
+  .pricing-grid{grid-template-columns:1fr!important}
+
+  /* ── Stats banner ── */
+  .stats-row{flex-direction:column!important;align-items:center;gap:24px!important}
+
+  /* ── Reviews marquee ── */
+  .marquee-wrap{-webkit-mask:none;mask:none}
+
+  /* ── Footer ── */
   .footer-grid{grid-template-columns:1fr}
+  footer .footer-bottom{flex-direction:column;text-align:center;gap:8px}
+
+  /* ── Misc ── */
   .score-row{flex-direction:column;text-align:center}
-  .hero-input-wrap{flex-direction:column;border-radius:14px}
-  .hero-input{width:100%;border-bottom:1px solid rgba(0,0,0,.1);text-align:center}
-  .hero-input-btn{margin:0 10px 10px;width:calc(100% - 20px)}
-  .hero-terminal{margin-top:32px}
 }
 
 /* ── MARQUEE REVIEWS ── */
@@ -763,6 +780,10 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
     <a href="#faq">FAQ</a>
     <a href="about.html">O nás</a>
     <a href="dashboard.html" id="navDashboardLink" style="display:none">Dashboard</a>
+    <div class="mobile-auth-btns">
+      <button class="btn-signin" onclick="openModal('login');toggleMobileMenu()">Prihlásiť sa</button>
+      <button class="btn-signup" onclick="openModal('register');toggleMobileMenu()">Začať zadarmo</button>
+    </div>
   </div>
   <a class="nav-logo" href="#hero">
     <img src="nondox.png" alt="NonDox" style="height: 44px; width: auto;"/>
@@ -925,7 +946,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
 <section style="background:linear-gradient(135deg,rgba(220,38,38,.15),rgba(220,38,38,.05));border-top:1px solid rgba(220,38,38,.3);border-bottom:1px solid rgba(220,38,38,.3);padding:48px 20px;text-align:center">
   <div style="max-width:900px;margin:0 auto">
     <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:#ef4444;margin-bottom:16px">⚠️ Aktuálny stav kybernetickej bezpečnosti na Slovensku</div>
-    <div style="display:flex;justify-content:center;gap:60px;flex-wrap:wrap;margin-bottom:24px">
+    <div class="stats-row" style="display:flex;justify-content:center;gap:60px;flex-wrap:wrap;margin-bottom:24px">
       <div>
         <div style="font-size:3rem;font-weight:800;color:#ef4444">73%</div>
         <div style="font-size:.85rem;color:#9ca3af">slovenských škôl nemá<br>plán kybernetickej ochrany</div>
