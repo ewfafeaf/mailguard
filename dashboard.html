@@ -2538,6 +2538,17 @@ body::before{content:'';position:fixed;inset:0;
       <div id="filesResultWrap" style="display:none;margin-top:16px">
         <div id="fileResult"></div>
         <div class="save-indicator" id="fileSaveIndicator">✓ Analýza uložená do histórie</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button id="filePdfBtn" class="hdr-analyze-btn" onclick="downloadFilePDF()" style="display:none">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <polyline points="9 15 12 18 15 15"/>
+            </svg>
+            Stiahnuť PDF report
+          </button>
+        </div>
       </div>
     </div>
 
@@ -3079,6 +3090,7 @@ const _sb = supabase.createClient(
 
 let _currentUser = null;
 let _currentRole = 'admin';
+let _lastFileData = null;
 let _currentPlan = 'free';
 const FREE_DAILY_LIMIT = 3;
 const PLAN_RANK = { free: 0, pro: 1, school: 2, business: 3 };
@@ -6515,8 +6527,11 @@ async function analyzeFile(file){
   if(!analysisData) return;
 
   // Zobraz štandardný výsledok
+  _lastFileData={...analysisData, _filename: file.name};
   fileResultEl.innerHTML=renderPDFResult(analysisData);
   filesResultWrap.style.display='block';
+  const pdfBtn=document.getElementById('filePdfBtn');
+  if(pdfBtn) pdfBtn.style.display='flex';
   filesResultWrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 
   _resetDropZone();
@@ -6626,6 +6641,169 @@ function renderPDFResult(d){
     ${urlSection}
     ${recsHTML}
   </div>`;
+}
+
+function downloadFilePDF(){
+  const d=_lastFileData;
+  if(!d){ alert('Žiadne dáta na export.'); return; }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, margin=18;
+  let y=margin;
+
+  const scoreLabel=d.score>=80?'BEZPEČNÝ':d.score>=50?'PODOZRIVÝ':'NEBEZPEČNÝ';
+  const scoreColor=d.score>=80?[34,197,94]:d.score>=50?[234,179,8]:[239,68,68];
+
+  // ── Header ──────────────────────────────────────────
+  doc.setFillColor(13,17,23);
+  doc.rect(0,0,W,28,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(79,142,247);
+  doc.text('NonDox',margin,12);
+  doc.setFontSize(9);
+  doc.setTextColor(136,136,170);
+  doc.text('Bezpečnostný report analýzy súboru',margin,19);
+  doc.setFontSize(8);
+  doc.setTextColor(80,80,110);
+  doc.text('nondox.com',W-margin,12,'right');
+  doc.text(new Date().toLocaleString('sk-SK'),W-margin,19,'right');
+  y=36;
+
+  // ── Názov súboru ─────────────────────────────────────
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(238,238,245);
+  doc.text(d._filename||d.filename||'Neznámy súbor', margin, y);
+  y+=7;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(136,136,170);
+  const dtype=d.docType||'PDF';
+  const pageStr=d.pages!=null?(dtype==='XLSX'?`${d.pages} ${d.pages===1?'list':'listov'}`:`${d.pages} ${d.pages===1?'strana':'strán'}`):'—';
+  doc.text(`Typ: ${dtype}  ·  ${pageStr}  ·  ${d.urlCount??0} URL`,margin,y);
+  y+=10;
+
+  // ── Výsledok ─────────────────────────────────────────
+  doc.setFillColor(...scoreColor);
+  doc.roundedRect(margin,y,W-margin*2,14,3,3,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(255,255,255);
+  doc.text(`${scoreLabel}  —  Skóre: ${d.score}/100`, W/2, y+9, {align:'center'});
+  y+=22;
+
+  // ── Antivírusové skenery ─────────────────────────────
+  if(d.vtStats||d.vtEngines){
+    doc.setFillColor(26,26,40);
+    doc.roundedRect(margin,y,W-margin*2,16,2,2,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(79,142,247);
+    doc.text('VirusTotal',margin+4,y+6);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(238,238,245);
+    const mal=d.vtStats?.malicious??0;
+    const tot=(d.vtStats?.total)||(d.vtEngines??0);
+    doc.text(`Skenovaných enginov: ${tot}  ·  Detekovaných hrozieb: ${mal}`,margin+4,y+12);
+    y+=22;
+  }
+
+  // ── Nájdené hrozby ──────────────────────────────────
+  const threats=[];
+  if(d.hasJS)       threats.push('JavaScript v dokumente — riziko spustenia kódu');
+  if(d.hasAutoOpen) threats.push('Auto-open akcia — automatické spustenie po otvorení');
+  if(d.hasMacros)   threats.push('VBA makrá — nespúšťaj v nedôveryhodných súboroch');
+  if(d.hasEmbedded&&!d.hasMacros) threats.push('Vložené súbory (embedded objects)');
+  if(d.hasForms)    threats.push('Interaktívny formulár — opatrnosť pri vypĺňaní');
+  if(d.suspiciousUrls?.length) threats.push(`${d.suspiciousUrls.length} nebezpečných URL (Google Safe Browsing)`);
+
+  if(threats.length>0){
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(239,68,68);
+    doc.text('Nájdené hrozby',margin,y);
+    y+=5;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(238,238,245);
+    threats.forEach(t=>{
+      doc.setTextColor(239,68,68);
+      doc.text('▸',margin,y);
+      doc.setTextColor(238,238,245);
+      doc.text(t,margin+5,y);
+      y+=5.5;
+    });
+    y+=4;
+  } else {
+    doc.setFillColor(26,40,26);
+    doc.roundedRect(margin,y,W-margin*2,10,2,2,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(34,197,94);
+    doc.text('✓  Žiadne hrozby neboli detekované',margin+4,y+6.5);
+    y+=16;
+  }
+
+  // ── URL v dokumente ──────────────────────────────────
+  if((d.urlCount??0)>0&&d.urls?.length>0){
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(79,142,247);
+    doc.text(`URL v dokumente (${Math.min(d.urls.length,20)} z ${d.urlCount})`,margin,y);
+    y+=5;
+    const suspSet=new Set((d.suspiciousUrls||[]).map(u=>u.url));
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica','normal');
+    d.urls.slice(0,20).forEach(u=>{
+      if(y>268){ doc.addPage(); y=margin; }
+      const bad=suspSet.has(u);
+      doc.setTextColor(bad?239:136, bad?68:238, bad?68:245);
+      doc.text((bad?'✗ ':'✓ ')+u, margin, y, {maxWidth: W-margin*2-4});
+      y+=4.5;
+    });
+    if(d.urlCount>20){
+      doc.setTextColor(100,100,130);
+      doc.text(`… a ďalších ${d.urlCount-20} URL`,margin,y);
+      y+=5;
+    }
+    y+=4;
+  }
+
+  // ── Odporúčania ──────────────────────────────────────
+  if(d.recs?.length){
+    if(y>250){ doc.addPage(); y=margin; }
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(234,179,8);
+    doc.text('Odporúčania',margin,y);
+    y+=5;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(238,238,245);
+    d.recs.forEach(r=>{
+      if(y>268){ doc.addPage(); y=margin; }
+      doc.text('▸ '+r, margin, y, {maxWidth: W-margin*2});
+      y+=5;
+    });
+  }
+
+  // ── Footer ───────────────────────────────────────────
+  const pages=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFillColor(13,17,23);
+    doc.rect(0,287,W,10,'F');
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7);
+    doc.setTextColor(80,80,110);
+    doc.text('NonDox | nondox.com | Zákon č. 69/2018 Z.z. o kybernetickej bezpečnosti',margin,293);
+    doc.text(`Strana ${i}/${pages}`,W-margin,293,'right');
+  }
+
+  const safe=(d._filename||d.filename||'report').replace(/[^a-z0-9._-]/gi,'_');
+  doc.save(`nondox-report-${safe}.pdf`);
 }
 
 async function savePDFAnalysis(filename, data){
