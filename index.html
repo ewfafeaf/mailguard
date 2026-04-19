@@ -455,6 +455,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   body::before,body::after,.main::before,.main::after,#hero::before,#hero::after,.vibe-blob{animation:none!important;transition:none!important}
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:block!important}
+  #mobileCloseBtn{display:block!important}
   nav{grid-template-columns:auto 1fr auto;padding:0 16px}
   .nav-left{position:fixed!important;top:0!important;right:0!important;left:auto!important;bottom:0!important;width:75%!important;max-width:280px!important;height:100vh!important;background:rgba(10,10,15,.97)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;flex-direction:column!important;padding:80px 20px 32px!important;gap:4px!important;z-index:9999!important;transform:translateX(100%)!important;transition:transform .3s ease!important;border-left:1px solid rgba(255,255,255,.1)!important;display:flex!important;visibility:hidden!important}
   .nav-left.open{transform:translateX(0)!important;visibility:visible!important}
@@ -774,7 +775,7 @@ input#heroInput:-webkit-autofill:focus {
 <!-- ── NAV ── -->
 <nav id="mainNav">
   <div class="nav-left">
-    <button onclick="toggleMobileMenu()" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer">✕</button>
+    <button id="mobileCloseBtn" onclick="toggleMobileMenu()" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;display:none">✕</button>
     <a href="#hero">Nástroj</a>
     <a href="#how">Ako to funguje</a>
     <a href="#pricing">Cenník</a>
@@ -2464,5 +2465,28 @@ buildFaq();
 </script>
 </body>
 <script>
+(function(){
+  var el=document.getElementById('heroInput');
+  if(!el)return;
+  var words=['yoursite.com','google.com','apple.com','facebook.com','microsoft.com'];
+  var wi=0,pos=0,erasing=false,paused=false;
+  el.addEventListener('focus',function(){paused=true;});
+  el.addEventListener('blur',function(){paused=false;if(!el.value)go();});
+  function go(){
+    if(paused||el===document.activeElement)return;
+    var w=words[wi];
+    if(!erasing){
+      pos++;
+      el.setAttribute('placeholder',w.slice(0,pos));
+      if(pos===w.length){erasing=true;setTimeout(go,1400);return;}
+    } else {
+      pos--;
+      el.setAttribute('placeholder',w.slice(0,pos));
+      if(pos===0){erasing=false;wi=(wi+1)%words.length;}
+    }
+    setTimeout(go,erasing?45:75);
+  }
+  setTimeout(go,800);
+})();
 </script>
 </html>
