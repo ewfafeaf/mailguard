@@ -104,7 +104,7 @@ section{position:relative;z-index:1}
 /* hero input */
 .hero-input-wrap{display:flex;align-items:center;gap:8px;max-width:540px;width:100%;margin:32px auto 0;background:#ffffff;border:1px solid #e4e4e7;border-radius:14px;padding:6px 6px 6px 16px;box-shadow:0 4px 24px rgba(0,0,0,.12)}
 .hero-input-icon{display:none}
-.hero-input{flex:1;border:none!important;background:transparent!important;outline:none!important;font-size:1rem;color:#111111!important;-webkit-text-fill-color:#111111!important;height:44px;padding:0!important;caret-color:#111111;font-family:inherit}
+.hero-input{flex:1;border:none!important;background:transparent!important;outline:none!important;box-shadow:none!important;font-size:1rem;color:#111111!important;-webkit-text-fill-color:#111111!important;height:44px;padding:0 8px!important;caret-color:#111111!important;font-family:inherit}
 .hero-input::placeholder{color:#9ca3af!important;-webkit-text-fill-color:#9ca3af!important}
 .hero-input-btn{flex-shrink:0;height:44px;padding:0 20px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;white-space:nowrap}
 .hero-input-btn:hover{opacity:.9}
@@ -805,7 +805,6 @@ input#heroInput:-webkit-autofill:focus {
         spellcheck="false"
         autocomplete="off"
         placeholder="yoursite.com"
-        style="background:#ffffff;color:#111111;border:1px solid #e4e4e7;-webkit-text-fill-color:#111111;caret-color:#111111;"
         onkeydown="if(event.key==='Enter')heroAnalyze()"
       />
       <button class="hero-input-btn" onclick="heroAnalyze()">Analyzovať →</button>
