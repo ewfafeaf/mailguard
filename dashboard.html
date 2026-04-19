@@ -2951,33 +2951,36 @@ body::before{content:'';position:fixed;inset:0;
             <span class="pwc-dot pwc-dot-green"></span>
           </div>
           <span class="pwc-title">password-analyzer.exe</span>
-          <button class="pwc-clear-btn" onclick="event.stopPropagation();pwcClear()">&#x2715; clear</button>
+          <div style="display:flex;gap:6px">
+            <button class="pwc-clear-btn" id="pwcEyeBtn" onclick="event.stopPropagation();pwcToggleVisible()">👁 Zobraziť</button>
+            <button class="pwc-clear-btn" onclick="event.stopPropagation();pwcClear()">&#x2715; clear</button>
+          </div>
         </div>
 
         <!-- Terminal body -->
         <div class="pwc-body">
           <!-- Boot lines -->
-          <div class="pwc-line"><span class="pwc-dim">NonDox Password Analyzer v1.0</span></div>
-          <div class="pwc-line"><span class="pwc-dim">Copyright (c) 2025 NonDox Security. All rights reserved.</span></div>
+          <div class="pwc-line"><span class="pwc-dim">NonDox Analyzátor Hesiel v1.0</span></div>
+          <div class="pwc-line"><span class="pwc-dim">NonDox Security — Všetky práva vyhradené</span></div>
           <div class="pwc-line">&nbsp;</div>
-          <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Ready. Type your password below:</div>
+          <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Pripravený. Zadajte heslo nižšie:</div>
           <div class="pwc-line">&nbsp;</div>
 
           <!-- Input line -->
           <div class="pwc-line pwc-input-line">
             <span class="pwc-prompt">&gt;</span>
-            <span class="pwc-input-label">Password: </span>
+            <span class="pwc-input-label">Heslo: </span>
             <span id="pwcMasked" class="pwc-masked"></span><span class="pwc-cursor" id="pwcCursor">_</span>
           </div>
 
           <!-- Live output — hidden until typing -->
           <div id="pwcTermOutput" style="display:none">
             <div class="pwc-line">&nbsp;</div>
-            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Analyzing: <span id="pwcTermMasked2" class="pwc-masked"></span></div>
-            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Entropy:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermEntropy">--</span> bits <span id="pwcTermEntropyBar"></span></div>
-            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Dictionary:&nbsp;&nbsp;&nbsp;<span id="pwcTermDict">--</span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Analyzujem:&nbsp;&nbsp;&nbsp;<span id="pwcTermMasked2" class="pwc-masked"></span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Entropia:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermEntropy">--</span> bitov <span id="pwcTermEntropyBar"></span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Slovník:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermDict">--</span></div>
             <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Brute force:&nbsp; <span id="pwcTermBrute">--</span></div>
-            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Status:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermStatus">--</span></div>
+            <div class="pwc-line"><span class="pwc-prompt">&gt;</span> Stav:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pwcTermStatus">--</span></div>
           </div>
         </div>
 
@@ -7652,7 +7655,9 @@ function pwcAnalyze(){
   const result=document.getElementById('pwcResult');
 
   // Update terminal masked display
-  const masked='*'.repeat(val.length);
+  const inp2=document.getElementById('pwcInput');
+  const isVisible=inp2.dataset.visible==='1';
+  const masked=isVisible?val:'*'.repeat(val.length);
   const maskedEl=document.getElementById('pwcMasked');
   const masked2El=document.getElementById('pwcTermMasked2');
   if(maskedEl) maskedEl.textContent=masked;
@@ -7737,12 +7742,25 @@ function pwcAnalyze(){
   if(eEl){eEl.textContent=entropy+' bits';eEl.style.color=termColor;}
   const entropyBarEl=document.getElementById('pwcTermEntropyBar');
   if(entropyBarEl){entropyBarEl.textContent=entropyBar;entropyBarEl.style.color=termColor;}
-  if(dEl){dEl.textContent=okCommon?'PASS ✓':'FAIL ✗ — common password detected';dEl.style.color=okCommon?'#00ff41':'#ff4444';}
+  if(dEl){dEl.textContent=okCommon?'OK ✓':'CHYBA ✗ — bežné heslo nájdené';dEl.style.color=okCommon?'#00ff41':'#ff4444';}
   if(bEl){bEl.textContent='~'+pwcFormatTime(crackSecs);bEl.style.color=termColor;}
   if(sEl){sEl.textContent=text.toUpperCase();sEl.style.color=termColor;}
 
   requestAnimationFrame(()=>pwcDrawCanvas(pct,color));
   document.getElementById('pwcTip').style.display=pct<=50?'block':'none';
+}
+
+function pwcToggleVisible(){
+  const inp=document.getElementById('pwcInput');
+  const btn=document.getElementById('pwcEyeBtn');
+  const maskedEl=document.getElementById('pwcMasked');
+  const masked2El=document.getElementById('pwcTermMasked2');
+  const visible=inp.dataset.visible==='1';
+  inp.dataset.visible=visible?'0':'1';
+  if(btn) btn.textContent=visible?'👁 Zobraziť':'🙈 Skryť';
+  const display=visible?'*'.repeat(inp.value.length):inp.value;
+  if(maskedEl) maskedEl.textContent=display;
+  if(masked2El) masked2El.textContent=display;
 }
 
 function pwcClear(){
