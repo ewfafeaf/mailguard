@@ -4068,7 +4068,7 @@ async function webScan(){
     sslResult=r;
     termLine('[*]','Fetching SSL certificate... OK','info','info',250);
     if(r?.ok && r.cert){
-      termLine('[+]',`Certificate valid: ${r.cert.subject} (${r.cert.daysLeft}d remaining)`,'ok','ok',300);
+      termLine('[+]',`Certificate valid: ${r.cert.subject || hostname} (${r.cert.daysLeft}d remaining)`,'ok','ok',300);
     } else {
       termLine('[-]','SSL certificate unavailable or expired','err','err',300);
     }
@@ -4407,7 +4407,7 @@ function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,ob
   return`<div class="hres" style="padding:20px">
     <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;font-family:monospace">${escHtml(scanUrl)}</div>
     ${renderFinalScore(report)}
-    ${renderSSLPanel(sslResult)}
+    ${renderSSLPanel(sslResult, hostname)}
     ${renderWhoisPanel(whoisResult)}
     ${renderVTPanel(vtResult)}
     ${renderShodanPanel(shodanResult)}
@@ -4942,7 +4942,7 @@ function renderShodanPanel(sh){
 }
 
 /* ── SSL Panel Render ── */
-function renderSSLPanel(ssl){
+function renderSSLPanel(ssl, hostname){
   if(!ssl){
     return`<div class="ssl-panel" style="opacity:.7">
       <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🔒 SSL / TLS Certifikát</div>
@@ -4987,7 +4987,7 @@ function renderSSLPanel(ssl){
     </div>
     <div class="ssl-detail-item">
       <div class="ssl-detail-label">Subjekt</div>
-      <div class="ssl-detail-value">${escHtml(cert.subject)}</div>
+      <div class="ssl-detail-value">${escHtml(cert.subject || hostname || '—')}</div>
     </div>
     <div class="ssl-detail-item">
       <div class="ssl-detail-label">Platný do</div>
