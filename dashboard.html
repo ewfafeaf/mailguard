@@ -2524,7 +2524,7 @@ body::before{content:'';position:fixed;inset:0;
           <polyline points="9 15 12 18 15 15"/>
         </svg>
         <div class="upload-text-main">Presuň súbor sem alebo klikni pre výber</div>
-        <div class="upload-text-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB · <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán</span></div>
+        <div class="upload-text-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB · <span id="fileUploadPlanLabel" style="color:var(--accent);font-weight:600">Vyžaduje PRO plán</span></div>
         <div class="upload-formats">
           <span class="format-badge">PDF</span>
           <span class="format-badge">DOC</span>
@@ -3182,6 +3182,18 @@ async function loadProfile(){
   });
   const deepBadge=document.getElementById('deepScanBadge');
   if(deepBadge) deepBadge.style.display=(_currentPlan==='business'||_currentPlan==='school')?'inline-flex':'none';
+  const fileLabel=document.getElementById('fileUploadPlanLabel');
+  if(fileLabel){
+    if(_currentPlan==='free'){
+      fileLabel.textContent='Vyžaduje PRO plán';
+      fileLabel.style.color='var(--accent)';
+    } else if(_currentPlan==='business'||_currentPlan==='school'){
+      fileLabel.textContent='✅ Dostupné vo vašom pláne';
+      fileLabel.style.color='var(--green)';
+    } else {
+      fileLabel.style.display='none';
+    }
+  }
 }
 
 async function updateUserInfo(){
@@ -6411,7 +6423,7 @@ const _FILE_UPLOAD_HTML=`
     <polyline points="9 15 12 18 15 15"/>
   </svg>
   <div class="upload-text-main">Presuň súbor sem alebo klikni pre výber</div>
-  <div class="upload-text-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB · <span style="color:var(--accent);font-weight:600">Vyžaduje PRO plán</span></div>
+  <div class="upload-text-sub">PDF, DOC, DOCX, XLS, XLSX · max 10 MB · <span id="fileUploadPlanLabel" style="color:var(--accent);font-weight:600">Vyžaduje PRO plán</span></div>
   <div class="upload-formats">
     <span class="format-badge">PDF</span>
     <span class="format-badge">DOC</span>
