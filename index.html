@@ -87,12 +87,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;
 .btn-signup:hover{background:#f4f4f5;border-color:#d4d4d8}
 .nav-hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer}
 .nav-mobile-menu{display:none}
-@media(max-width:700px){
-  nav{grid-template-columns:auto 1fr}
-  .nav-left{display:none}
-  .nav-right{display:none}
-  .nav-hamburger{display:block;justify-self:end}
-}
 
 /* ── SECTIONS ── */
 section{position:relative;z-index:1}
@@ -451,10 +445,13 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .footer-grid{grid-template-columns:1fr 1fr}
   .nav-center{display:none}
 }
-@media(max-width:640px){
+@media(max-width:768px){
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:flex;align-items:center}
+  #mobileMenuBtn{display:block!important}
   nav{grid-template-columns:auto 1fr;padding:0 16px}
+  .nav-left{display:none;position:fixed;top:68px;left:0;right:0;background:#000;flex-direction:column;padding:20px;gap:8px;z-index:99}
+  .nav-left.open{display:flex}
   .nav-mobile-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;
     background:rgba(8,8,18,.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);
     border-radius:14px;padding:14px;flex-direction:column;gap:4px;z-index:99}
@@ -465,6 +462,10 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .nav-mobile-menu a:hover,.nav-mobile-menu button:hover{background:rgba(255,255,255,.07);color:var(--text)}
   .nav-mobile-menu .m-signup{background:linear-gradient(90deg,var(--accent),var(--accent2));
     color:#fff!important;font-weight:700;border-radius:9px;margin-top:4px}
+  .hero h1{font-size:2rem}
+  .hero p{font-size:.9rem}
+  .plans-grid{grid-template-columns:1fr!important}
+  .features-grid{grid-template-columns:1fr!important}
   .footer-grid{grid-template-columns:1fr}
   .score-row{flex-direction:column;text-align:center}
   .hero-input-wrap{flex-direction:column;border-radius:14px}
@@ -770,7 +771,7 @@ body::after{content:'';position:fixed;top:-60%;right:-60%;width:220%;height:220%
     <button class="btn-signin" onclick="openModal('login')">Prihlásiť sa</button>
     <button class="btn-signup" onclick="openModal('register')">Registrovať</button>
   </div>
-  <button class="nav-hamburger" aria-label="Menu">☰</button>
+  <button id="mobileMenuBtn" class="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">☰</button>
 </nav>
 
 <!-- ── HERO ── -->
@@ -2053,6 +2054,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function toggleFeature(btn){
   btn.closest('.feature-item').classList.toggle('expanded');
+}
+
+function toggleMobileMenu() {
+  const menu = document.querySelector('.nav-left');
+  menu.classList.toggle('open');
 }
 
 function openModal(type){
