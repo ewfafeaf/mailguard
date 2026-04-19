@@ -2484,7 +2484,7 @@ body::before{content:'';position:fixed;inset:0;
     <!-- Section: Plány -->
     <!-- Section: Files -->
     <div id="sectionFiles" class="dash-section" style="display:none">
-      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov<button class="info-btn-label" onclick="showInfoModal('files')">ⓘ Info</button></div>
+      <div class="dash-section-title"><div class="dot" style="background:#f0a500"></div>Analýza súborov<button class="info-btn-label" onclick="showInfoModal('files')">ⓘ Info</button><span id="deepScanBadge" style="display:none;margin-left:10px;padding:3px 10px;border-radius:99px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88;font-size:.72rem;font-weight:600">🔬 Deep Scan aktívny</span></div>
 
       <!-- Feature cards -->
       <div class="file-scanner-features">
@@ -3180,6 +3180,8 @@ async function loadProfile(){
     const el=document.getElementById(id);
     if(el) el.style.display=hasPro?'none':'';
   });
+  const deepBadge=document.getElementById('deepScanBadge');
+  if(deepBadge) deepBadge.style.display=(_currentPlan==='business'||_currentPlan==='school')?'inline-flex':'none';
 }
 
 async function updateUserInfo(){
