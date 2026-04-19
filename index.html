@@ -455,6 +455,9 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 .mobile-auth-btns{display:none}
 
 @media(max-width:768px){
+  *{-webkit-overflow-scrolling:touch}
+  html{scroll-behavior:auto!important}
+  body::before,body::after,.main::before,.main::after,#hero::before,#hero::after,.vibe-blob{animation:none!important;transition:none!important}
   .nav-center,.nav-right{display:none}
   .nav-hamburger{display:flex!important}
   nav{grid-template-columns:auto 1fr auto;padding:0 16px}
