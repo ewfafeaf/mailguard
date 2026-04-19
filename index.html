@@ -1538,13 +1538,18 @@ document.addEventListener('click',e=>{if(!e.target.closest('nav'))closeNav();});
 /* current logged-in user (set by Supabase listener) */
 let _currentUser=null;
 
-function heroAnalyze() {
+async function heroAnalyze() {
   const val = document.getElementById('heroInput').value.trim();
   if (!val) {
     document.getElementById('heroInput').focus();
     return;
   }
-  openModal('register');
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
+    window.location.href = '/dashboard?scan=' + encodeURIComponent(val);
+  } else {
+    openModal('register');
+  }
 }
 
 function renderHeroResultHTML(val){
