@@ -2669,20 +2669,30 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
+        <!-- Security Awareness Box -->
+        <div id="teamAwarenessBox" style="display:none"></div>
+
         <!-- Zoznam učiteľov -->
         <div class="team-card">
-          <div class="card-header">
-            <div class="card-icon">👥</div>
-            <div>
-              <h3 class="card-title" id="teachersCardTitle">Učitelia</h3>
-              <p class="card-subtitle">Prehľad učiteľov a ich aktivity v NonDox</p>
+          <div class="card-header" style="flex-wrap:wrap;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;flex:1">
+              <div class="card-icon">👥</div>
+              <div>
+                <h3 class="card-title" id="teachersCardTitle">Učitelia</h3>
+                <p class="card-subtitle">Prehľad učiteľov a ich aktivity v NonDox</p>
+              </div>
             </div>
+            <button id="teamExportPdfBtn" onclick="exportTeamPDF()" style="display:none;align-items:center;gap:7px;padding:8px 16px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:#4f8ef7;font-size:.82rem;font-weight:600;cursor:pointer">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Export PDF reportu
+            </button>
           </div>
           <div class="card-content" style="padding-bottom:8px">
 
             <div class="teachers-table" id="teachersList">
               <div class="table-header">
                 <div>UČITEĽ</div>
+                <div>ROLA</div>
                 <div>STAV</div>
                 <div>AKTIVITA</div>
                 <div>LINK</div>
@@ -8261,6 +8271,8 @@ async function checkUserAccess(){
   }
 }
 
+let _teamAwarenessData = null; // cached for PDF export
+
 async function loadTeachers(){
   const tableEl  = document.getElementById('teachersList');
   const countEl  = document.getElementById('teamCount');
@@ -8278,10 +8290,20 @@ async function loadTeachers(){
   tableEl.insertAdjacentHTML('beforeend',`<div class="team-empty">
     <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 auto 8px"></div>Načítavam…</div>`);
 
-  const {data,error}=await _sb.from('team_members')
-    .select('id,member_email,full_name,role,status,created_at,member_user_id,invite_token')
-    .eq('owner_id',_currentUser.id)
-    .order('created_at',{ascending:true});
+  const [{data, error}, {data: phishCampaigns}, {data: phishTargets}] = await Promise.all([
+    _sb.from('team_members')
+      .select('id,member_email,full_name,role,status,created_at,member_user_id,invite_token')
+      .eq('owner_id', _currentUser.id)
+      .order('created_at', {ascending: true}),
+    _sb.from('phishing_campaigns')
+      .select('id,created_at')
+      .eq('owner_id', _currentUser.id),
+    _sb.from('phishing_targets')
+      .select('campaign_id,member_email,clicked')
+      .in('campaign_id',
+        (await _sb.from('phishing_campaigns').select('id').eq('owner_id', _currentUser.id)).data?.map(c=>c.id) || []
+      ),
+  ]);
 
   if(error){
     tableEl.querySelector('.team-empty').innerHTML=`<span style="color:var(--red)">Chyba: ${escHtml(error.message)}</span>`;
@@ -8291,6 +8313,70 @@ async function loadTeachers(){
   if(countEl) countEl.textContent = data.length;
   if(fillEl)  fillEl.style.width  = Math.min(100, Math.round(data.length/limit*100))+'%';
   if(titleEl) titleEl.textContent = `Učitelia (${data.length})`;
+
+  // ── Security Awareness Score ─────────────────────────────────────
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const campaignsThisMonth = (phishCampaigns||[]).filter(c => c.created_at >= monthStart).length;
+  const allTargets = phishTargets || [];
+  const clickedEmails = new Set(allTargets.filter(t => t.clicked).map(t => t.member_email));
+  const suspUploaders = new Set(
+    (await _sb.from('analyses').select('user_id').in('verdict',['high','medium'])
+      .in('user_id', data.filter(m=>m.member_user_id).map(m=>m.member_user_id))
+    ).data?.map(a=>a.user_id) || []
+  );
+  let score = 100;
+  data.forEach(m => {
+    if(clickedEmails.has(m.member_email)) score -= 10;
+    if(m.member_user_id && suspUploaders.has(m.member_user_id)) score -= 5;
+  });
+  if(clickedEmails.size === 0 && data.length > 0) score += 5;
+  score = Math.max(0, Math.min(100, score));
+  const totalThreats = (await _sb.from('analyses').select('id',{count:'exact'})
+    .eq('user_id', _currentUser.id)
+    .in('verdict',['high','medium'])).count || 0;
+
+  _teamAwarenessData = { score, memberCount: data.length, campaignsThisMonth, totalThreats, members: null, phishCampaigns, allTargets };
+
+  const scoreColor = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+  const scoreLabel = score >= 70 ? 'Dobrá odolnosť' : score >= 50 ? 'Stredná odolnosť' : 'Nízka odolnosť';
+  const awarBox = document.getElementById('teamAwarenessBox');
+  if(awarBox) {
+    awarBox.style.display = 'block';
+    awarBox.innerHTML = `
+      <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:14px;padding:22px 24px;margin-bottom:16px">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px">🛡️ Security Awareness</div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="text-align:center;flex-shrink:0">
+            <div style="font-size:2.6rem;font-weight:800;color:${scoreColor};line-height:1">${score}<span style="font-size:1.2rem;opacity:.6">/100</span></div>
+            <div style="font-size:.75rem;color:${scoreColor};font-weight:600;margin-top:4px">${scoreLabel}</div>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">Odolnosť školy voči phishingovým útokom</div>
+            <div style="height:8px;border-radius:99px;background:#2e3350;overflow:hidden">
+              <div style="height:100%;width:${score}%;background:${scoreColor};border-radius:99px;transition:width .6s ease"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px">
+          <div style="background:#22263a;border-radius:10px;padding:12px 14px;text-align:center">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--text)">${data.length}</div>
+            <div style="font-size:.73rem;color:var(--muted);margin-top:2px">Členov tímu</div>
+          </div>
+          <div style="background:#22263a;border-radius:10px;padding:12px 14px;text-align:center">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--text)">${campaignsThisMonth}</div>
+            <div style="font-size:.73rem;color:var(--muted);margin-top:2px">Phishing simulácií tento mesiac</div>
+          </div>
+          <div style="background:#22263a;border-radius:10px;padding:12px 14px;text-align:center">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--text)">${totalThreats}</div>
+            <div style="font-size:.73rem;color:var(--muted);margin-top:2px">Zachytených hrozieb celkom</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const exportBtn = document.getElementById('teamExportPdfBtn');
+  if(exportBtn) exportBtn.style.display = 'flex';
 
   // Naplniť checkboxy cieľov pre phishing
   const targetList = document.getElementById('phishingTargetList');
@@ -8320,12 +8406,16 @@ async function loadTeachers(){
     return {...m, total, threats, lastAt, notRegistered:false};
   }));
 
+  if(_teamAwarenessData) _teamAwarenessData.members = withActivity;
+
   const rows=withActivity.map(m=>{
     const initials=(m.member_email||'?')[0].toUpperCase();
     const addedDate=new Date(m.created_at).toLocaleDateString('sk-SK');
     const badgeClass = m.status === 'joined' || m.member_user_id ? 'joined' : 'pending';
     const statusText = m.status === 'joined' || m.member_user_id ? 'Aktívny' : 'Čaká na registráciu';
     const statusBadge=`<div class="team-badge ${badgeClass}">${statusText}</div>`;
+    const roleLabel = m.role === 'admin' ? 'Admin' : 'Učiteľ';
+    const roleBadge = `<span style="font-size:.72rem;padding:2px 8px;border-radius:5px;font-weight:600;background:${m.role==='admin'?'rgba(79,142,247,.18)':'rgba(100,100,140,.18)'};color:${m.role==='admin'?'#4f8ef7':'#9ca3af'}">${roleLabel}</span>`;
     const activityHtml=m.notRegistered
       ? `<div class="activity-stats"><span style="font-size:.78rem;color:#8888aa;font-style:italic">Ešte nezaregistrovaný</span></div>`
       : `<div class="activity-stats">
@@ -8354,6 +8444,7 @@ async function loadTeachers(){
           <div class="teacher-email">Pridaný ${addedDate}</div>
         </div>
       </div>
+      <div>${roleBadge}</div>
       <div>${statusBadge}</div>
       <div class="col-activity">${activityHtml}</div>
       <div class="col-link">${linkCol}</div>
@@ -8365,6 +8456,114 @@ async function loadTeachers(){
   }).join('');
 
   tableEl.insertAdjacentHTML('beforeend', rows);
+}
+
+function exportTeamPDF(){
+  const d = _teamAwarenessData;
+  if(!d){ alert('Najskôr načítajte tím.'); return; }
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  const W = 210, margin = 18;
+  let y = 0;
+
+  // ── Header ──────────────────────────────────────────────────────
+  doc.setFillColor(17, 19, 31);
+  doc.rect(0, 0, W, 38, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.setTextColor(255,255,255);
+  doc.text('NonDox — Security Awareness Report', margin, 16);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,130,160);
+  const dateStr = new Date().toLocaleDateString('sk-SK',{day:'2-digit',month:'long',year:'numeric'});
+  doc.text(`Vygenerované: ${dateStr}`, margin, 26);
+  y = 48;
+
+  // ── Score banner ─────────────────────────────────────────────────
+  const sc = d.score;
+  const [sr,sg,sb] = sc>=70?[34,197,94]:sc>=50?[245,158,11]:[239,68,68];
+  doc.setFillColor(sr,sg,sb,0.12); doc.setDrawColor(sr,sg,sb);
+  doc.roundedRect(margin, y, W-margin*2, 28, 4, 4, 'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(26); doc.setTextColor(sr,sg,sb);
+  doc.text(`${sc}/100`, margin+8, y+18);
+  doc.setFontSize(10); doc.setTextColor(200,210,230);
+  doc.text('Odolnosť školy voči phishingovým útokom', margin+40, y+11);
+  const scoreLabel = sc>=70?'Dobrá odolnosť':sc>=50?'Stredná odolnosť':'Nízka odolnosť';
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(sr,sg,sb);
+  doc.text(scoreLabel, margin+40, y+20);
+  y += 36;
+
+  // ── Quick stats ──────────────────────────────────────────────────
+  const stats = [
+    ['Členov tímu', d.memberCount],
+    ['Phishing simulácií (mesiac)', d.campaignsThisMonth],
+    ['Zachytených hrozieb celkom', d.totalThreats],
+  ];
+  const boxW = (W - margin*2 - 8) / 3;
+  stats.forEach(([label, val], i) => {
+    const bx = margin + i*(boxW+4);
+    doc.setFillColor(28,32,46); doc.setDrawColor(46,51,80);
+    doc.roundedRect(bx, y, boxW, 20, 3, 3, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(220,225,245);
+    doc.text(String(val), bx+boxW/2, y+10, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,110,140);
+    doc.text(label, bx+boxW/2, y+17, {align:'center'});
+  });
+  y += 28;
+
+  // ── Teachers table ───────────────────────────────────────────────
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(160,170,200);
+  doc.text('ZOZNAM ČLENOV TÍMU', margin, y); y += 6;
+  doc.setFillColor(28,32,46);
+  doc.rect(margin, y, W-margin*2, 7, 'F');
+  doc.setFontSize(7.5); doc.setTextColor(100,110,140);
+  doc.text('UČITEĽ', margin+2, y+5);
+  doc.text('ROLA', margin+70, y+5);
+  doc.text('STAV', margin+95, y+5);
+  doc.text('ANALÝZY', margin+120, y+5);
+  doc.text('HROZBY', margin+145, y+5);
+  y += 8;
+
+  const members = d.members || [];
+  members.forEach((m, idx) => {
+    if(y > 265){ doc.addPage(); y = 20; }
+    if(idx%2===0){ doc.setFillColor(22,25,38); doc.rect(margin, y-1, W-margin*2, 9, 'F'); }
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(210,215,235);
+    doc.text((m.full_name||m.member_email).slice(0,32), margin+2, y+5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(130,140,170);
+    if(m.full_name) doc.text(m.member_email.slice(0,28), margin+2, y+9.5);
+    doc.setTextColor(m.role==='admin'?[79,142,247]:[150,163,175]);
+    doc.text(m.role==='admin'?'Admin':'Učiteľ', margin+70, y+5);
+    doc.setTextColor(m.status==='joined'||m.member_user_id?[34,197,94]:[245,158,11]);
+    doc.text(m.status==='joined'||m.member_user_id?'Aktívny':'Čaká', margin+95, y+5);
+    doc.setTextColor(200,210,230);
+    doc.text(String(m.total||0), margin+120, y+5);
+    doc.setTextColor(m.threats>0?[239,68,68]:[100,110,140]);
+    doc.text(String(m.threats||0), margin+145, y+5);
+    y += m.full_name ? 12 : 9;
+  });
+  y += 6;
+
+  // ── Phishing campaigns ───────────────────────────────────────────
+  if(y > 240){ doc.addPage(); y = 20; }
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(160,170,200);
+  doc.text('PHISHING SIMULÁCIE', margin, y); y += 6;
+  const sent = (d.allTargets||[]).length;
+  const clicked = (d.allTargets||[]).filter(t=>t.clicked).length;
+  const clickRate = sent>0 ? Math.round(clicked/sent*100) : 0;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(180,190,220);
+  doc.text(`Kampane celkom: ${(d.phishCampaigns||[]).length}   |   Odoslaných emailov: ${sent}   |   Kliknutí: ${clicked} (${clickRate}%)`, margin, y);
+  y += 12;
+
+  // ── Footer on each page ──────────────────────────────────────────
+  const pageCount = doc.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    doc.setFillColor(17,19,31);
+    doc.rect(0, 287, W, 10, 'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,90,110);
+    doc.text('NonDox Security Platform  •  nondox.com  •  Dôverné', margin, 293);
+    doc.text(`Strana ${p} / ${pageCount}`, W-margin, 293, {align:'right'});
+  }
+
+  doc.save(`nondox-team-report-${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 async function teamShowHistory(userId, email){
