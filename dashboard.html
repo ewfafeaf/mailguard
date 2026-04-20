@@ -9079,6 +9079,26 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 </div>
+<div id="hibpKeyModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:16px;width:min(460px,92vw);position:relative">
+    <button onclick="document.getElementById('hibpKeyModal').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;line-height:1">✕</button>
+    <div style="text-align:center;padding:32px">
+      <div style="font-size:2rem;margin-bottom:16px">🔑</div>
+      <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;color:#eeeef5">Aktivácia Monitora únikov</h3>
+      <p style="font-size:.88rem;color:#7a82a0;margin-bottom:20px;line-height:1.6">
+        Pre aktiváciu Monitora únikov je potrebný vlastný bezpečnostný kľúč (HIBP API).<br>
+        Tento kľúč zabezpečuje priamy šifrovaný prístup k globálnej databáze hrozieb
+        a garantuje, že vaše dáta prechádzajú len cez váš vlastný kanál.
+      </p>
+      <button onclick="document.getElementById('hibpKeyModal').style.display='none';showSection('nastavenia')" style="padding:11px 24px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:9px;color:#fff;font-weight:700;cursor:pointer;font-size:.9rem">
+        Nastaviť kľúč v Nastaveniach →
+      </button>
+      <p style="font-size:.75rem;color:#4a5068;margin-top:12px">
+        Potrebujete pomoc? Kontaktujte nás na <a href="mailto:peter@nondox.com" style="color:#4f8ef7">peter@nondox.com</a>
+      </p>
+    </div>
+  </div>
+</div>
 <div class="info-modal-overlay" id="infoModalOverlay" onclick="if(event.target===this)closeInfoModal()">
   <div class="info-modal">
     <button class="close-btn" onclick="closeInfoModal()">✕</button>
@@ -9290,7 +9310,13 @@ async function runHibpCheck() {
     const data = await r.json();
 
     if (!data.ok) {
-      resultDiv.innerHTML = `<div style="color:var(--red)">${data.error}</div>`;
+      const errLower = (data.error || '').toLowerCase();
+      if (errLower.includes('hibp') || errLower.includes('api key') || errLower.includes('401') || errLower.includes('403') || errLower.includes('unauthorized')) {
+        resultDiv.innerHTML = '';
+        document.getElementById('hibpKeyModal').style.display = 'flex';
+      } else {
+        resultDiv.innerHTML = `<div style="color:var(--red)">${escHtml(data.error)}</div>`;
+      }
       return;
     }
 
