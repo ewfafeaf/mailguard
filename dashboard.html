@@ -3756,12 +3756,22 @@ function displayBlacklistResults(data){
   const resolvedNote=data.resolvedFrom
     ?`<div style="margin-top:4px;font-size:.72rem;color:#555e70">Resolved: ${escHtml(data.resolvedFrom)} → ${escHtml(data.ip)}</div>`:'';
 
+  const nowStr = new Date().toLocaleString('sk-SK',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const lastCheckNote=`<div style="margin-top:5px;font-size:.72rem;color:#555e70">Posledná kontrola: ${nowStr}</div>`;
+
+  const hasAutoMonitor = _currentPlan==='business'||_currentPlan==='school';
+  const autoMonitorBadge = hasAutoMonitor
+    ? `<div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:#3fb95022;border:1px solid #3fb95055;font-size:.75rem;font-weight:600;color:var(--green)">🛡️ Auto-Monitor aktívny — upozorníme vás ak sa doména ocitne na blackliste</div>`
+    : '';
+
   document.getElementById('bl-results').innerHTML=`
     <div class="dns-score-card">
       <div class="dns-score-circle">${s}<span style="font-size:.95rem;font-weight:400;color:rgba(255,255,255,.4)">/100</span></div>
       <div style="margin-top:10px;font-size:.9rem;font-weight:700;color:${verdictCol};letter-spacing:.02em">${escHtml(verdict)}</div>
       <div style="margin-top:4px;font-size:.72rem;color:#555e70;letter-spacing:.06em;text-transform:uppercase">${escHtml(data.ip||data.input)}</div>
       ${resolvedNote}
+      ${lastCheckNote}
+      ${autoMonitorBadge}
     </div>
 
     <div class="res-section">
