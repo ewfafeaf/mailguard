@@ -1899,6 +1899,26 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
+        <!-- Row: Súlad so zákonom -->
+        <div style="grid-column:1/-1">
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.06),rgba(79,142,247,.01));border:1px solid rgba(79,142,247,.2)">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+              <div>
+                <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">⚖️ Súlad so zákonom č. 69/2018 Z.z.</div>
+                <div style="font-size:.72rem;color:#555e70;margin-top:3px">Zákon o kybernetickej bezpečnosti — automatické vyhodnotenie</div>
+              </div>
+              <button onclick="downloadCompliancePDF()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:#4f8ef7;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                Stiahnuť certifikát súladu
+              </button>
+            </div>
+            <div id="complianceChecklist" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+              <div style="grid-column:1/-1;font-size:.8rem;color:var(--muted);padding:8px 0">Načítavam dáta…</div>
+            </div>
+            <div id="complianceSummary"></div>
+          </div>
+        </div>
+
         <!-- Row 4b: Two admin-panel charts -->
         <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <!-- Growth Chart -->
@@ -5375,6 +5395,185 @@ async function loadStats(){
   if(sidebarTotal) sidebarTotal.textContent=`${total} analýz celkovo`;
 
   loadDashboardWidgets();
+  loadComplianceChecklist();
+}
+
+/* ── COMPLIANCE CHECKLIST ── */
+let _complianceResults = null;
+
+async function loadComplianceChecklist() {
+  if (!_currentUser) return;
+  const monthAgo = new Date(Date.now() - 30*24*3600*1000).toISOString();
+
+  const [
+    { data: webAnalyses },
+    { data: dnsAnalyses },
+    { data: recentAny },
+    { data: phishCampaigns },
+    { data: breachAnalyses },
+  ] = await Promise.all([
+    _sb.from('analyses').select('meta,created_at').eq('user_id', _currentUser.id).eq('type','web').order('created_at',{ascending:false}).limit(1),
+    _sb.from('analyses').select('meta,created_at').eq('user_id', _currentUser.id).eq('type','dns').order('created_at',{ascending:false}).limit(1),
+    _sb.from('analyses').select('id').eq('user_id', _currentUser.id).gte('created_at', monthAgo).limit(1),
+    _sb.from('phishing_campaigns').select('id').eq('owner_id', _currentUser.id).limit(1),
+    _sb.from('analyses').select('id').eq('user_id', _currentUser.id).eq('type','hibp').limit(1),
+  ]);
+
+  const lastWeb = webAnalyses?.[0]?.meta || {};
+  const lastDns = dnsAnalyses?.[0]?.meta || {};
+
+  const checks = [
+    {
+      label: 'HTTPS a SSL certifikát',
+      desc:  'Webová prezentácia školy má platný SSL certifikát',
+      pass:  !!(lastWeb.ssl?.ok && (lastWeb.ssl?.grade === 'A' || lastWeb.ssl?.grade === 'A+')),
+      tip:   'Spustite Web skener na vašej doméne',
+    },
+    {
+      label: 'DMARC politika',
+      desc:  'Emailová doména má nakonfigurovaný DMARC záznam',
+      pass:  !!(lastDns.dmarc?.exists),
+      tip:   'Spustite DNS Checker na vašej emailovej doméne',
+    },
+    {
+      label: 'SPF záznam',
+      desc:  'Emailová doména má nakonfigurovaný SPF záznam',
+      pass:  !!(lastDns.spf?.status === 'PASS'),
+      tip:   'Spustite DNS Checker na vašej emailovej doméne',
+    },
+    {
+      label: 'Pravidelné bezpečnostné skenovanie',
+      desc:  'Aspoň jedna analýza za posledných 30 dní',
+      pass:  !!(recentAny?.length > 0),
+      tip:   'Spustite akúkoľvek analýzu',
+    },
+    {
+      label: 'Školenie zamestnancov',
+      desc:  'Bol spustený aspoň jeden phishing simulačný test',
+      pass:  !!(phishCampaigns?.length > 0),
+      tip:   'Spustite Phishing Simulator v sekcii Tím',
+    },
+    {
+      label: 'Monitoring únikov dát',
+      desc:  'Bol spustený Breach Monitor pre doménu školy',
+      pass:  !!(breachAnalyses?.length > 0),
+      tip:   'Skontrolujte doménu v Breach Monitor',
+    },
+  ];
+
+  _complianceResults = checks;
+  const passed = checks.filter(c => c.pass).length;
+
+  const statusColor = passed < 4 ? '#ef4444' : passed < 6 ? '#f59e0b' : '#22c55e';
+  const statusText  = passed < 4
+    ? 'Kritický stav — škola nespĺňa zákonné minimá'
+    : passed < 6
+    ? 'Čiastočný súlad — odporúčame doplniť chýbajúce body'
+    : 'Plný súlad so zákonom';
+
+  const listEl = document.getElementById('complianceChecklist');
+  const sumEl  = document.getElementById('complianceSummary');
+  if (!listEl) return;
+
+  listEl.innerHTML = checks.map(c => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;background:${c.pass?'rgba(34,197,94,.07)':'rgba(239,68,68,.07)'};border:1px solid ${c.pass?'rgba(34,197,94,.2)':'rgba(239,68,68,.18)'}">
+      <span style="font-size:1rem;flex-shrink:0;margin-top:1px">${c.pass?'✅':'❌'}</span>
+      <div style="min-width:0">
+        <div style="font-size:.8rem;font-weight:600;color:${c.pass?'#22c55e':'#ef4444'}">${c.label}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:2px;line-height:1.4">${c.pass ? c.desc : c.tip}</div>
+      </div>
+    </div>`).join('');
+
+  if (sumEl) {
+    sumEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:${statusColor}14;border:1px solid ${statusColor}33;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:baseline;gap:4px;flex-shrink:0">
+          <span style="font-size:1.6rem;font-weight:800;color:${statusColor}">${passed}</span>
+          <span style="font-size:.9rem;color:var(--muted)">/ 6</span>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:.82rem;font-weight:700;color:${statusColor}">${statusText}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">Vaša škola spĺňa ${passed} z 6 bodov národnej stratégie kybernetickej bezpečnosti podľa zákona č. 69/2018 Z.z.</div>
+        </div>
+        <div style="height:6px;flex:1;min-width:100px;background:#2e3350;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(passed/6*100)}%;background:${statusColor};border-radius:99px;transition:width .6s ease"></div>
+        </div>
+      </div>`;
+  }
+}
+
+function downloadCompliancePDF() {
+  const checks = _complianceResults;
+  if (!checks) { alert('Načítajte najskôr dashboard.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 18;
+  let y = 0;
+
+  // Header
+  doc.setFillColor(17,19,31); doc.rect(0,0,W,42,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(255,255,255);
+  doc.text('Certifikát súladu so zákonom č. 69/2018 Z.z.', M, 16);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(100,110,150);
+  doc.text('Zákon o kybernetickej bezpečnosti Slovenskej republiky', M, 25);
+  doc.text(`Vygenerované: ${new Date().toLocaleDateString('sk-SK',{day:'2-digit',month:'long',year:'numeric'})}`, M, 32);
+  y = 52;
+
+  // Score banner
+  const passed = checks.filter(c=>c.pass).length;
+  const [sr,sg,sb] = passed < 4 ? [239,68,68] : passed < 6 ? [245,158,11] : [34,197,94];
+  const statusText = passed < 4 ? 'Kritický stav' : passed < 6 ? 'Čiastočný súlad' : 'Plný súlad';
+  doc.setFillColor(sr,sg,sb,0.1); doc.setDrawColor(sr,sg,sb);
+  doc.roundedRect(M, y, W-M*2, 24, 4, 4, 'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(28); doc.setTextColor(sr,sg,sb);
+  doc.text(`${passed}/6`, M+8, y+16);
+  doc.setFontSize(11); doc.setTextColor(200,210,230);
+  doc.text(statusText, M+30, y+10);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(sr,sg,sb);
+  doc.text(`Škola spĺňa ${passed} z 6 bodov národnej stratégie kybernetickej bezpečnosti`, M+30, y+19);
+  y += 32;
+
+  // Checklist
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(140,150,180);
+  doc.text('VYHODNOTENIE JEDNOTLIVÝCH BODOV', M, y); y += 7;
+
+  checks.forEach((c, i) => {
+    if(y > 265) { doc.addPage(); y = 20; }
+    const [cr,cg,cb] = c.pass ? [34,197,94] : [239,68,68];
+    doc.setFillColor(cr,cg,cb,0.08); doc.setDrawColor(cr,cg,cb,0.3);
+    doc.roundedRect(M, y, W-M*2, 14, 2, 2, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(cr,cg,cb);
+    doc.text(c.pass ? '✓' : '✗', M+4, y+9);
+    doc.setTextColor(200,210,230);
+    doc.text(c.label, M+12, y+9);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(100,110,140);
+    doc.text(c.pass ? c.desc : `Odporúčanie: ${c.tip}`, M+12, y+13.5);
+    y += 17;
+  });
+
+  y += 6;
+  // Legal note
+  if(y > 255) { doc.addPage(); y = 20; }
+  doc.setFillColor(28,32,46); doc.setDrawColor(46,51,80);
+  doc.roundedRect(M, y, W-M*2, 28, 3, 3, 'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(140,150,180);
+  doc.text('PRÁVNA POZNÁMKA', M+5, y+7);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(100,110,140);
+  const note = 'Tento certifikát bol vygenerovaný automatizovaným systémom NonDox na základe dostupných dát. Nenahrádza oficiálny bezpečnostný audit. Zákon č. 69/2018 Z.z. o kybernetickej bezpečnosti ukladá prevádzkovateľom základných služieb povinnosť implementovať bezpečnostné opatrenia.';
+  const lines = doc.splitTextToSize(note, W-M*2-10);
+  doc.text(lines, M+5, y+14);
+  y += 32;
+
+  // Footer
+  const pages = doc.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    doc.setFillColor(17,19,31); doc.rect(0,287,W,10,'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(70,80,110);
+    doc.text('NonDox Security Platform  •  nondox.com  •  Dôverný dokument', M, 293);
+    doc.text(`${p} / ${pages}`, W-M, 293, {align:'right'});
+  }
+  doc.save(`nondox-compliance-${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 /* ── DASHBOARD WIDGETS ── */
