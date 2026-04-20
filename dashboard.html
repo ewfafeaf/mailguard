@@ -9429,6 +9429,11 @@ async function runHibpCheck() {
     }
     html += '</div>';
 
+    html += `<div style="margin-top:16px;padding:14px 16px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;font-size:.82rem;color:#7a82a0;line-height:1.6">
+      <strong style="color:#4f8ef7">ℹ️ Čo tieto výsledky znamenajú?</strong><br>
+      Zobrazené úniky sa týkajú emailových adries patriacich k vašej doméne. Ak vidíte breach (napr. Chegg, LinkedIn), znamená to že niekto s emailom na vašej doméne bol registrovaný na tejto platforme a jeho údaje unikli pri masívnom úniku dát. Odporúčame okamžite zmeniť heslá na všetkých službách kde používate rovnaké heslo. Úniky z rokov 2015–2020 sú obzvlášť rizikové ak ste heslo odvtedy nemenili.
+    </div>`;
+
     resultDiv.innerHTML = html;
   } catch(err) {
     resultDiv.innerHTML = `<div style="color:var(--red)">Chyba: ${err.message}</div>`;
