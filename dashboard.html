@@ -614,6 +614,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 .header-feature-card:hover{border-color:rgba(79,142,247,.4);transform:translateY(-3px);
   box-shadow:0 8px 24px rgba(79,142,247,.12)}
 .pwc-check{font-size:.8rem;font-family:'JetBrains Mono',monospace;color:var(--red);transition:color .25s}
+.hdr-tooltip-wrap:hover .hdr-tooltip-box{opacity:1!important}
 
 /* ── PWC TERMINAL ── */
 .pwc-terminal{position:relative;background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden;cursor:text;user-select:none;font-family:'Courier New',monospace}
@@ -7059,9 +7060,14 @@ function renderHeadersResult(d){
     </div>`;
 
   // Auth výsledky
-  const spfLabel  = d.spf  ? d.spf.toUpperCase()  : 'N/A';
-  const dkimLabel = d.dkim ? d.dkim.toUpperCase()  : 'N/A';
-  const dmarcLabel= d.dmarc? d.dmarc.toUpperCase() : 'N/A';
+  const _statusSk=(v)=>{
+    if(!v) return 'N/A';
+    const m={pass:'V PORIADKU',fail:'CHYBA',neutral:'NEUTRÁLNY',none:'NENÁJDENÉ',softfail:'SOFTFAIL',present:'V PORIADKU'};
+    return m[v.toLowerCase()]||v.toUpperCase();
+  };
+  const spfLabel  = _statusSk(d.spf);
+  const dkimLabel = _statusSk(d.dkim);
+  const dmarcLabel= _statusSk(d.dmarc);
 
   const spfPass  = d.spf==='pass';
   const dkimPass = d.dkim==='pass' || d.dkim==='present';
@@ -7090,7 +7096,7 @@ function renderHeadersResult(d){
   // Spoofing banner
   const spoofingBanner=d.spoofingDetected?`
     <div style="padding:12px 14px;border-radius:10px;background:#f8514922;border:1px solid #f8514966;margin-bottom:14px">
-      <div style="font-weight:700;color:var(--red);margin-bottom:6px;font-size:.9rem">⚠️ Možný email spoofing detekovaný</div>
+      <div style="font-weight:700;color:var(--red);margin-bottom:6px;font-size:.9rem;display:flex;align-items:center;gap:7px">⚠️ Možný email spoofing detekovaný<span style="position:relative;display:inline-flex;align-items:center" class="hdr-tooltip-wrap"><span style="width:16px;height:16px;border-radius:50%;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:var(--red);font-size:.68rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:default;line-height:1">ⓘ</span><span style="position:absolute;left:50%;transform:translateX(-50%);top:calc(100% + 6px);width:260px;background:rgba(20,20,35,.97);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:9px 12px;font-size:.76rem;font-weight:400;color:#c8cae0;line-height:1.5;z-index:999;pointer-events:none;opacity:0;transition:opacity .18s" class="hdr-tooltip-box">Nezrovnalosť domén môže byť legitímna (napr. Shopify, Mailchimp), ale je to aj bežná technika útočníkov. Skontrolujte odosielateľa manuálne.</span></span></div>
       ${d.spoofingFlags.map(f=>`<div style="font-size:.8rem;color:var(--muted);padding:2px 0">▸ ${escHtml(f)}</div>`).join('')}
     </div>`
     :`<div style="padding:10px 14px;border-radius:10px;background:#3fb95022;border:1px solid #3fb95044;margin-bottom:14px;font-size:.84rem;color:var(--green);font-weight:600">
@@ -7104,7 +7110,7 @@ function renderHeadersResult(d){
     d.returnPath && `<div><span style="color:var(--muted)">Return-Path:</span> ${escHtml(d.returnPath)}</div>`,
     d.subject && `<div><span style="color:var(--muted)">Subject:</span> ${escHtml(d.subject)}</div>`,
     d.date    && `<div><span style="color:var(--muted)">Date:</span> ${escHtml(d.date)}</div>`,
-    d.receivedHops && `<div><span style="color:var(--muted)">Received hops:</span> ${d.receivedHops}</div>`,
+    d.receivedHops && `<div><span style="color:var(--muted)">Počet skokov:</span> ${d.receivedHops}</div>`,
   ].filter(Boolean).join('');
 
   return`<div class="hres" style="padding:20px">
@@ -7174,7 +7180,7 @@ async function generatePoliceReport(){
     if(y+need>278){ doc.addPage(); y=margin; drawPageHeader(); }
   };
   const riskColor=(score)=> score<=30?CLR_GREEN:score<=60?CLR_ORG:CLR_RED;
-  const riskLabel=(score)=> score<=30?'Low':score<=60?'Medium':'High';
+  const riskLabel=(score)=> score<=30?'Nízke':score<=60?'Stredné':'Vysoké';
 
   // ── Helper: detect base64-like strings ──
   const looksLikeBase64=(s)=> s && !/[.:]/.test(s) && /^[A-Za-z0-9+/=]{8,}$/.test(s);
@@ -7247,9 +7253,11 @@ async function generatePoliceReport(){
 
   const authVal=(v)=>{
     if(!v||v==='—') return {txt:'—',risk:0};
-    if(v==='pass')  return {txt:'PASS',risk:0};
-    if(v==='fail')  return {txt:'FAIL',risk:80};
+    if(v==='pass'||v==='present') return {txt:'V PORIADKU',risk:0};
+    if(v==='fail')     return {txt:'CHYBA',risk:80};
     if(v==='softfail') return {txt:'SOFTFAIL',risk:55};
+    if(v==='neutral')  return {txt:'NEUTRÁLNY',risk:30};
+    if(v==='none')     return {txt:'NENÁJDENÉ',risk:40};
     return {txt:v.toUpperCase(),risk:30};
   };
 
@@ -7257,8 +7265,8 @@ async function generatePoliceReport(){
     ['SPF Check',              authVal(d.spf),          d.spf==='pass'?'Domain verified via SPF record':'SPF verification failed'],
     ['DKIM Check',             authVal(d.dkim),          d.dkim==='pass'?'Valid cryptographic signature':'DKIM signature invalid or missing'],
     ['DMARC Check',            authVal(d.dmarc),         d.dmarc==='pass'||d.dmarc==='present'?'DMARC policy present and valid':'DMARC policy missing or failed'],
-    ['From / Reply-To Match',  d.fromReturnMatch?{txt:'MATCH',risk:0}:{txt:'MISMATCH',risk:75}, d.fromReturnMatch?'From and Return-Path domains match':'From and Return-Path domains differ'],
-    ['Spoofing Detection',     d.spoofingDetected?{txt:'DETECTED',risk:90}:{txt:'CLEAN',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Suspicious indicators found'):'No spoofing indicators detected'],
+    ['From / Reply-To zhoda',  d.fromReturnMatch?{txt:'ZHODA',risk:0}:{txt:'NEZHODUJE SA',risk:75}, d.fromReturnMatch?'Domény From a Return-Path sa zhodujú':'Domény From a Return-Path sa nezhodujú'],
+    ['Detekcia spoofingu',     d.spoofingDetected?{txt:'DETEKOVANÝ',risk:90}:{txt:'ČISTÝ',risk:0}, d.spoofingDetected?((d.spoofingFlags||[]).join('; ')||'Nájdené podozrivé indikátory'):'Žiadne indikátory spoofingu'],
   ];
 
   tableRows.forEach(([check,auth,detail],idx)=>{
@@ -7344,9 +7352,32 @@ async function generatePoliceReport(){
   }
   y+=6;
 
-  // ══ 4. ZÁVER ════════════════════════════════════════════════════
+  // ══ 4. RAW EMAIL HLAVIČKA ════════════════════════════════════════
+  const rawHdrText=d._rawHeaders||'';
+  if(rawHdrText.trim()){
+    checkY(14);
+    sf(9,'bold',BLK); doc.text('4. RAW EMAIL HLAVIČKA',margin,y); y+=4;
+    ln(margin,y,W-margin,y,0.4,BLK); y+=4;
+    sf(6,'normal',[60,60,80]);
+    const rawLines=doc.splitTextToSize(rawHdrText.replace(/\t/g,'  '),contentW-4);
+    const maxLines=Math.min(rawLines.length,120);
+    const chunkH=4.2;
+    for(let i=0;i<maxLines;i++){
+      checkY(chunkH+1);
+      doc.text(rawLines[i],margin+2,y);
+      y+=chunkH;
+    }
+    if(rawLines.length>120){
+      sf(6,'italic',GRY);
+      doc.text(`… (zobrazených prvých 120 riadkov z ${rawLines.length})`,margin+2,y);
+      y+=5;
+    }
+    y+=6;
+  }
+
+  // ══ 5. ZÁVER ════════════════════════════════════════════════════
   checkY(20);
-  sf(9,'bold',BLK); doc.text('4. CONCLUSION AND RECOMMENDATION',margin,y); y+=4;
+  sf(9,'bold',BLK); doc.text('5. CONCLUSION AND RECOMMENDATION',margin,y); y+=4;
   ln(margin,y,W-margin,y,0.4,BLK); y+=4;
 
   const score=d.score||0;
