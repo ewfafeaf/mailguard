@@ -89,6 +89,11 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+  if (req.headers['content-length'] && parseInt(req.headers['content-length']) > MAX_SIZE) {
+    return res.status(413).json({ error: 'Súbor je príliš veľký. Maximum je 10MB.' });
+  }
+
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });

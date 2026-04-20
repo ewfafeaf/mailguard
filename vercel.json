@@ -1,5 +1,11 @@
 {
   "cleanUrls": true,
+  "functions": {
+    "api/analyze-file.js": {
+      "maxDuration": 30,
+      "memory": 512
+    }
+  },
   "redirects": [
     {
       "source": "/",

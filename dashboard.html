@@ -2339,6 +2339,79 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
+        <!-- 2FA -->
+        <div class="settings-card" id="mfaCard">
+          <div class="sc-header">
+            <div class="sc-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+            </div>
+            <div>
+              <h3 class="sc-title">Zabezpečenie účtu</h3>
+              <p class="sc-subtitle">Dvojfaktorová autentifikácia pridáva extra vrstvu ochrany k vášmu účtu.</p>
+            </div>
+            <div style="margin-left:auto">
+              <span id="mfaStatusBadge" style="display:none;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#22c55e">✓ Aktívna</span>
+            </div>
+          </div>
+          <div class="sc-content">
+
+            <!-- State: not enrolled -->
+            <div id="mfaStateIdle">
+              <p class="sc-card-info" style="margin-bottom:16px">
+                Aktivujte TOTP autentifikáciu (Google Authenticator, Authy). Po aktivácii budete pri každom prihlásení požiadaní o 6-ciferný kód.
+              </p>
+              <button class="sc-action-btn primary" id="mfaEnrollBtn" onclick="mfaStartEnroll()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Aktivovať 2FA
+              </button>
+            </div>
+
+            <!-- State: QR shown -->
+            <div id="mfaStateEnroll" style="display:none">
+              <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+                <div style="flex-shrink:0;background:#fff;border-radius:10px;padding:10px;display:inline-block">
+                  <img id="mfaQrImg" src="" alt="QR kód" width="160" height="160"/>
+                </div>
+                <div style="flex:1;min-width:200px">
+                  <div style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:6px">Postup aktivácie:</div>
+                  <ol style="font-size:.8rem;color:var(--muted);line-height:1.8;padding-left:16px;margin-bottom:14px">
+                    <li>Otvorte <strong style="color:var(--text)">Google Authenticator</strong> alebo <strong style="color:var(--text)">Authy</strong></li>
+                    <li>Oskenujte QR kód vľavo</li>
+                    <li>Zadajte 6-ciferný kód z aplikácie</li>
+                  </ol>
+                  <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Manuálny kľúč (ak QR nefunguje):</div>
+                  <div id="mfaSecretKey" style="font-family:monospace;font-size:.75rem;background:#22263a;padding:6px 10px;border-radius:6px;color:#4f8ef7;word-break:break-all;margin-bottom:14px"></div>
+                  <div class="sc-input-group" style="margin-bottom:10px">
+                    <label>Overovací kód</label>
+                    <input type="text" id="mfaTotpInput" class="settings-input" placeholder="123456"
+                      maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                      onkeydown="if(event.key==='Enter')mfaVerify()"
+                      style="letter-spacing:.25em;font-size:1.1rem;text-align:center;max-width:180px"/>
+                  </div>
+                  <div style="display:flex;gap:10px">
+                    <button class="sc-action-btn primary" id="mfaVerifyBtn" onclick="mfaVerify()">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                      Potvrdiť aktiváciu
+                    </button>
+                    <button class="sc-action-btn" onclick="mfaCancelEnroll()" style="background:transparent;border:1px solid #2e3350;color:var(--muted)">Zrušiť</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: already active -->
+            <div id="mfaStateActive" style="display:none">
+              <p class="sc-card-info" style="color:#22c55e;margin-bottom:14px">✅ Dvojfaktorová autentifikácia je aktívna na vašom účte.</p>
+              <button class="sc-action-btn" onclick="mfaDisable()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Deaktivovať 2FA
+              </button>
+            </div>
+
+            <div class="sc-msg" id="mfaMsg" style="margin-top:10px"></div>
+          </div>
+        </div>
+
         <!-- Google Safe Browsing API -->
         <div class="settings-card" id="gsbCard" style="display:none">
           <div class="sc-header">
@@ -3194,6 +3267,7 @@ async function initDashboard(){
   // load plan from profiles
   await loadProfile();
   loadStats();
+  mfaLoadState();
   loadHistory();
   loadDailyUsage();
   loadNovaExtras();
@@ -9146,6 +9220,98 @@ async function changePassword(){
     dashLivePasswordCheck();
     showToast('Heslo bolo úspešne zmenené','success');
   }
+}
+
+/* ── 2FA / MFA ── */
+let _mfaFactorId = null;
+
+async function mfaLoadState() {
+  const { data, error } = await _sb.auth.mfa.listFactors();
+  if (error) return;
+  const totp = data?.totp?.find(f => f.status === 'verified');
+  const badge = document.getElementById('mfaStatusBadge');
+  if (totp) {
+    _mfaFactorId = totp.id;
+    document.getElementById('mfaStateIdle').style.display   = 'none';
+    document.getElementById('mfaStateEnroll').style.display = 'none';
+    document.getElementById('mfaStateActive').style.display = 'block';
+    if (badge) badge.style.display = 'inline-block';
+  } else {
+    document.getElementById('mfaStateIdle').style.display   = 'block';
+    document.getElementById('mfaStateEnroll').style.display = 'none';
+    document.getElementById('mfaStateActive').style.display = 'none';
+    if (badge) badge.style.display = 'none';
+  }
+}
+
+async function mfaStartEnroll() {
+  const btn = document.getElementById('mfaEnrollBtn');
+  const msg = document.getElementById('mfaMsg');
+  msg.textContent = '';
+  btn.disabled = true; btn.textContent = 'Načítavam…';
+
+  const { data, error } = await _sb.auth.mfa.enroll({ factorType: 'totp' });
+  btn.disabled = false; btn.textContent = 'Aktivovať 2FA';
+
+  if (error) {
+    msg.style.color = 'var(--red)'; msg.textContent = error.message; return;
+  }
+
+  _mfaFactorId = data.id;
+  document.getElementById('mfaQrImg').src       = data.totp.qr_code;
+  document.getElementById('mfaSecretKey').textContent = data.totp.secret;
+  document.getElementById('mfaTotpInput').value = '';
+  document.getElementById('mfaStateIdle').style.display   = 'none';
+  document.getElementById('mfaStateEnroll').style.display = 'block';
+  setTimeout(() => document.getElementById('mfaTotpInput').focus(), 100);
+}
+
+async function mfaVerify() {
+  const code = document.getElementById('mfaTotpInput').value.trim();
+  const btn  = document.getElementById('mfaVerifyBtn');
+  const msg  = document.getElementById('mfaMsg');
+  msg.textContent = '';
+  if (!code || code.length !== 6) { msg.style.color='var(--red)'; msg.textContent='Zadajte 6-ciferný kód.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Overujem…';
+
+  const { data: challengeData, error: cErr } = await _sb.auth.mfa.challenge({ factorId: _mfaFactorId });
+  if (cErr) { msg.style.color='var(--red)'; msg.textContent=cErr.message; btn.disabled=false; btn.textContent='Potvrdiť aktiváciu'; return; }
+
+  const { error: vErr } = await _sb.auth.mfa.verify({
+    factorId:    _mfaFactorId,
+    challengeId: challengeData.id,
+    code,
+  });
+  btn.disabled = false; btn.textContent = 'Potvrdiť aktiváciu';
+
+  if (vErr) {
+    msg.style.color = 'var(--red)'; msg.textContent = 'Nesprávny kód. Skúste znova.';
+    document.getElementById('mfaTotpInput').value = '';
+    document.getElementById('mfaTotpInput').focus();
+    return;
+  }
+
+  showToast('2FA bola úspešne aktivovaná', 'success');
+  mfaLoadState();
+}
+
+function mfaCancelEnroll() {
+  if (_mfaFactorId) _sb.auth.mfa.unenroll({ factorId: _mfaFactorId }).catch(()=>{});
+  _mfaFactorId = null;
+  document.getElementById('mfaStateIdle').style.display   = 'block';
+  document.getElementById('mfaStateEnroll').style.display = 'none';
+  document.getElementById('mfaMsg').textContent = '';
+}
+
+async function mfaDisable() {
+  if (!_mfaFactorId) return;
+  if (!confirm('Naozaj chcete deaktivovať 2FA?')) return;
+  const { error } = await _sb.auth.mfa.unenroll({ factorId: _mfaFactorId });
+  if (error) { showToast('Chyba: ' + error.message, 'error'); return; }
+  _mfaFactorId = null;
+  showToast('2FA bola deaktivovaná', 'success');
+  mfaLoadState();
 }
 
 function confirmDeleteAccount(){
