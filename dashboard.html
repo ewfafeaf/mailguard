@@ -2358,7 +2358,7 @@ body::before{content:'';position:fixed;inset:0;
             <!-- State: not enrolled -->
             <div id="mfaStateIdle">
               <p class="sc-card-info" style="margin-bottom:16px">
-                Aktivujte TOTP autentifikáciu (Google Authenticator, Authy). Po aktivácii budete pri každom prihlásení požiadaní o 6-ciferný kód.
+                Aktivujte TOTP autentifikáciu (Google Authenticator, Authy). Po aktivácii budete požiadaní o 6-ciferný kód raz týždenne pri prihlásení z nového zariadenia alebo po 7 dňoch.
               </p>
               <button class="sc-action-btn primary" id="mfaEnrollBtn" onclick="mfaStartEnroll()">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -3232,8 +3232,23 @@ _sb.auth.getSession().then(({data:{session}})=>{
     return;
   }
   _currentUser=session.user;
-  initDashboard();
-  document.getElementById('loadingScreen').style.display='none';
+
+  // 2FA 7-day check
+  (async () => {
+    const { data: factors } = await _sb.auth.mfa.listFactors();
+    const hasTotp = factors?.totp?.some(f => f.status === 'verified');
+    if (hasTotp) {
+      const mfaVerifiedAt = localStorage.getItem('mfa_verified_at');
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (!mfaVerifiedAt || Date.now() - parseInt(mfaVerifiedAt) > sevenDays) {
+        showMfaChallengeModal();
+        return;
+      }
+    }
+    initDashboard();
+    document.getElementById('loadingScreen').style.display='none';
+  })();
+  return;
 });
 
 _sb.auth.onAuthStateChange((event,session)=>{
@@ -9225,6 +9240,48 @@ async function changePassword(){
 /* ── 2FA / MFA ── */
 let _mfaFactorId = null;
 
+function showMfaChallengeModal() {
+  document.getElementById('mfaChallengeModal').style.display = 'flex';
+  document.getElementById('loadingScreen').style.display = 'none';
+  setTimeout(() => document.getElementById('mfaChallengeInput')?.focus(), 150);
+}
+
+async function mfaChallengeSubmit() {
+  const code = (document.getElementById('mfaChallengeInput').value || '').trim();
+  const msg  = document.getElementById('mfaChallengeMsg');
+  const btn  = document.getElementById('mfaChallengeBtn');
+  msg.textContent = '';
+  if (!code || code.length !== 6) { msg.textContent = 'Zadajte 6-ciferný kód.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Overujem…';
+
+  const { data: factors } = await _sb.auth.mfa.listFactors();
+  const totp = factors?.totp?.find(f => f.status === 'verified');
+  if (!totp) { localStorage.removeItem('mfa_verified_at'); location.reload(); return; }
+
+  const { data: challengeData, error: cErr } = await _sb.auth.mfa.challenge({ factorId: totp.id });
+  if (cErr) { msg.textContent = cErr.message; btn.disabled = false; btn.textContent = 'Potvrdiť →'; return; }
+
+  const { error: vErr } = await _sb.auth.mfa.verify({ factorId: totp.id, challengeId: challengeData.id, code });
+  btn.disabled = false; btn.textContent = 'Potvrdiť →';
+
+  if (vErr) {
+    msg.textContent = 'Nesprávny kód. Skúste znova.';
+    document.getElementById('mfaChallengeInput').value = '';
+    document.getElementById('mfaChallengeInput').focus();
+    return;
+  }
+
+  localStorage.setItem('mfa_verified_at', Date.now());
+  document.getElementById('mfaChallengeModal').style.display = 'none';
+  initDashboard();
+  document.getElementById('loadingScreen').style.display = 'none';
+}
+
+function mfaChallengeSignOut() {
+  _sb.auth.signOut().then(() => { window.location.href = 'index.html'; });
+}
+
 async function mfaLoadState() {
   const { data, error } = await _sb.auth.mfa.listFactors();
   if (error) return;
@@ -9292,6 +9349,7 @@ async function mfaVerify() {
     return;
   }
 
+  localStorage.setItem('mfa_verified_at', Date.now());
   showToast('2FA bola úspešne aktivovaná', 'success');
   mfaLoadState();
 }
@@ -9603,6 +9661,22 @@ document.addEventListener('DOMContentLoaded',()=>{
       <button onclick="closeExportModal()" style="flex:1;padding:12px;background:transparent;border:1px solid #2e3350;border-radius:8px;color:#a0a8c0;cursor:pointer;font-weight:600;font-family:inherit;">Zrušiť</button>
       <button onclick="confirmExport()" style="flex:1;padding:12px;background:linear-gradient(135deg,#4f8ef7,#7c5ff7);border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600;font-family:inherit;">📥 Exportovať PDF</button>
     </div>
+  </div>
+</div>
+<div id="mfaChallengeModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);align-items:center;justify-content:center">
+  <div style="background:#1a1d27;border:1px solid #2e3350;border-radius:16px;width:min(400px,92vw);padding:32px;text-align:center">
+    <div style="width:52px;height:52px;border-radius:14px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px">
+      <svg width="24" height="24" fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="#4f8ef7"/></svg>
+    </div>
+    <h3 style="font-size:1.05rem;font-weight:700;color:#eeeef5;margin-bottom:8px">Overenie identity</h3>
+    <p style="font-size:.84rem;color:#7a82a0;margin-bottom:20px;line-height:1.5">Uplynulo 7 dní od posledného overenia. Zadajte kód z Google Authenticator.</p>
+    <input type="text" id="mfaChallengeInput" class="settings-input" placeholder="123456"
+      maxlength="6" inputmode="numeric" pattern="[0-9]*"
+      onkeydown="if(event.key==='Enter')mfaChallengeSubmit()"
+      style="letter-spacing:.3em;font-size:1.2rem;text-align:center;margin-bottom:14px;max-width:180px;display:block;margin-left:auto;margin-right:auto"/>
+    <div id="mfaChallengeMsg" style="font-size:.8rem;color:var(--red);min-height:18px;margin-bottom:10px"></div>
+    <button onclick="mfaChallengeSubmit()" id="mfaChallengeBtn" style="width:100%;padding:11px;background:linear-gradient(90deg,#4f8ef7,#7c5ff7);border:none;border-radius:9px;color:#fff;font-weight:700;cursor:pointer;font-size:.9rem">Potvrdiť →</button>
+    <button onclick="mfaChallengeSignOut()" style="margin-top:10px;width:100%;padding:9px;background:transparent;border:1px solid #2e3350;border-radius:9px;color:var(--muted);font-size:.82rem;cursor:pointer">Odhlásiť sa</button>
   </div>
 </div>
 <div id="hibpKeyModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
