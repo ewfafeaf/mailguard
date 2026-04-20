@@ -8567,21 +8567,33 @@ async function loadTeachers(){
   // ── Security Awareness Score ─────────────────────────────────────
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const campaignsThisMonth = (phishCampaigns||[]).filter(c => c.created_at >= monthStart).length;
   const allTargets = phishTargets || [];
-  const clickedEmails = new Set(allTargets.filter(t => t.clicked).map(t => t.member_email));
-  const suspUploaders = new Set(
-    (await _sb.from('analyses').select('user_id').in('verdict',['high','medium'])
-      .in('user_id', data.filter(m=>m.member_user_id).map(m=>m.member_user_id))
-    ).data?.map(a=>a.user_id) || []
-  );
-  let score = 100;
-  data.forEach(m => {
-    if(clickedEmails.has(m.member_email)) score -= 10;
-    if(m.member_user_id && suspUploaders.has(m.member_user_id)) score -= 5;
+  const campaignsThisMonth = (phishCampaigns||[]).filter(c => c.created_at >= monthStart).length;
+
+  const { data: scoreData } = await _sb.rpc('get_security_awareness_score', {
+    p_owner_id: _currentUser.id
   });
-  if(clickedEmails.size === 0 && data.length > 0) score += 5;
-  score = Math.max(0, Math.min(100, score));
+
+  let score;
+  if (scoreData !== null && scoreData !== undefined) {
+    score = typeof scoreData === 'object' ? (scoreData.score ?? 100) : scoreData;
+  } else {
+    // Fallback: client-side calculation if RPC not available
+    const clickedEmails = new Set(allTargets.filter(t => t.clicked).map(t => t.member_email));
+    const suspUploaders = new Set(
+      (await _sb.from('analyses').select('user_id').in('verdict',['high','medium'])
+        .in('user_id', data.filter(m=>m.member_user_id).map(m=>m.member_user_id))
+      ).data?.map(a=>a.user_id) || []
+    );
+    score = 100;
+    data.forEach(m => {
+      if(clickedEmails.has(m.member_email)) score -= 10;
+      if(m.member_user_id && suspUploaders.has(m.member_user_id)) score -= 5;
+    });
+    if(clickedEmails.size === 0 && data.length > 0) score += 5;
+    score = Math.max(0, Math.min(100, score));
+  }
+
   const totalThreats = (await _sb.from('analyses').select('id',{count:'exact'})
     .eq('user_id', _currentUser.id)
     .in('verdict',['high','medium'])).count || 0;
