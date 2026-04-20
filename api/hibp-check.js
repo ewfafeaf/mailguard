@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
-const HIBP_KEY = '44cd4a87d45a44b29715b5e01835be49';
+const HIBP_KEY = process.env.HIBP_KEY;
 
 async function verifyToken(token) {
   if (!token) return null;

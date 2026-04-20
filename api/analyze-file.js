@@ -53,6 +53,12 @@ const DANGEROUS_PATTERNS = [
   // VBScript/Makrá
   { pattern: 'Shell.Execute',             severity: 'critical', desc: 'Spustenie príkazu cez Shell (VBScript)' },
   { pattern: 'WScript.Shell',             severity: 'critical', desc: 'Prístup k Windows Shell (Makro)' },
+  // Obfuskácia / dynamické spustenie kódu
+  { pattern: 'eval(',                     severity: 'high',     desc: 'Dynamické spustenie kódu – typické pre obfuskovaný malware' },
+  { pattern: 'exec(',                     severity: 'high',     desc: 'Spustenie externého príkazu' },
+  { pattern: 'base64.b64decode',          severity: 'high',     desc: 'Dekódovanie skrytého kódu – typická obfuskácia' },
+  { pattern: '__import__',                severity: 'high',     desc: 'Dynamický import modulov – obfuskácia' },
+  { pattern: 'compile(',                  severity: 'medium',   desc: 'Kompilácia kódu za behu' },
 ];
 
 function scanDangerousPatterns(text) {

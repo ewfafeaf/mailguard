@@ -17,6 +17,9 @@ module.exports = async function handler(req, res) {
     const rows = await findRes.json();
 
     if (rows && rows[0] && !rows[0].clicked) {
+      const userAgent = req.headers['user-agent'] || '';
+      const isBot = /bot|crawler|spider|headless|phantom|selenium/i.test(userAgent);
+
       // Oznac ako kliknuty
       await fetch(
         `${SUPABASE_URL}/rest/v1/phishing_targets?id=eq.${rows[0].id}`,
@@ -27,7 +30,12 @@ module.exports = async function handler(req, res) {
             'Authorization': `Bearer ${SUPABASE_KEY}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ clicked: true, clicked_at: new Date().toISOString() })
+          body: JSON.stringify({
+            clicked: true,
+            clicked_at: new Date().toISOString(),
+            behavior: isBot ? 'bot' : 'clicked',
+            user_agent: userAgent.slice(0, 200)
+          })
         }
       );
 
