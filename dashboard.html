@@ -3536,21 +3536,21 @@ async function analyzeDNS(){
 
     if(response.ok){
       termLine(data.spf.status==='PASS'?'[+]':'[-]',
-        'SPF: '+(data.spf.status==='PASS'?'PASS — record found':'FAIL — no SPF record'),
+        'SPF: '+(data.spf.status==='PASS'?'V PORIADKU — záznam nájdený':'CHYBA — SPF záznam chýba'),
         data.spf.status==='PASS'?'ok':'err',data.spf.status==='PASS'?'ok':'err',80);
       termLine(data.dkim.status==='PASS'?'[+]':'[-]',
-        'DKIM: '+(data.dkim.status==='PASS'?'PASS — found':'NOT FOUND — no DKIM key'),
+        'DKIM: '+(data.dkim.status==='PASS'?'V PORIADKU — nájdený':'NENÁJDENÉ — DKIM kľúč chýba'),
         data.dkim.status==='PASS'?'ok':'err',data.dkim.status==='PASS'?'ok':'err',80);
       termLine(data.dmarc.exists?'[+]':'[-]',
-        'DMARC: '+(data.dmarc.exists?'FOUND — p='+data.dmarc.policy:'MISSING — no DMARC policy'),
+        'DMARC: '+(data.dmarc.exists?'NÁJDENÉ — p='+data.dmarc.policy:'CHÝBA — DMARC politika nenájdená'),
         data.dmarc.exists?'ok':'err',data.dmarc.exists?'ok':'err',80);
       termLine(data.mx.count>0?'[+]':'[-]',
-        'MX: '+data.mx.count+' mail server'+(data.mx.count!==1?'s':'')+' found',
+        'MX: nájdených '+data.mx.count+' mail server'+(data.mx.count!==1?'ov':''),
         data.mx.count>0?'ok':'err',data.mx.count>0?'ok':'err',80);
       const scoreIcon=data.score>=80?'[+]':data.score>=40?'[*]':'[-]';
       const scoreCls =data.score>=80?'ok':data.score>=40?'info':'err';
-      termLine(scoreIcon,'Final score: '+data.score+'/100',scoreCls,scoreCls,80);
-      termLine('[✓]','DNS check complete!','done','ok',80);
+      termLine(scoreIcon,'Celkové skóre: '+data.score+'/100',scoreCls,scoreCls,80);
+      termLine('[✓]','DNS kontrola dokončená!','done','ok',80);
 
       // Po skončení všetkých riadkov: 500ms pauza → skry overlay → zobraz výsledky
       _termChain=_termChain.then(async()=>{
@@ -3577,24 +3577,41 @@ async function analyzeDNS(){
 function displayDNSResults(data){
   const s=data.score;
   const verdictCol=s>=80?'#22c55e':s>=60?'#4f8ef7':s>=40?'#f97316':'#ef4444';
-  const verdict=s>=80?'Excellent Security':s>=60?'Good Security':s>=40?'Needs Improvement':'Poor Security';
+  const verdict=s>=80?'Výborné zabezpečenie':s>=60?'Dobré zabezpečenie':s>=40?'Vyžaduje zlepšenie':'Slabé zabezpečenie';
+
+  function dnsStatusSk(st){
+    if(!st) return st;
+    const m={'PASS':'V PORIADKU','FAIL':'CHYBA','NONE':'NENÁJDENÉ','NEUTRAL':'NEUTRÁLNY'};
+    return m[st.toUpperCase()]||st;
+  }
+  function dnsDetailSk(raw){
+    if(!raw) return raw;
+    return raw.replace(/\bNot found\b/g,'Nenájdené').replace(/\bNot configured\b/g,'Nenakonfigurované');
+  }
+
+  const dkimDetail = data.dkim.selector
+    ? 'Selektor: '+data.dkim.selector
+    : 'Nenakonfigurované';
 
   const checks=[
-    {name:'SPF Record',    status:data.spf.status,   detail:data.spf.record||'Not found'},
-    {name:'DKIM Signature',status:data.dkim.status,  detail:data.dkim.selector?'Selector: '+data.dkim.selector:'Not configured'},
-    {name:'DMARC Policy',  status:data.dmarc.status, detail:data.dmarc.policy?'p='+data.dmarc.policy:'Not found'},
-    {name:'MX Records',    status:data.mx.status,    detail:data.mx.count+' mail server'+(data.mx.count!==1?'s':'')}
+    {name:'SPF Záznam',      status:data.spf.status,   detail:dnsDetailSk(data.spf.record||'Nenájdené')},
+    {name:'DKIM Podpis',     status:data.dkim.status,  detail:dkimDetail, isDkim:true},
+    {name:'DMARC Politika',  status:data.dmarc.status, detail:data.dmarc.policy?'p='+data.dmarc.policy:'Nenájdené'},
+    {name:'MX Záznamy',      status:data.mx.status,    detail:data.mx.count+' mail server'+(data.mx.count!==1?'y/ov':'')}
   ];
 
   const tableRows=checks.map(c=>`
     <tr>
       <td class="td-label">${escHtml(c.name)}</td>
-      <td style="width:100px"><span class="status-badge status-${c.status.toLowerCase()}">${escHtml(c.status)}</span></td>
-      <td class="td-detail">${escHtml(c.detail)}</td>
+      <td style="width:120px"><span class="status-badge status-${(c.status||'').toLowerCase()}">${escHtml(dnsStatusSk(c.status))}</span></td>
+      <td class="td-detail">
+        ${escHtml(c.detail)}
+        ${c.isDkim?`<div style="margin-top:5px;font-size:.75rem;color:var(--muted);line-height:1.4">ℹ️ DKIM detekcia vyžaduje znalosť selektora. Pre presný test odošlite email na <a href="mailto:audit@nondox.com" style="color:var(--accent)">audit@nondox.com</a></div>`:''}
+      </td>
     </tr>`).join('');
 
   const recsHtml=data.recommendations.length===0
-    ?`<div style="color:#22c55e;font-size:.8rem;padding:10px 14px">✓ All checks passed — no issues found</div>`
+    ?`<div style="color:#22c55e;font-size:.8rem;padding:10px 14px">✓ Všetky kontroly prešli — žiadne problémy nenájdené</div>`
     :`<div class="res-recs-list">${data.recommendations.map(r=>`
       <div class="res-rec">
         <div class="res-rec-title ${r.type}">${escHtml(r.title)}</div>
@@ -3610,12 +3627,12 @@ function displayDNSResults(data){
     </div>
 
     <div class="res-section">
-      <div class="res-section-title">DNS Records</div>
+      <div class="res-section-title">DNS Záznamy</div>
       <table class="res-table"><tbody>${tableRows}</tbody></table>
     </div>
 
     <div class="res-section">
-      <div class="res-section-title">Recommendations</div>
+      <div class="res-section-title">Odporúčania</div>
       ${recsHtml}
     </div>`;
 }
