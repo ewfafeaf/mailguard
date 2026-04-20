@@ -9299,12 +9299,50 @@ async function runHibpCheck() {
       return;
     }
 
+    const _svgWrap = (paths, color='#8b949e') =>
+      `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">${paths}</svg>`;
+
+    // Generic reusables
+    const _svgLock   = _svgWrap('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>');
+    const _svgShield = _svgWrap('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>');
+    const _svgUser   = _svgWrap('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>');
+    const _svgMail   = _svgWrap('<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>');
+    const _svgBriefcase = _svgWrap('<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>');
+    const _svgBox    = _svgWrap('<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>');
+    const _svgBook   = _svgWrap('<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>');
+    const _svgMusic  = _svgWrap('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
+    const _svgCamera = _svgWrap('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>');
+    const _svgImage  = _svgWrap('<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>');
+    const _svgActivity = _svgWrap('<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>');
+    const _svgPen    = _svgWrap('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>');
+    const _svgGlobe  = _svgWrap('<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>');
+    const _svgHeadphones = _svgWrap('<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>');
+    const _svgZap    = _svgWrap('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>');
+    const _svgFilm   = _svgWrap('<rect width="20" height="20" x="2" y="2" rx="2.18"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>');
+    const _svgGamepad= _svgWrap('<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>');
+
     const BREACH_ICONS = {
-      'Adobe':'🎨','LinkedIn':'💼','Canva':'🖌️','Facebook':'📘','Twitter':'🐦',
-      'Dropbox':'📦','Chegg':'📚','MyFitnessPal':'💪','Dubsmash':'🎵',
-      'Tumblr':'📷','Snapchat':'👻','Spotify':'🎵','Netflix':'🎬',
-      'Twitch':'🎮','Steam':'🎮','Zynga':'🎲','Quora':'❓',
-      'Gravatar':'🖼️','Deezer':'🎧','Wattpad':'📖','default':'🔐'
+      'Adobe':        _svgPen,
+      'LinkedIn':     _svgBriefcase,
+      'Canva':        _svgImage,
+      'Facebook':     _svgGlobe,
+      'Twitter':      _svgWrap('<path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>'),
+      'Dropbox':      _svgBox,
+      'Chegg':        _svgBook,
+      'MyFitnessPal': _svgActivity,
+      'Dubsmash':     _svgMusic,
+      'Tumblr':       _svgCamera,
+      'Snapchat':     _svgWrap('<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 14c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z"/>'),
+      'Spotify':      _svgMusic,
+      'Netflix':      _svgFilm,
+      'Twitch':       _svgGamepad,
+      'Steam':        _svgGamepad,
+      'Zynga':        _svgGamepad,
+      'Quora':        _svgGlobe,
+      'Gravatar':     _svgImage,
+      'Deezer':       _svgHeadphones,
+      'Wattpad':      _svgBook,
+      'default':      _svgLock,
     };
 
     const BREACH_DATA = {
@@ -9346,7 +9384,7 @@ async function runHibpCheck() {
           ? `<div style="margin-top:3px;font-size:.72rem;color:var(--muted)">Postihnutých účtov: <b style="color:var(--text)">${info.accounts}</b></div>`
           : '';
         return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:#1a1d2e;border-radius:6px;border:1px solid #2e3350">
-          <span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">${icon}</span>
+          ${icon}
           <div style="flex:1;min-width:0">
             <div style="font-size:.82rem;font-weight:600;color:var(--text)">${escHtml(name)}</div>
             ${classesHtml}
