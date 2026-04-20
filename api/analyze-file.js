@@ -19,7 +19,7 @@ const DANGEROUS_PATTERNS = [
   { pattern: 'RtlAdjustPrivilege',         severity: 'critical', desc: 'Eskalácia systémových privilégií' },
   { pattern: 'dllload',                    severity: 'critical', desc: 'Načítanie systémovej knižnice' },
   // Office macros
-  { pattern: 'AutoOpen',                   severity: 'critical', desc: 'Automatické spustenie po otvorení' },
+  { pattern: 'AutoOpen',                   severity: 'critical', desc: 'Automatické spustenie po otvorení — Dokument obsahuje kód ktorý sa automaticky spustí bez vedomia používateľa. Typická technika malware útokov.' },
   { pattern: 'Workbook_Open',              severity: 'critical', desc: 'Automatické spustenie v Exceli' },
   { pattern: 'CreateObject("WScript.Shell")', severity: 'critical', desc: 'Prístup k Windows Shell' },
   { pattern: "CreateObject('WScript.Shell')", severity: 'critical', desc: 'Prístup k Windows Shell' },
@@ -51,8 +51,8 @@ const DANGEROUS_PATTERNS = [
   { pattern: 'Chrome\\User Data\\Default\\Login Data', severity: 'critical', desc: 'Pokus o krádež hesiel z Chrome' },
   { pattern: 'AppData\\Roaming\\Telegram', severity: 'critical', desc: 'Pokus o krádež Telegram session' },
   // VBScript/Makrá
-  { pattern: 'Shell.Execute',             severity: 'critical', desc: 'Spustenie príkazu cez Shell (VBScript)' },
-  { pattern: 'WScript.Shell',             severity: 'critical', desc: 'Prístup k Windows Shell (Makro)' },
+  { pattern: 'Shell.Execute',             severity: 'critical', desc: 'Spustenie príkazu cez Shell — Tento skript sa pokúša spustiť príkazy priamo v operačnom systéme, čo môže viesť k úplnej strate kontroly nad počítačom.' },
+  { pattern: 'WScript.Shell',             severity: 'critical', desc: 'Prístup k Windows Shell (Makro) — Tento skript sa pokúša spustiť príkazy priamo v operačnom systéme, čo môže viesť k úplnej strate kontroly nad počítačom.' },
   // Obfuskácia / dynamické spustenie kódu
   { pattern: 'eval(',                     severity: 'high',     desc: 'Dynamické spustenie kódu – typické pre obfuskovaný malware' },
   { pattern: 'exec(',                     severity: 'high',     desc: 'Spustenie externého príkazu' },
