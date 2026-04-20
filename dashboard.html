@@ -6654,6 +6654,27 @@ function renderPDFResult(d){
 
     ${flags.length ? `<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">${flags.join('')}</div>` : ''}
 
+    ${(()=>{
+      const dp = d.dangerousPatterns;
+      if(!dp || dp.length===0) return '';
+      const rows = dp.map(p=>{
+        const isCrit = p.severity==='critical';
+        const badge = `<span style="font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:4px;background:${isCrit?'#f85149':'#e3b341'};color:#0d1117;flex-shrink:0">${isCrit?'KRITICKÉ':'VYSOKÉ'}</span>`;
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f8514933">
+          ${badge}
+          <div style="flex:1;min-width:0">
+            <span style="font-size:.82rem;font-weight:600;color:var(--red)">${escHtml(p.desc)}</span>
+            <span style="font-size:.78rem;color:var(--muted);margin-left:6px">— <code style="font-family:monospace;background:#f8514911;padding:1px 4px;border-radius:3px">${escHtml(p.pattern)}</code></span>
+            <span style="font-size:.75rem;color:var(--muted);margin-left:6px">riadok ${p.line}</span>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div style="margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#f8514914;border:1px solid #f8514966">
+        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:8px">⚠️ Detekované podozrivé správanie (${dp.length})</div>
+        ${rows}
+      </div>`;
+    })()}
+
     ${urlSection}
     ${recsHTML}
   </div>`;

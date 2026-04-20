@@ -127,14 +127,15 @@ async function analyzePDF(buf, gsbKey) {
   const hasForms    = /\/AcroForm/.test(rawStr);
   const hasAutoOpen = /\/OpenAction|\/AA\s*<</.test(rawStr);
 
+  const dangerousPatterns = scanDangerousPatterns(text);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
   const { score, recs } = calcScore({
-    hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType: 'PDF',
+    hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType: 'PDF', dangerousPatterns,
   });
 
   console.log(`[PDF] pages=${pdfData.numpages} urls=${allUrls.length} js=${hasJS} score=${score}`);
   return { ok:true, docType:'PDF', pages:pdfData.numpages, urlCount:allUrls.length,
-    urls:allUrls.slice(0,50), suspiciousUrls, hasJS, hasEmbedded, hasForms, hasAutoOpen, score, recs };
+    urls:allUrls.slice(0,50), suspiciousUrls, hasJS, hasEmbedded, hasForms, hasAutoOpen, score, recs, dangerousPatterns };
 }
 
 /* ═══════════════════════════════════════
@@ -171,16 +172,17 @@ async function analyzeDOCX(buf, gsbKey) {
 
   const allUrls = dedup([...hyperlinkUrls, ...textUrls]).slice(0, 100);
 
+  const dangerousPatterns = scanDangerousPatterns(plainText);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
   const { score, recs } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
-    hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX', hasMacros,
+    hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX', hasMacros, dangerousPatterns,
   });
 
   console.log(`[DOCX] pages=${pages} hyperlinks=${hyperlinkUrls.length} textUrls=${textUrls.length} macros=${hasMacros} score=${score}`);
   return { ok:true, docType:'DOCX', pages, urlCount:allUrls.length,
     urls:allUrls.slice(0,50), suspiciousUrls, hasJS:false, hasEmbedded:hasMacros,
-    hasForms:false, hasAutoOpen:false, hasMacros, score, recs };
+    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns };
 }
 
 /* ═══════════════════════════════════════
@@ -190,6 +192,7 @@ async function analyzeXLSX(buf, gsbKey) {
   const wb = XLSX.read(buf, { type: 'buffer', cellFormula: false, cellNF: false });
 
   const allUrls = [];
+  const xlsxTextParts = [];
 
   for (const sheetName of wb.SheetNames) {
     const ws = wb.Sheets[sheetName];
@@ -207,6 +210,7 @@ async function analyzeXLSX(buf, gsbKey) {
       if (typeof cell.v === 'string') {
         const found = cell.v.match(URL_REGEX);
         if (found) allUrls.push(...found.map(u => u.replace(/[.,;)]+$/, '')));
+        xlsxTextParts.push(cell.v);
       }
     }
   }
@@ -218,18 +222,19 @@ async function analyzeXLSX(buf, gsbKey) {
   const hasMacros = /xl\/vbaProject\.bin/i.test(rawStr) ||
     (buf[0] === 0xD0 && buf[1] === 0xCF);
 
+  const dangerousPatterns = scanDangerousPatterns(xlsxTextParts.join('\n'));
   const suspiciousUrls = await safeGSB(uniqueUrls, gsbKey);
   const { score, recs } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
     hasForms: false, allUrls: uniqueUrls, suspiciousUrls, docType: 'XLSX',
-    hasMacros,
+    hasMacros, dangerousPatterns,
   });
 
   const sheetCount = wb.SheetNames.length;
   console.log(`[XLSX] sheets=${sheetCount} urls=${uniqueUrls.length} macros=${hasMacros} score=${score}`);
   return { ok:true, docType:'XLSX', pages: sheetCount, urlCount:uniqueUrls.length,
     urls:uniqueUrls.slice(0,50), suspiciousUrls, hasJS:false, hasEmbedded:hasMacros,
-    hasForms:false, hasAutoOpen:false, hasMacros, score, recs };
+    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns };
 }
 
 /* ═══════════════════════════════════════
@@ -243,7 +248,7 @@ function dedup(arr) {
   return [...new Set(arr)];
 }
 
-function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType, hasMacros }) {
+function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType, hasMacros, dangerousPatterns = [] }) {
   let score = 100;
   const recs = [];
 
@@ -273,6 +278,12 @@ function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspici
   if (allUrls.length > 30) {
     score -= 5;
     recs.push('Neobvyklý počet URL – môže ísť o spam alebo tracking dokument.');
+  }
+  if (dangerousPatterns.length > 0) {
+    const critCount = dangerousPatterns.filter(p => p.severity === 'critical').length;
+    const highCount = dangerousPatterns.filter(p => p.severity === 'high').length;
+    score -= critCount * 20 + highCount * 10;
+    recs.push(`Statická analýza odhalila ${dangerousPatterns.length} podozrivých vzor${dangerousPatterns.length === 1 ? '' : 'ov'} v obsahu dokumentu.`);
   }
 
   return { score: Math.max(0, Math.min(100, score)), recs };
