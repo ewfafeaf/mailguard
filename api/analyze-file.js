@@ -8,6 +8,57 @@ const XLSX     = require('xlsx');
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
 
+const DANGEROUS_PATTERNS = [
+  // Python
+  { pattern: 'shutil.rmtree',              severity: 'critical', desc: 'Mazanie priečinkov' },
+  { pattern: 'os.remove',                  severity: 'high',     desc: 'Mazanie súborov' },
+  { pattern: 'os.system',                  severity: 'high',     desc: 'Spustenie systémových príkazov' },
+  { pattern: 'subprocess',                 severity: 'high',     desc: 'Spustenie externých procesov' },
+  // Windows/Native
+  { pattern: 'NtRaiseHardError',           severity: 'critical', desc: 'Kritická systémová chyba – BSoD' },
+  { pattern: 'RtlAdjustPrivilege',         severity: 'critical', desc: 'Eskalácia systémových privilégií' },
+  { pattern: 'dllload',                    severity: 'critical', desc: 'Načítanie systémovej knižnice' },
+  // Office macros
+  { pattern: 'AutoOpen',                   severity: 'critical', desc: 'Automatické spustenie po otvorení' },
+  { pattern: 'Workbook_Open',              severity: 'critical', desc: 'Automatické spustenie v Exceli' },
+  { pattern: 'CreateObject("WScript.Shell")', severity: 'critical', desc: 'Prístup k Windows Shell' },
+  { pattern: "CreateObject('WScript.Shell')", severity: 'critical', desc: 'Prístup k Windows Shell' },
+  { pattern: 'Shell(',                     severity: 'high',     desc: 'Spustenie shell príkazu' },
+  // System paths
+  { pattern: 'System32',                   severity: 'critical', desc: 'Prístup k systémovým súborom Windows' },
+  { pattern: 'C:\\Windows',               severity: 'high',     desc: 'Prístup k Windows priečinku' },
+  { pattern: '/etc/passwd',               severity: 'critical', desc: 'Prístup k systémovým heslám Linux' },
+  // Fork bomb
+  { pattern: 'fork()',                     severity: 'critical', desc: 'Fork bomb – zahltenie systému' },
+  { pattern: ':(){ :|:& };:',             severity: 'critical', desc: 'Fork bomb príkaz' },
+];
+
+function scanDangerousPatterns(text) {
+  if (!text) return [];
+  const lines = text.split('\n');
+  const found = [];
+  const seen = new Set();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    for (const dp of DANGEROUS_PATTERNS) {
+      const key = dp.pattern + ':' + i;
+      if (seen.has(key)) continue;
+      if (line.toLowerCase().includes(dp.pattern.toLowerCase())) {
+        seen.add(key);
+        found.push({
+          pattern:  dp.pattern,
+          severity: dp.severity,
+          desc:     dp.desc,
+          line:     i + 1,
+          snippet:  line.trim().slice(0, 120),
+        });
+      }
+    }
+  }
+  return found;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
