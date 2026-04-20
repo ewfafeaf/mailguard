@@ -1772,6 +1772,50 @@ body::before{content:'';position:fixed;inset:0;
     <div id="sectionNova" class="dash-section">
       <div class="dashboard-grid">
 
+        <!-- Row 0: Nové widgety -->
+        <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px">
+
+          <!-- Widget 1: Digitálna imunita školy -->
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(79,142,247,.02));border:1px solid rgba(79,142,247,.25)">
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">🏫 Digitálna imunita školy</div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <svg viewBox="0 0 120 120" width="90" height="90" style="flex-shrink:0">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(79,142,247,.12)" stroke-width="10"/>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#4f8ef7" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"
+                  transform="rotate(-90 60 60)" id="immunityRing"/>
+                <text x="60" y="57" text-anchor="middle" font-size="24" font-weight="800" fill="#eeeef5" font-family="system-ui" id="immunityText">—</text>
+                <text x="60" y="72" text-anchor="middle" font-size="9" fill="rgba(120,130,160,.8)" font-family="system-ui">/100</text>
+              </svg>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:.8rem;font-weight:600;color:var(--text)" id="immunityLabel">Načítavam…</div>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:4px;line-height:1.4" id="immunityDetail"></div>
+              </div>
+            </div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Celková odolnosť školy</div>
+          </div>
+
+          <!-- Widget 2: Hrozby tento týždeň -->
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(239,68,68,.07),rgba(239,68,68,.02));border:1px solid rgba(239,68,68,.22)">
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">⚠️ Hrozby tento týždeň</div>
+            <div id="weekThreatsBody">
+              <div style="display:flex;align-items:center;gap:8px;height:70px;color:var(--muted);font-size:.82rem">
+                <div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Načítavam…
+              </div>
+            </div>
+          </div>
+
+          <!-- Widget 3: Ľudský faktor -->
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(251,191,36,.07),rgba(251,191,36,.02));border:1px solid rgba(251,191,36,.22)">
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">👥 Ľudský faktor</div>
+            <div id="humanFactorBody">
+              <div style="display:flex;align-items:center;gap:8px;height:70px;color:var(--muted);font-size:.82rem">
+                <div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Načítavam…
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Row 1: Stat karty -->
         <div style="grid-column:1/-1;display:flex;gap:12px">
           <div class="stat-card" style="flex:1.2;background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,255,136,.02));border:1px solid rgba(0,255,136,.25)">
@@ -5240,6 +5284,123 @@ async function loadStats(){
   // Sidebar total label
   const sidebarTotal=document.getElementById('sidebarTotalLabel');
   if(sidebarTotal) sidebarTotal.textContent=`${total} analýz celkovo`;
+
+  loadDashboardWidgets();
+}
+
+/* ── DASHBOARD WIDGETS ── */
+async function loadDashboardWidgets() {
+  if (!_currentUser) return;
+  const weekAgo = new Date(Date.now() - 7*24*3600000).toISOString();
+
+  // Fetch all data in parallel
+  const [
+    { data: recentAnalyses },
+    { data: allAnalyses },
+    { data: phishCampaigns },
+    { data: phishTargets },
+    { data: teamMembers },
+  ] = await Promise.all([
+    _sb.from('analyses').select('score,verdict,type,created_at').eq('user_id', _currentUser.id).gte('created_at', weekAgo),
+    _sb.from('analyses').select('score,type').eq('user_id', _currentUser.id).order('created_at', {ascending:false}).limit(50),
+    _sb.from('phishing_campaigns').select('id,click_count,sent_count,created_at').eq('owner_id', _currentUser.id).gte('created_at', weekAgo),
+    _sb.from('phishing_targets').select('clicked').eq('campaign_id',
+      // only need clicked count — filter by owner campaigns this week
+      'dummy' // placeholder; we compute from phishCampaigns below
+    ).limit(1), // dummy — see below
+    _currentPlan === 'school' || _currentPlan === 'business'
+      ? _sb.from('team_members').select('id,member_email,full_name').eq('owner_id', _currentUser.id)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  // ── Widget 1: Digitálna imunita ─────────────────────────────────
+  // web skener skóre = avg score of type='web' analyses
+  const webScores   = (allAnalyses||[]).filter(a=>a.type==='web'  && a.score!=null).map(a=>a.score);
+  const fileScores  = (allAnalyses||[]).filter(a=>a.type==='file' && a.score!=null).map(a=>a.score);
+  const avg = arr => arr.length ? Math.round(arr.reduce((s,v)=>s+v,0)/arr.length) : null;
+  const webAvg  = avg(webScores);
+  const fileAvg = avg(fileScores);
+
+  // phishing odolnosť: % učiteľov čo nekliklo (computed from all campaigns)
+  const { data: allCampaigns } = await _sb.from('phishing_campaigns').select('sent_count,click_count').eq('owner_id', _currentUser.id);
+  const totalSent    = (allCampaigns||[]).reduce((s,c)=>s+(c.sent_count||0),0);
+  const totalClicked = (allCampaigns||[]).reduce((s,c)=>s+(c.click_count||0),0);
+  const phishScore   = totalSent > 0 ? Math.round((1 - totalClicked/totalSent)*100) : null;
+
+  const parts = [webAvg, fileAvg, phishScore].filter(v=>v!==null);
+  const immunity = parts.length > 0 ? Math.round(parts.reduce((s,v)=>s+v,0)/parts.length) : null;
+  const immColor = immunity===null ? '#8b949e' : immunity>=70 ? '#22c55e' : immunity>=50 ? '#f59e0b' : '#ef4444';
+  const immLabel = immunity===null ? 'Spustite prvú analýzu' : immunity>=70 ? 'Dobrá odolnosť' : immunity>=50 ? 'Stredná odolnosť' : 'Nízka odolnosť';
+  const immDetail = parts.length === 0 ? '' :
+    [webAvg!==null?`Web: ${webAvg}`:null, fileAvg!==null?`Súbory: ${fileAvg}`:null, phishScore!==null?`Phishing: ${phishScore}`:null]
+    .filter(Boolean).join(' · ');
+
+  const ring = document.getElementById('immunityRing');
+  const txt  = document.getElementById('immunityText');
+  const lbl  = document.getElementById('immunityLabel');
+  const det  = document.getElementById('immunityDetail');
+  if (ring && txt) {
+    txt.textContent = immunity !== null ? immunity : '—';
+    txt.style.fill = immColor;
+    ring.style.stroke = immColor;
+    const offset = immunity !== null ? 314 - (immunity/100)*314 : 314;
+    ring.setAttribute('stroke-dashoffset', offset);
+  }
+  if (lbl) { lbl.textContent = immLabel; lbl.style.color = immColor; }
+  if (det) det.textContent = immDetail;
+
+  // ── Widget 2: Hrozby tento týždeň ───────────────────────────────
+  const critical    = (recentAnalyses||[]).filter(a=>a.score!=null && a.score<50).length;
+  const dangerFiles = (recentAnalyses||[]).filter(a=>a.type==='file' && (a.verdict==='high'||a.verdict==='medium')).length;
+  const phishClicked = (phishCampaigns||[]).filter(c=>c.click_count>0).length;
+  const weekEl = document.getElementById('weekThreatsBody');
+  if (weekEl) {
+    if (critical===0 && dangerFiles===0 && phishClicked===0) {
+      weekEl.innerHTML = `<div style="padding:12px 0;font-size:.88rem;color:#22c55e;font-weight:600">✅ Žiadne hrozby tento týždeň</div>`;
+    } else {
+      weekEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
+        ${critical>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">
+          <span style="color:var(--muted)">🔴 Kritické hrozby</span>
+          <span style="font-weight:700;color:#ef4444">${critical}</span>
+        </div>` : ''}
+        ${phishClicked>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">
+          <span style="color:var(--muted)">🎣 Phishing kliknutia</span>
+          <span style="font-weight:700;color:#f97316">${phishClicked}</span>
+        </div>` : ''}
+        ${dangerFiles>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">
+          <span style="color:var(--muted)">📄 Nebezpečné súbory</span>
+          <span style="font-weight:700;color:#f59e0b">${dangerFiles}</span>
+        </div>` : ''}
+        <div style="font-size:.7rem;color:#555e70;margin-top:2px">Posledných 7 dní</div>
+      </div>`;
+    }
+  }
+
+  // ── Widget 3: Ľudský faktor ──────────────────────────────────────
+  const hfEl = document.getElementById('humanFactorBody');
+  if (hfEl) {
+    const memberCount = (teamMembers||[]).length;
+    const isSchool = _currentPlan==='school'||_currentPlan==='business';
+    if (!isSchool) {
+      hfEl.innerHTML = `<div style="font-size:.82rem;color:var(--muted);line-height:1.5">
+        Správa tímu je dostupná v School pláne.<br>
+        <button onclick="showSection('plans')" style="margin-top:8px;padding:6px 14px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);border-radius:7px;color:#4f8ef7;font-size:.78rem;font-weight:600;cursor:pointer">Zobraziť plány →</button>
+      </div>`;
+    } else if (memberCount === 0) {
+      hfEl.innerHTML = `<div style="font-size:.82rem;color:var(--muted);margin-bottom:10px">Zatiaľ žiadni učitelia v tíme.</div>
+        <button onclick="showSection('team')" style="padding:8px 16px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);border-radius:8px;color:#fbbf24;font-size:.8rem;font-weight:600;cursor:pointer;width:100%">
+          Pozvite učiteľov do tímu →
+        </button>`;
+    } else {
+      hfEl.innerHTML = `<div style="margin-bottom:10px">
+          <span style="font-size:1.8rem;font-weight:800;color:#fbbf24">${memberCount}</span>
+          <span style="font-size:.85rem;color:var(--muted);margin-left:6px">členov tímu</span>
+        </div>
+        <button onclick="showSection('team');setTimeout(()=>document.getElementById('phishingCampaignName')?.focus(),400)" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);border-radius:8px;color:#fbbf24;font-size:.8rem;font-weight:600;cursor:pointer;width:100%">
+          🎣 Spustiť phishing test →
+        </button>`;
+    }
+  }
 }
 
 /* ── HISTORY ── */
