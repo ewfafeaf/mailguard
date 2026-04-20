@@ -9295,20 +9295,72 @@ async function runHibpCheck() {
     }
 
     if (data.breachCount === 0) {
-      resultDiv.innerHTML = `<div style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:16px;color:#00ff88">✅ Žiadne uniknuté emaily nenájdené pre doménu <b>${data.domain}</b></div>`;
+      resultDiv.innerHTML = `<div style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:16px;color:#00ff88">✅ Žiadne uniknuté emaily nenájdené pre doménu <b>${escHtml(data.domain)}</b></div>`;
       return;
     }
 
+    const BREACH_ICONS = {
+      'Adobe':'🎨','LinkedIn':'💼','Canva':'🖌️','Facebook':'📘','Twitter':'🐦',
+      'Dropbox':'📦','Chegg':'📚','MyFitnessPal':'💪','Dubsmash':'🎵',
+      'Tumblr':'📷','Snapchat':'👻','Spotify':'🎵','Netflix':'🎬',
+      'Twitch':'🎮','Steam':'🎮','Zynga':'🎲','Quora':'❓',
+      'Gravatar':'🖼️','Deezer':'🎧','Wattpad':'📖','default':'🔐'
+    };
+
+    const BREACH_DATA = {
+      'Adobe':        { classes:['Email','Heslo (hash)','Používateľské meno'],        accounts:'153 000 000', plainPwd:false },
+      'LinkedIn':     { classes:['Email','Heslo (hash)','Pracovná pozícia'],           accounts:'164 000 000', plainPwd:false },
+      'Canva':        { classes:['Email','Meno','Heslo (hash)'],                       accounts:'137 000 000', plainPwd:false },
+      'Facebook':     { classes:['Email','Telefónne číslo','Poloha'],                  accounts:'533 000 000', plainPwd:false },
+      'Twitter':      { classes:['Email','Telefónne číslo'],                           accounts:'5 400 000',   plainPwd:false },
+      'Dropbox':      { classes:['Email','Heslo (hash)'],                              accounts:'68 600 000',  plainPwd:false },
+      'Chegg':        { classes:['Email','Heslo','Meno','Adresa'],                     accounts:'40 000 000',  plainPwd:false },
+      'MyFitnessPal': { classes:['Email','Používateľské meno','Heslo (hash)'],         accounts:'150 000 000', plainPwd:false },
+      'Dubsmash':     { classes:['Email','Používateľské meno','Heslo (hash)'],         accounts:'162 000 000', plainPwd:false },
+      'Zynga':        { classes:['Email','Heslo','Telefónne číslo'],                   accounts:'218 000 000', plainPwd:false },
+      'Tumblr':       { classes:['Email','Heslo (hash)'],                              accounts:'65 000 000',  plainPwd:false },
+      'Quora':        { classes:['Email','Heslo (hash)','Meno'],                       accounts:'100 000 000', plainPwd:false },
+      'Wattpad':      { classes:['Email','Heslo','Meno','Dátum narodenia'],            accounts:'271 000 000', plainPwd:false },
+      'Gravatar':     { classes:['Email','Používateľské meno','Geografická poloha'],   accounts:'167 000 000', plainPwd:false },
+    };
+
     let html = `<div style="background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.2);border-radius:10px;padding:16px;margin-bottom:16px">
       <div style="color:#ff3b3b;font-weight:700;font-size:1rem">⚠️ Nájdených ${data.breachCount} uniknutých emailov</div>
-      <div style="color:var(--muted);font-size:.82rem;margin-top:4px">Doména: ${data.domain}</div>
+      <div style="color:var(--muted);font-size:.82rem;margin-top:4px">Doména: ${escHtml(data.domain)}</div>
     </div>`;
 
     html += '<div style="display:flex;flex-direction:column;gap:8px">';
     for (const item of data.breachedEmails) {
+      const breachCards = item.breaches.map(name => {
+        const icon = BREACH_ICONS[name] || BREACH_ICONS['default'];
+        const info = BREACH_DATA[name] || null;
+        const hasPlainPwd = info?.plainPwd;
+        const classesHtml = info
+          ? `<div style="margin-top:5px;font-size:.74rem">
+              <span style="color:var(--muted)">Uniknuté dáta: </span>
+              <span style="color:${hasPlainPwd?'var(--red)':'var(--text)'};font-weight:${hasPlainPwd?'700':'400'}">${info.classes.join(', ')}</span>
+              ${hasPlainPwd?'<span style="margin-left:5px;font-size:.68rem;font-weight:700;padding:1px 5px;border-radius:3px;background:var(--red);color:#fff">PLAIN TEXT</span>':''}
+            </div>`
+          : `<div style="margin-top:5px;font-size:.74rem;color:var(--muted)">Uniknuté dáta: informácie nedostupné</div>`;
+        const countHtml = info?.accounts
+          ? `<div style="margin-top:3px;font-size:.72rem;color:var(--muted)">Postihnutých účtov: <b style="color:var(--text)">${info.accounts}</b></div>`
+          : '';
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:#1a1d2e;border-radius:6px;border:1px solid #2e3350">
+          <span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">${icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.82rem;font-weight:600;color:var(--text)">${escHtml(name)}</div>
+            ${classesHtml}
+            ${countHtml}
+          </div>
+        </div>`;
+      }).join('');
+
       html += `<div style="background:#22263a;border:1px solid #2e3350;border-radius:8px;padding:12px">
-        <div style="font-size:.85rem;color:#e8eaf0;margin-bottom:4px">📧 ${item.email}</div>
-        <div style="font-size:.75rem;color:var(--muted)">Breaches: ${item.breaches.join(', ')}</div>
+        <div style="font-size:.85rem;color:#e8eaf0;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <span>📧</span><span>${escHtml(item.email)}</span>
+          <span style="margin-left:4px;font-size:.72rem;padding:1px 7px;border-radius:10px;background:#f8514922;border:1px solid #f8514955;color:var(--red);font-weight:600">${item.breaches.length} breach${item.breaches.length!==1?'es':''}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">${breachCards}</div>
       </div>`;
     }
     html += '</div>';
