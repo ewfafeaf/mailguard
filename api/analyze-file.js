@@ -31,6 +31,28 @@ const DANGEROUS_PATTERNS = [
   // Fork bomb
   { pattern: 'fork()',                     severity: 'critical', desc: 'Fork bomb – zahltenie systému' },
   { pattern: ':(){ :|:& };:',             severity: 'critical', desc: 'Fork bomb príkaz' },
+  // PowerShell
+  { pattern: 'Remove-Item -Recurse',       severity: 'critical', desc: 'Hromadné mazanie súborov (PowerShell)' },
+  { pattern: '-ExecutionPolicy Bypass',    severity: 'critical', desc: 'Obchádzanie zabezpečenia Windows' },
+  // Windows CMD
+  { pattern: 'del /s /q',                 severity: 'critical', desc: 'Tiché mazanie súborov (CMD)' },
+  // PHP
+  { pattern: 'shell_exec',                severity: 'critical', desc: 'Spustenie systémových príkazov (PHP)' },
+  { pattern: 'passthru',                  severity: 'high',     desc: 'Spustenie externých príkazov (PHP)' },
+  // Python rozšírenie
+  { pattern: 'os.unlink',                 severity: 'high',     desc: 'Mazanie súborov (Python)' },
+  { pattern: 'subprocess.Popen',          severity: 'high',     desc: 'Spustenie externých procesov (Python)' },
+  { pattern: 'socket.connect',            severity: 'high',     desc: 'Sieťové pripojenie – možná exfiltrácia dát' },
+  { pattern: 'requests.post',             severity: 'high',     desc: 'Odosielanie dát na externý server' },
+  // Pamäťové útoky
+  { pattern: 'VirtualAlloc',              severity: 'critical', desc: 'Vstrekovanie kódu do pamäte – typické pre ransomware' },
+  { pattern: 'WriteProcessMemory',        severity: 'critical', desc: 'Modifikácia pamäte iného procesu' },
+  // Krádež hesiel
+  { pattern: 'Chrome\\User Data\\Default\\Login Data', severity: 'critical', desc: 'Pokus o krádež hesiel z Chrome' },
+  { pattern: 'AppData\\Roaming\\Telegram', severity: 'critical', desc: 'Pokus o krádež Telegram session' },
+  // VBScript/Makrá
+  { pattern: 'Shell.Execute',             severity: 'critical', desc: 'Spustenie príkazu cez Shell (VBScript)' },
+  { pattern: 'WScript.Shell',             severity: 'critical', desc: 'Prístup k Windows Shell (Makro)' },
 ];
 
 function scanDangerousPatterns(text) {
