@@ -4286,103 +4286,155 @@ async function webScan(){
   const urlRisk=analyzeUrl(scanUrl);
   let sslResult=null, gsbResult=null, obsResult=null, whoisResult=null, vtResult=null, shodanResult=null;
 
-  const sslPromise=runSSLCheck(hostname).then(r=>{
-    sslResult=r;
-    termLine('[*]','Fetching SSL certificate... OK','info','info',250);
-    if(r?.ok && r.cert){
-      termLine('[+]',`Certificate valid: ${r.cert.subject || hostname} (${r.cert.daysLeft}d remaining)`,'ok','ok',300);
-    } else {
-      termLine('[-]','SSL certificate unavailable or expired','err','err',300);
-    }
-  }).catch(e=>{ console.error('[SSL]',e); termLine('[-]','SSL check failed','err','err',200); });
+  // ── Progressive skeleton ─────────────────────────────────────────
+  const CHECKS = ['ssl','whois','vt','headers','shodan'];
+  const CHECK_LABELS = { ssl:'SSL certifikát', whois:'WHOIS / Vek domény', vt:'VirusTotal reputácia', headers:'Bezpečnostné hlavičky', shodan:'Shodan skener' };
+  let completedCount = 0;
 
+  const wsProgressHTML = () => `
+    <div id="wsScanLive" style="padding:20px">
+      <div id="wsScanProgressLine" style="font-size:.88rem;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <div class="spinner" style="width:13px;height:13px;border-width:2px;flex-shrink:0"></div>
+        <span id="wsScanProgressText">⏳ Analýza prebieha... (0/5 kontrol dokončených)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${CHECKS.map(k=>`
+          <div id="wsCheck_${k}" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)">
+            <div id="wsCheck_${k}_icon" style="width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+              <div class="spinner" style="width:12px;height:12px;border-width:2px"></div>
+            </div>
+            <div style="font-size:.82rem;color:var(--muted)">${CHECK_LABELS[k]}</div>
+            <div id="wsCheck_${k}_detail" style="margin-left:auto;font-size:.78rem;color:var(--muted)">Prebieha…</div>
+          </div>`).join('')}
+      </div>
+      <div id="wsScanScoreWrap" style="display:none;margin-top:16px"></div>
+    </div>`;
+
+  resultEl.style.display='block';
+  resultEl.innerHTML=wsProgressHTML();
+
+  const markCheck = (key, pass, detail) => {
+    completedCount++;
+    const iconEl   = document.getElementById(`wsCheck_${key}_icon`);
+    const detailEl = document.getElementById(`wsCheck_${key}_detail`);
+    const rowEl    = document.getElementById(`wsCheck_${key}`);
+    const textEl   = document.getElementById('wsScanProgressText');
+    if(iconEl)   iconEl.innerHTML   = pass===null ? '⚠️' : pass ? '✅' : '❌';
+    if(detailEl) detailEl.textContent = detail || (pass===null ? 'Kontrola nedostupná' : '');
+    if(rowEl)    rowEl.style.borderColor = pass===null ? 'rgba(245,158,11,.3)' : pass ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)';
+    if(textEl)   textEl.textContent = completedCount < 5
+      ? `⏳ Analýza prebieha... (${completedCount}/5 kontrol dokončených)`
+      : '✅ Všetky kontroly dokončené — vypočítavam skóre…';
+  };
+
+  // ── Paralelné volania (Promise.allSettled — nikdy nezastavia sa) ──
   const gsbKey=localStorage.getItem('gsb_api_key');
-  const gsbPromise=(gsbKey?checkGoogleSafeBrowsing(scanUrl):Promise.resolve(null)).then(r=>{
-    gsbResult=r;
-  }).catch(e=>console.error('[GSB]',e));
 
-  const whoisPromise=runWhoisCheck(hostname).then(r=>{
-    whoisResult=r;
-    termLine('[*]','Checking WHOIS database...','info','info',250);
-    if(r?.age_days!=null){
-      const yrs=(r.age_days/365).toFixed(1);
-      termLine('[+]',`Domain age: ${yrs} years (registered ${r.creation_date||'unknown'})`,'ok','ok',300);
-    } else {
-      termLine('[*]','WHOIS data unavailable','info','muted',200);
-    }
-  }).catch(e=>{ console.error('[WHOIS]',e); termLine('[-]','WHOIS lookup failed','err','err',200); });
+  const [sslRes, whoisRes, vtRes, headersRes, shodanRes, gsbRes] = await Promise.allSettled([
+    runSSLCheck(hostname),
+    runWhoisCheck(hostname),
+    runVTCheck(hostname),
+    runHeadersCheck(hostname),
+    runShodanCheck(hostname),
+    gsbKey ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null),
+  ]);
 
-  const vtPromise=runVTCheck(hostname).then(r=>{
-    vtResult=r;
-    const engines=r?.total||94;
-    termLine('[*]',`Querying VirusTotal (${engines} engines)...`,'info','info',250);
-    if(r?.ok){
-      const threats=(r.malicious||0)+(r.suspicious||0);
-      if(threats===0){
-        termLine('[+]',`Clean: 0/${engines} detections`,'ok','ok',300);
-      } else {
-        termLine('[-]',`Threats found: ${threats}/${engines} detections`,'err','err',300);
-      }
-    } else {
-      termLine('[*]','VirusTotal check unavailable','info','muted',200);
-    }
-  }).catch(e=>{ console.error('[VT]',e); termLine('[-]','VirusTotal check failed','err','err',200); });
+  // SSL
+  sslResult = sslRes.status==='fulfilled' ? sslRes.value : null;
+  if(sslRes.status==='rejected'){
+    termLine('[-]','SSL check failed','err','err',0);
+    markCheck('ssl', null, 'Kontrola nedostupná');
+  } else if(sslResult?.ok && sslResult.cert){
+    termLine('[+]',`TLS Grade: ${sslResult.grade||'?'} — ${sslResult.cert.daysLeft}d remaining`,'ok','ok',0);
+    markCheck('ssl', true, `${sslResult.grade||'OK'} · ${sslResult.cert.daysLeft} dní do expirácie`);
+  } else {
+    termLine('[-]','SSL certificate unavailable or expired','err','err',0);
+    markCheck('ssl', false, sslResult?.error || 'Certifikát chýba alebo expiroval');
+  }
 
-  const headersPromise=runHeadersCheck(hostname).then(r=>{
-    obsResult=r;
-    termLine('[*]','Scanning security headers...','info','info',250);
-    const hsts=r?.tests?.['strict-transport-security']?.pass;
-    const csp =r?.tests?.['content-security-policy']?.pass;
-    termLine(hsts?'[+]':'[-]',`HSTS: ${hsts?'PRESENT':'MISSING'}`,hsts?'ok':'err',hsts?'ok':'err',200);
-    termLine(csp ?'[+]':'[-]',`CSP: ${csp ?'PRESENT':'MISSING'}`,csp ?'ok':'err',csp ?'ok':'err',200);
-  }).catch(e=>{ console.error('[Headers]',e); termLine('[-]','Header scan failed','err','err',200); });
+  // WHOIS
+  whoisResult = whoisRes.status==='fulfilled' ? whoisRes.value : null;
+  if(whoisRes.status==='rejected'){
+    termLine('[-]','WHOIS lookup failed','err','err',0);
+    markCheck('whois', null, 'Kontrola nedostupná');
+  } else if(whoisResult?.age_days!=null){
+    const yrs=(whoisResult.age_days/365).toFixed(1);
+    termLine('[+]',`Domain age: ${yrs} years`,'ok','ok',0);
+    markCheck('whois', true, `${yrs} rokov · ${whoisResult.registrar||''}`);
+  } else {
+    termLine('[*]','WHOIS data unavailable','info','muted',0);
+    markCheck('whois', null, 'WHOIS dáta nedostupné');
+  }
 
-  const shodanPromise=runShodanCheck(hostname).then(r=>{
-    shodanResult=r;
-    termLine('[*]','Querying Shodan intelligence database...','info','info',280);
-    if(r?.ok && r.inShodan){
-      const dangerous=(r.openDangerous||[]).filter(p=>p.risk==='high');
-      const portCount=r.ports?.length||0;
-      if(dangerous.length){
-        termLine('[-]',`${portCount} ports found – DANGEROUS: ${dangerous.map(p=>p.port).join(', ')}`,
-          'err','err',300);
-      } else {
-        termLine('[+]',`${portCount} open ports – no dangerous services exposed`,'ok','ok',300);
-      }
-    } else if(r?.ok && !r.inShodan){
-      termLine('[*]','Host not indexed in Shodan','info','muted',250);
-    } else {
-      termLine('[*]','Shodan unavailable (API key not configured)','info','muted',200);
-    }
-  }).catch(e=>{ console.error('[Shodan]',e); termLine('[*]','Shodan check skipped','info','muted',200); });
+  // VirusTotal
+  vtResult = vtRes.status==='fulfilled' ? vtRes.value : null;
+  if(vtRes.status==='rejected'){
+    termLine('[-]','VirusTotal check failed','err','err',0);
+    markCheck('vt', null, 'Kontrola nedostupná');
+  } else if(vtResult?.ok){
+    const threats=(vtResult.malicious||0)+(vtResult.suspicious||0);
+    const engines=vtResult.total||94;
+    termLine(threats?'[-]':'[+]',`${threats?'Threats: '+threats:'Clean'} / ${engines} engines`,threats?'err':'ok',threats?'err':'ok',0);
+    markCheck('vt', threats===0, `${threats} hrozieb z ${engines} enginov`);
+  } else {
+    termLine('[*]','VirusTotal check unavailable','info','muted',0);
+    markCheck('vt', null, 'API kľúč nie je nastavený');
+  }
 
-  await Promise.all([sslPromise, gsbPromise, headersPromise, whoisPromise, vtPromise, shodanPromise]);
+  // Security headers
+  obsResult = headersRes.status==='fulfilled' ? headersRes.value : null;
+  if(headersRes.status==='rejected'){
+    termLine('[-]','Header scan failed','err','err',0);
+    markCheck('headers', null, 'Kontrola nedostupná');
+  } else {
+    const hsts=obsResult?.tests?.['strict-transport-security']?.pass;
+    const csp =obsResult?.tests?.['content-security-policy']?.pass;
+    const passCount=Object.values(obsResult?.tests||{}).filter(t=>t?.pass).length;
+    const total=Object.keys(obsResult?.tests||{}).length||6;
+    termLine(hsts?'[+]':'[-]',`HSTS: ${hsts?'PRESENT':'MISSING'}`,hsts?'ok':'err',hsts?'ok':'err',0);
+    termLine(csp?'[+]':'[-]',`CSP: ${csp?'PRESENT':'MISSING'}`,csp?'ok':'err',csp?'ok':'err',0);
+    markCheck('headers', passCount>=Math.floor(total*0.5), `${passCount}/${total} hlavičiek OK`);
+  }
 
-  // Záverečné riadky s reálnym skóre
+  // Shodan
+  shodanResult = shodanRes.status==='fulfilled' ? shodanRes.value : null;
+  if(shodanRes.status==='rejected'){
+    termLine('[*]','Shodan check skipped','info','muted',0);
+    markCheck('shodan', null, 'Kontrola nedostupná');
+  } else if(shodanResult?.ok && shodanResult.inShodan){
+    const dangerous=(shodanResult.openDangerous||[]).filter(p=>p.risk==='high');
+    termLine(dangerous.length?'[-]':'[+]',`${shodanResult.ports?.length||0} ports – ${dangerous.length?'DANGEROUS':'clean'}`,dangerous.length?'err':'ok',dangerous.length?'err':'ok',0);
+    markCheck('shodan', dangerous.length===0, `${shodanResult.ports?.length||0} portov · ${dangerous.length?dangerous.length+' rizikových':'žiadne rizikové'}`);
+  } else {
+    termLine('[*]','Shodan unavailable','info','muted',0);
+    markCheck('shodan', null, 'API kľúč nie je nastavený');
+  }
+
+  // GSB (bežalo paralelne, len uložíme výsledok)
+  gsbResult = gsbRes.status==='fulfilled' ? gsbRes.value : null;
+  if(gsbKey){
+    const gsbOk=!gsbResult||gsbResult.length===0;
+    termLine(gsbOk?'[+]':'[-]',`Google Safe Browsing: ${gsbOk?'CLEAN':'THREAT DETECTED'}`,gsbOk?'ok':'err',gsbOk?'ok':'err',0);
+  }
+
+  // ── Finálne skóre ───────────────────────────────────────────────
   let report;
   try{ report=buildWebReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,whoisResult,vtResult,shodanResult); }
   catch(e){ console.error('[webScan] buildWebReport threw:',e); report={score:0,recs:[],gsbChecked:false}; }
 
-  if(gsbKey){
-    const gsbOk=!gsbResult||gsbResult.length===0;
-    termLine(gsbOk?'[+]':'[-]',`Google Safe Browsing: ${gsbOk?'CLEAN':'THREAT DETECTED'}`,
-      gsbOk?'ok':'err',gsbOk?'ok':'err',350);
-  }
-  termLine('[*]','Calculating security score...','info','info',450);
+  termLine('[*]','Calculating security score...','info','info',200);
   const scoreIcon=report.score>=80?'[+]':report.score>=40?'[*]':'[-]';
   const scoreCls =report.score>=80?'ok':report.score>=40?'info':'err';
-  termLine(scoreIcon,`Final score: ${report.score}/100`,scoreCls,scoreCls,400);
-  termLine('[✓]','Scan complete!','done','ok',350);
+  termLine(scoreIcon,`Final score: ${report.score}/100`,scoreCls,scoreCls,300);
+  termLine('[✓]','Scan complete!','done','ok',200);
 
-  // Vyrenderuj výsledky POD overlayom (žiadne blikanie keď overlay zmizne)
+  // Nahraď skeleton plným výsledkom POD overlayom
   console.log('[webScan] FINAL score:', report.score);
-  resultEl.style.display='block';
   _lastWsReport=report;
   _lastWsScanUrl=scanUrl;
   _lastWsObsResult=obsResult;
   resultEl.innerHTML=wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,obsResult,gsbResult,report,shodanResult);
 
-  // Až potom zavrieme overlay — obsah je už pripravený pod ním
   await closeTerminalOverlay();
 
   btn.disabled=false;
