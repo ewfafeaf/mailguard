@@ -59,6 +59,17 @@ const DANGEROUS_PATTERNS = [
   { pattern: 'base64.b64decode',          severity: 'high',     desc: 'Dekódovanie skrytého kódu – typická obfuskácia' },
   { pattern: '__import__',                severity: 'high',     desc: 'Dynamický import modulov – obfuskácia' },
   { pattern: 'compile(',                  severity: 'medium',   desc: 'Kompilácia kódu za behu' },
+  // OLE / Embedded objects
+  { pattern: 'OLE',                       severity: 'critical', desc: 'Vložený OLE objekt — môže obsahovať skrytý spustiteľný súbor' },
+  { pattern: 'EMBED',                     severity: 'high',     desc: 'Vložený objekt v dokumente — skontrolujte obsah' },
+  { pattern: 'Package',                   severity: 'critical', desc: 'Vložený balík — typická technika na skrytie EXE súboru v dokumente' },
+  { pattern: '\x4D\x5A',                  severity: 'critical', desc: 'Detekovaná hlavička EXE súboru — dokument obsahuje spustiteľný súbor' },
+  { pattern: 'D0CF11E0',                  severity: 'high',     desc: 'Starý Office formát (OLE2) — zvýšené riziko makro útoku' },
+  // Excel-specific attacks
+  { pattern: 'AUTO_OPEN',                 severity: 'critical', desc: 'Excel makro sa automaticky spustí po otvorení' },
+  { pattern: 'Auto_Open',                 severity: 'critical', desc: 'Excel makro sa automaticky spustí po otvorení' },
+  { pattern: 'CALL(',                     severity: 'critical', desc: 'Priame volanie Windows API z Excel makra' },
+  { pattern: 'REGISTER(',                 severity: 'critical', desc: 'Registrácia externej DLL knižnice z Excel makra' },
 ];
 
 function scanDangerousPatterns(text) {
