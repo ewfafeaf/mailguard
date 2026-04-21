@@ -161,14 +161,16 @@ async function analyzePDF(buf, gsbKey) {
   const hasAutoOpen = /\/OpenAction|\/AA\s*<</.test(rawStr);
 
   const dangerousPatterns = scanDangerousPatterns(text);
+  const metadata = extractPdfMeta(rawStr);
+  const metaWarnings = checkSuspiciousMeta(metadata);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
   const { score, recs } = calcScore({
-    hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType: 'PDF', dangerousPatterns,
+    hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType: 'PDF', dangerousPatterns, metaWarnings,
   });
 
   console.log(`[PDF] pages=${pdfData.numpages} urls=${allUrls.length} js=${hasJS} score=${score}`);
   return { ok:true, docType:'PDF', pages:pdfData.numpages, urlCount:allUrls.length,
-    urls:allUrls.slice(0,50), suspiciousUrls, hasJS, hasEmbedded, hasForms, hasAutoOpen, score, recs, dangerousPatterns };
+    urls:allUrls.slice(0,50), suspiciousUrls, hasJS, hasEmbedded, hasForms, hasAutoOpen, score, recs, dangerousPatterns, metadata, metaWarnings };
 }
 
 /* ═══════════════════════════════════════
@@ -206,16 +208,18 @@ async function analyzeDOCX(buf, gsbKey) {
   const allUrls = dedup([...hyperlinkUrls, ...textUrls]).slice(0, 100);
 
   const dangerousPatterns = scanDangerousPatterns(plainText);
+  const metadata = extractDocxMeta(zip);
+  const metaWarnings = checkSuspiciousMeta(metadata);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
   const { score, recs } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
-    hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX', hasMacros, dangerousPatterns,
+    hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX', hasMacros, dangerousPatterns, metaWarnings,
   });
 
   console.log(`[DOCX] pages=${pages} hyperlinks=${hyperlinkUrls.length} textUrls=${textUrls.length} macros=${hasMacros} score=${score}`);
   return { ok:true, docType:'DOCX', pages, urlCount:allUrls.length,
     urls:allUrls.slice(0,50), suspiciousUrls, hasJS:false, hasEmbedded:hasMacros,
-    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns };
+    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns, metadata, metaWarnings };
 }
 
 /* ═══════════════════════════════════════
@@ -271,6 +275,66 @@ async function analyzeXLSX(buf, gsbKey) {
 }
 
 /* ═══════════════════════════════════════
+   Metadata Extraction
+═══════════════════════════════════════ */
+function extractDocxMeta(zip) {
+  const xml = zip.getEntry('docProps/core.xml')?.getData()?.toString('utf8') || '';
+  if (!xml) return null;
+
+  const get = (tag) => {
+    const m = xml.match(new RegExp(`<${tag}[^>]*>([^<]*)<\/${tag}>`, 'i'));
+    return m ? m[1].trim() : null;
+  };
+  return {
+    author:       get('dc:creator'),
+    lastModifiedBy: get('cp:lastModifiedBy'),
+    revision:     get('cp:revision') ? parseInt(get('cp:revision'), 10) : null,
+    created:      get('dcterms:created'),
+    modified:     get('dcterms:modified'),
+  };
+}
+
+function extractPdfMeta(rawStr) {
+  const get = (key) => {
+    const m = rawStr.match(new RegExp(`/${key}\\s*\\(([^)]{0,200})\\)`));
+    return m ? m[1].trim() : null;
+  };
+  return {
+    author:   get('Author'),
+    creator:  get('Creator'),
+    producer: get('Producer'),
+    created:  get('CreationDate'),
+    modified: get('ModDate'),
+  };
+}
+
+function checkSuspiciousMeta(meta) {
+  if (!meta) return [];
+  const warnings = [];
+  const SUSPICIOUS_PATH_KEYWORDS = /hesla|password|private|sukromne|secret|credential|hack|malware|virus/i;
+
+  const authorStr = meta.author || '';
+  const lastModStr = meta.lastModifiedBy || '';
+
+  if (!authorStr || /^unknown$/i.test(authorStr)) {
+    warnings.push('Autor dokumentu nie je uvedený alebo je neznámy.');
+  }
+  if (SUSPICIOUS_PATH_KEYWORDS.test(authorStr) || SUSPICIOUS_PATH_KEYWORDS.test(lastModStr)) {
+    warnings.push('Meno autora obsahuje podozrivé kľúčové slovo.');
+  }
+  if (meta.revision !== undefined && meta.revision !== null && meta.revision === 0) {
+    warnings.push('Revízia dokumentu je 0 – dokument nebol nikdy upravený, môže byť generovaný automaticky.');
+  }
+  const allText = Object.values(meta).filter(Boolean).join(' ');
+  if (SUSPICIOUS_PATH_KEYWORDS.test(allText)) {
+    if (!warnings.some(w => w.includes('podozrivé kľúčové'))) {
+      warnings.push('Metadáta obsahujú podozrivé kľúčové slová.');
+    }
+  }
+  return warnings;
+}
+
+/* ═══════════════════════════════════════
    Spoločné pomocné funkcie
 ═══════════════════════════════════════ */
 function extractUrls(text) {
@@ -281,7 +345,7 @@ function dedup(arr) {
   return [...new Set(arr)];
 }
 
-function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType, hasMacros, dangerousPatterns = [] }) {
+function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType, hasMacros, dangerousPatterns = [], metaWarnings = [] }) {
   let score = 100;
   const recs = [];
 
@@ -317,6 +381,10 @@ function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspici
     const highCount = dangerousPatterns.filter(p => p.severity === 'high').length;
     score -= critCount * 20 + highCount * 10;
     recs.push(`Statická analýza odhalila ${dangerousPatterns.length} podozrivých vzor${dangerousPatterns.length === 1 ? '' : 'ov'} v obsahu dokumentu.`);
+  }
+  if (metaWarnings.length > 0) {
+    score -= metaWarnings.length * 5;
+    recs.push(`Metadáta dokumentu obsahujú ${metaWarnings.length} podozrivý${metaWarnings.length === 1 ? '' : 'ch'} znak${metaWarnings.length === 1 ? '' : 'ov'}.`);
   }
 
   return { score: Math.max(0, Math.min(100, score)), recs };

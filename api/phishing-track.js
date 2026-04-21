@@ -20,6 +20,21 @@ module.exports = async function handler(req, res) {
       const userAgent = req.headers['user-agent'] || '';
       const isBot = /bot|crawler|spider|headless|phantom|selenium/i.test(userAgent);
 
+      const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+
+      let geo = {};
+      try {
+        const geoRes = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, {
+          signal: AbortSignal.timeout(3000)
+        });
+        if (geoRes.ok) geo = await geoRes.json();
+      } catch(geoErr) {
+        console.warn('[phishing-track] geo lookup failed:', geoErr.message);
+      }
+
+      const isSlovak = geo.country_code === 'SK';
+      const isSuspicious = !isSlovak && !isBot && !!geo.country_code;
+
       // Oznac ako kliknuty
       await fetch(
         `${SUPABASE_URL}/rest/v1/phishing_targets?id=eq.${rows[0].id}`,
@@ -34,7 +49,11 @@ module.exports = async function handler(req, res) {
             clicked: true,
             clicked_at: new Date().toISOString(),
             behavior: isBot ? 'bot' : 'clicked',
-            user_agent: userAgent.slice(0, 200)
+            user_agent: userAgent.slice(0, 200),
+            ip_address: ip.slice(0, 45),
+            country: geo.country || null,
+            country_code: geo.country_code || null,
+            is_suspicious: isSuspicious,
           })
         }
       );
