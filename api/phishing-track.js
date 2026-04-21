@@ -32,8 +32,21 @@ module.exports = async function handler(req, res) {
         console.warn('[phishing-track] geo lookup failed:', geoErr.message);
       }
 
+      const CLOUD_RANGES = [
+        '13.', '52.', '54.', '18.', '3.',           // Amazon AWS
+        '34.', '35.', '104.196.', '130.211.',        // Google Cloud
+        '40.', '20.', '51.', '13.64.',               // Microsoft Azure
+        '199.232.', '185.199.',                       // GitHub/Fastly CDN
+      ];
+      const isCloudIP = CLOUD_RANGES.some(prefix => ip.startsWith(prefix));
+
       const isSlovak = geo.country_code === 'SK';
-      const isSuspicious = !isSlovak && !isBot && !!geo.country_code;
+      const isSuspicious = !isSlovak && !isBot && !isCloudIP && !!geo.country_code;
+
+      let behavior;
+      if (isCloudIP)   behavior = 'sandboxed';
+      else if (isBot)  behavior = 'bot';
+      else             behavior = 'clicked';
 
       // Oznac ako kliknuty
       await fetch(
@@ -48,12 +61,13 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify({
             clicked: true,
             clicked_at: new Date().toISOString(),
-            behavior: isBot ? 'bot' : 'clicked',
+            behavior,
             user_agent: userAgent.slice(0, 200),
             ip_address: ip.slice(0, 45),
             country: geo.country || null,
             country_code: geo.country_code || null,
             is_suspicious: isSuspicious,
+            notes: isCloudIP ? 'Automatický skener (cloud IP) — nie reálny používateľ' : null,
           })
         }
       );
