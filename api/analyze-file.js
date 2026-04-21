@@ -70,6 +70,11 @@ const DANGEROUS_PATTERNS = [
   { pattern: 'Auto_Open',                 severity: 'critical', desc: 'Excel makro sa automaticky spustí po otvorení' },
   { pattern: 'CALL(',                     severity: 'critical', desc: 'Priame volanie Windows API z Excel makra' },
   { pattern: 'REGISTER(',                 severity: 'critical', desc: 'Registrácia externej DLL knižnice z Excel makra' },
+  // PowerShell attack chains
+  { pattern: '-ExecutionPolicy Bypass',   severity: 'critical', desc: 'Obchádzanie bezpečnostnej politiky Windows — typický prvý krok ransomware útoku' },
+  { pattern: 'Invoke-Expression',         severity: 'critical', desc: 'PowerShell spustenie skrytého kódu (IEX) — klasická technika malware' },
+  { pattern: 'DownloadString',            severity: 'critical', desc: 'Sťahovanie a spúšťanie kódu z internetu — typický dropper útok' },
+  { pattern: 'IEX(',                      severity: 'critical', desc: 'PowerShell skratka pre Invoke-Expression — obfuskovaný malware' },
 ];
 
 function scanDangerousPatterns(text) {
@@ -119,7 +124,7 @@ module.exports = async function handler(req, res) {
   });
   if (!authRes.ok) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { filename = 'file', mimetype = '', data: b64, gsbKey } = req.body || {};
+  const { filename = 'file', mimetype = '', data: b64, gsbKey, vtKey } = req.body || {};
   if (!b64) return res.status(400).json({ error: 'Chýba parameter data (base64)' });
 
   const buf = Buffer.from(b64, 'base64');
@@ -136,12 +141,22 @@ module.exports = async function handler(req, res) {
     mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     mimetype === 'application/vnd.ms-excel';
 
+  // VirusTotal circuit breaker — run in parallel, never block the response
+  const vtPromise = vtKey ? safeVT(buf, filename, vtKey) : Promise.resolve(null);
+
   try {
     let result;
     if (isPDF)       result = await analyzePDF(buf, gsbKey);
     else if (isDOCX) result = await analyzeDOCX(buf, gsbKey);
     else if (isXLSX) result = await analyzeXLSX(buf, gsbKey);
     else return res.status(400).json({ error: 'Nepodporovaný formát. Použi PDF, DOCX, DOC, XLSX alebo XLS.' });
+
+    const vtResult = await vtPromise;
+    result.vt = vtResult;
+    result.vtFailed = vtResult === null && !!vtKey;
+    if (result.vtFailed) {
+      result.vtNote = 'VirusTotal momentálne nedostupný — analýza prebehla pomocou NonDox Deep Scan engine.';
+    }
 
     result.filename = filename;
     return res.status(200).json(result);
@@ -399,6 +414,47 @@ function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspici
   }
 
   return { score: Math.max(0, Math.min(100, score)), recs };
+}
+
+async function safeVT(buf, filename, vtKey) {
+  try {
+    const form = new FormData();
+    form.append('file', new Blob([buf]), filename);
+    const uploadRes = await fetch('https://www.virustotal.com/api/v3/files', {
+      method: 'POST',
+      headers: { 'x-apikey': vtKey },
+      body: form,
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!uploadRes.ok) {
+      console.warn('[analyze-file] VT upload failed:', uploadRes.status);
+      return null;
+    }
+    const { data } = await uploadRes.json();
+    const analysisId = data?.id;
+    if (!analysisId) return null;
+
+    // Poll once after 8s — free tier has delay
+    await new Promise(r => setTimeout(r, 8000));
+    const reportRes = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+      headers: { 'x-apikey': vtKey },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!reportRes.ok) return null;
+    const report = await reportRes.json();
+    const stats = report?.data?.attributes?.stats || {};
+    return {
+      malicious:  stats.malicious  || 0,
+      suspicious: stats.suspicious || 0,
+      undetected: stats.undetected || 0,
+      harmless:   stats.harmless   || 0,
+      engines:    Object.values(stats).reduce((a, b) => a + b, 0),
+      analysisId,
+    };
+  } catch (err) {
+    console.warn('[analyze-file] VT circuit breaker:', err.message);
+    return null;
+  }
 }
 
 async function safeGSB(urls, gsbKey) {
