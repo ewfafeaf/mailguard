@@ -171,7 +171,7 @@ async function analyzePDF(buf, gsbKey) {
   const hasForms    = /\/AcroForm/.test(rawStr);
   const hasAutoOpen = /\/OpenAction|\/AA\s*<</.test(rawStr);
 
-  const dangerousPatterns = scanDangerousPatterns(text);
+  const dangerousPatterns = scanDangerousPatterns(text.slice(0, 50000));
   const metadata = extractPdfMeta(rawStr);
   const metaWarnings = checkSuspiciousMeta(metadata);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
@@ -218,7 +218,7 @@ async function analyzeDOCX(buf, gsbKey) {
 
   const allUrls = dedup([...hyperlinkUrls, ...textUrls]).slice(0, 100);
 
-  const dangerousPatterns = scanDangerousPatterns(plainText);
+  const dangerousPatterns = scanDangerousPatterns(plainText.slice(0, 50000));
   const metadata = extractDocxMeta(zip);
   const metaWarnings = checkSuspiciousMeta(metadata);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
@@ -270,7 +270,7 @@ async function analyzeXLSX(buf, gsbKey) {
   const hasMacros = /xl\/vbaProject\.bin/i.test(rawStr) ||
     (buf[0] === 0xD0 && buf[1] === 0xCF);
 
-  const dangerousPatterns = scanDangerousPatterns(xlsxTextParts.join('\n'));
+  const dangerousPatterns = scanDangerousPatterns(xlsxTextParts.join('\n').slice(0, 50000));
   const suspiciousUrls = await safeGSB(uniqueUrls, gsbKey);
   const { score, recs } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
