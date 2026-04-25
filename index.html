@@ -1389,7 +1389,6 @@ input#heroInput:-webkit-autofill:focus {
         <div class="footer-col-title">Produkt</div>
         <ul class="footer-links">
           <li><a href="#hero">Analýza emailov</a></li>
-          <li><a href="#hero">URL skener</a></li>
           <li><a href="#hero">Analýza webu</a></li>
           <li><a href="#pricing">Cenník</a></li>
         </ul>
@@ -1398,15 +1397,14 @@ input#heroInput:-webkit-autofill:focus {
         <div class="footer-col-title">Spoločnosť</div>
         <ul class="footer-links">
           <li><a href="about.html">O nás</a></li>
-          <li><a href="#">Blog</a></li>
-          <li><a href="mailto:info@mailguard.sk">Kontakt</a></li>
+          <li><a href="#" onclick="openFooterContact();return false">Kontakt</a></li>
         </ul>
       </div>
       <div>
         <div class="footer-col-title">Podpora</div>
         <ul class="footer-links">
           <li><a href="#faq">FAQ</a></li>
-          <li><a href="#">Dokumentácia</a></li>
+          <li><a href="gdpr.html">Bezpečnostná dokumentácia</a></li>
           <li><a href="https://www.cert.sk" target="_blank" rel="noopener">CERT.SK</a></li>
         </ul>
       </div>
@@ -2131,6 +2129,15 @@ function openContact(plan){
   _contactPlan=plan;
   const labels={škola:'Záujem o plán ŠKOLA? Napíšte nám.',firma:'Záujem o plán FIRMA? Napíšte nám.'};
   document.getElementById('contactSub').textContent=labels[plan]||'Napíšte nám.';
+  document.getElementById('contactForm').style.display='';
+  document.getElementById('contactSuccess').style.display='none';
+  document.getElementById('contactErr').textContent='';
+  openModal('contact');
+}
+
+function openFooterContact(){
+  _contactPlan='general';
+  document.getElementById('contactSub').textContent='Napíšte nám — odpovieme do 24 hodín.';
   document.getElementById('contactForm').style.display='';
   document.getElementById('contactSuccess').style.display='none';
   document.getElementById('contactErr').textContent='';

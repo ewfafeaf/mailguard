@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="nondox.png">
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dokumentácia – NonDox</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#000000;--surface:#12121a;--surface2:#1a1a28;--border:#2a2a45;--accent:#4f8ef7;--accent2:#7c5ff7;--teal:#00d4ff;--text:#eeeef5;--muted:#8888aa;--nav-h:68px;}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#000000;border-bottom:1px solid rgba(255,255,255,.09);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0.75rem 2rem}
+.nav-logo{display:flex;align-items:center;text-decoration:none;justify-self:center}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-left{display:flex;justify-content:flex-start;align-items:center;gap:0}
+.nav-left a{color:#ffffff;text-decoration:none;font-size:.84rem;padding:6px 13px;border-radius:7px;transition:color .18s,background .18s;font-weight:500;white-space:nowrap}
+.nav-left a:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav-right{display:flex;align-items:center;gap:8px;justify-self:end}
+.btn-signin{background:transparent;border:none;color:rgba(255,255,255,.5);padding:6px 12px;font-size:.84rem;font-weight:500;cursor:pointer;font-family:inherit;transition:color .18s}
+.btn-signin:hover{color:#fff}
+.btn-signup{background:#fff;color:#111;border:1px solid #e4e4e7;padding:6px 16px;border-radius:99px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .18s}
+.btn-signup:hover{background:#f4f4f5}
+.about-hero{padding:calc(var(--nav-h) + 80px) 20px 60px;text-align:center;position:relative;overflow:hidden}
+.about-hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(79,142,247,.12) 0%,transparent 70%);pointer-events:none}
+.section-tag{display:inline-block;padding:6px 16px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.25);border-radius:100px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4f8ef7;margin-bottom:20px}
+.about-hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;line-height:1.1;letter-spacing:-1.5px;margin-bottom:8px}
+.about-hero .sub{font-size:1rem;color:var(--muted);margin-top:12px}
+.hl{background:linear-gradient(90deg,#4f8ef7,#00d4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.container{max-width:900px;margin:0 auto;padding:0 20px}
+.docs-layout{display:grid;grid-template-columns:220px 1fr;gap:40px;padding:0 0 80px;align-items:start}
+.docs-nav{position:sticky;top:calc(var(--nav-h) + 24px);background:rgba(18,18,26,.7);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.docs-nav-title{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:4px 8px;margin-bottom:4px}
+.docs-nav a{color:rgba(255,255,255,.5);text-decoration:none;font-size:.83rem;padding:6px 10px;border-radius:7px;transition:all .15s}
+.docs-nav a:hover,.docs-nav a.active{color:#fff;background:rgba(79,142,247,.12)}
+.docs-section{margin-bottom:52px;scroll-margin-top:calc(var(--nav-h) + 24px)}
+.docs-section h2{font-size:1.25rem;font-weight:800;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.docs-section .section-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:.78rem;font-weight:800;flex-shrink:0}
+.docs-section .intro{font-size:.95rem;color:var(--muted);margin-bottom:20px;line-height:1.7}
+.docs-step{display:flex;gap:14px;margin-bottom:16px;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px}
+.docs-step-num{width:26px;height:26px;border-radius:50%;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.docs-step-body h4{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.docs-step-body p{font-size:.84rem;color:#c8cae0;line-height:1.65}
+.docs-info{background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 16px;margin:16px 0;font-size:.85rem;color:#a8b8d8;line-height:1.7;display:flex;gap:10px}
+.docs-warn{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px 16px;margin:16px 0;font-size:.85rem;color:#d4a855;line-height:1.7;display:flex;gap:10px}
+.docs-score-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.85rem}
+.docs-score-table th{background:rgba(255,255,255,.04);color:var(--muted);padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid rgba(255,255,255,.06)}
+.docs-score-table td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:#c8cae0}
+.docs-divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:48px 0}
+@media(max-width:700px){.docs-layout{grid-template-columns:1fr}.docs-nav{display:none}}
+footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:32px 0;text-align:center}
+.footer-copy{font-size:.8rem;color:#4a5070}
+.footer-links-row{margin-top:12px;display:flex;flex-wrap:wrap;gap:16px;justify-content:center;font-size:.75rem}
+.footer-links-row a,.footer-links-row span{color:#4a5070;text-decoration:none}
+.footer-links-row a:hover{color:#4f8ef7}
+</style>
+</head>
+<body>
+<nav id="mainNav">
+  <div class="nav-left">
+    <a href="index.html">Domov</a>
+    <a href="index.html#pricing">Cenník</a>
+    <a href="about.html">O nás</a>
+    <a href="dashboard.html" id="navDashboardLink" style="display:none">Dashboard</a>
+  </div>
+  <a class="nav-logo" href="index.html"><img src="nondox.png" alt="NonDox" style="height:44px;width:auto;"/></a>
+  <div class="nav-right" id="navRight">
+    <button class="btn-signin" onclick="location.href='index.html'">Prihlásiť sa</button>
+    <button class="btn-signup" onclick="location.href='index.html'">Registrovať</button>
+  </div>
+</nav>
+
+<div class="about-hero">
+  <div class="section-tag">Dokumentácia</div>
+  <h1>Dokumentácia <span class="hl">NonDox</span></h1>
+  <p class="sub">Všetko čo potrebujete vedieť pre efektívne používanie platformy</p>
+</div>
+
+<main>
+  <div class="container">
+    <div class="docs-layout">
+
+      <!-- Sidebar nav -->
+      <nav class="docs-nav">
+        <div class="docs-nav-title">Obsah</div>
+        <a href="#start">Ako začať</a>
+        <a href="#web">Web skener</a>
+        <a href="#phishing">Phishing simulátor</a>
+        <a href="#breach">Breach Monitor</a>
+        <a href="#pdf">PDF reporty</a>
+      </nav>
+
+      <!-- Content -->
+      <div>
+
+        <section class="docs-section" id="start">
+          <h2><span class="docs-section-num">1</span> Ako začať</h2>
+          <p class="intro">Od registrácie po prvý bezpečnostný sken za menej ako 2 minúty.</p>
+
+          <div class="docs-step">
+            <div class="docs-step-num">1</div>
+            <div class="docs-step-body">
+              <h4>Registrácia účtu</h4>
+              <p>Na stránke nondox.com kliknite na „Registrovať". Zadajte emailovú adresu a heslo. Na email vám príde potvrdzovací odkaz — kliknite naň na aktiváciu účtu.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">2</div>
+            <div class="docs-step-body">
+              <h4>Výber plánu</h4>
+              <p>Po prihlásení si vyberte plán podľa vašich potrieb. Free plán umožňuje základné skeny. Pre phishing simulátor a tímové funkcie je potrebný plán Škola alebo Firma.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">3</div>
+            <div class="docs-step-body">
+              <h4>Prvý sken</h4>
+              <p>V dashboarde kliknite na sekciu „Web skener" v ľavom menu. Zadajte URL adresu webovej stránky vašej školy a kliknite na „Skenovať". Výsledky sa zobrazia do 30 sekúnd.</p>
+            </div>
+          </div>
+
+          <div class="docs-info">
+            <span>💡</span>
+            <span>Odporúčame začať skenovaním webovej stránky vašej školy a emailovej domény (DNS Checker). Tieto dva skeny poskytnú okamžitý prehľad o základnej bezpečnostnej situácii.</span>
+          </div>
+        </section>
+
+        <hr class="docs-divider"/>
+
+        <section class="docs-section" id="web">
+          <h2><span class="docs-section-num">2</span> Web skener</h2>
+          <p class="intro">Web skener vykoná komplexnú bezpečnostnú analýzu webovej stránky v 5 paralelných kontrolách.</p>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>SSL / TLS certifikát</h4>
+              <p>Overuje platnosť certifikátu, dátum expirácie, vydavateľa a šifrovaciu silu. Hodnotenie A+ je najvyššie možné. Certifikát by mal mať platnosť aspoň 30 dní.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>Bezpečnostné HTTP hlavičky</h4>
+              <p>Kontroluje prítomnosť HSTS, Content-Security-Policy, X-Frame-Options a ďalších 6 hlavičiek. Každá chýbajúca hlavička znižuje skóre.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>VirusTotal & Google Safe Browsing</h4>
+              <p>Overuje URL v databáze VirusTotal (90+ antivírusových enginov) a Google Safe Browsing. Ak je API kľúč nastavený v Nastaveniach, výsledky sú presnejšie.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>WHOIS — vek domény</h4>
+              <p>Domény registrované menej ako 6 mesiacov sú rizikovejšie. Kontroluje aj dátum expirácie — doména by mala byť predĺžená aspoň na 1 rok dopredu.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>Shodan — otvorené porty</h4>
+              <p>Kontroluje otvorené porty a exponované služby. Nebezpečné porty (23 Telnet, 3389 RDP, 5900 VNC) výrazne zvyšujú riziko útoku.</p>
+            </div>
+          </div>
+
+          <h4 style="margin-top:24px;margin-bottom:12px;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Interpretácia skóre</h4>
+          <table class="docs-score-table">
+            <thead><tr><th>Skóre</th><th>Hodnotenie</th><th>Odporúčanie</th></tr></thead>
+            <tbody>
+              <tr><td>80 – 100</td><td style="color:#22c55e">✅ Bezpečné</td><td>Udržujte aktuálny stav, monitorujte pravidelne</td></tr>
+              <tr><td>50 – 79</td><td style="color:#f59e0b">⚠️ Podozrivé</td><td>Odstráňte nájdené problémy podľa odporúčaní</td></tr>
+              <tr><td>0 – 49</td><td style="color:#ef4444">🚨 Nebezpečné</td><td>Okamžite kontaktujte IT administrátora</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <hr class="docs-divider"/>
+
+        <section class="docs-section" id="phishing">
+          <h2><span class="docs-section-num">3</span> Phishing simulátor</h2>
+          <p class="intro">Testujte odolnosť vašich učiteľov voči phishingu bezpečným a kontrolovaným spôsobom. Dostupné pre plány Škola a Firma.</p>
+
+          <div class="docs-step">
+            <div class="docs-step-num">1</div>
+            <div class="docs-step-body">
+              <h4>Pridajte členov tímu</h4>
+              <p>V sekcii „Tím" pridajte emailové adresy učiteľov. Môžete importovať zoznam hromadne, jeden email na riadok.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">2</div>
+            <div class="docs-step-body">
+              <h4>Vytvorte kampaň</h4>
+              <p>Kliknite na „Nová kampaň". Vyberte šablónu: Obnovenie hesla, Faktúra, Balík (DHL/Packeta), EduPage, Microsoft 365 alebo Riaditeľ–BOZP. Každá šablóna simuluje reálny phishingový útok.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">3</div>
+            <div class="docs-step-body">
+              <h4>Odošlite a sledujte výsledky</h4>
+              <p>Po odoslaní sledujte v reálnom čase kto email ignoroval, otvoril alebo klikol na link. Systém automaticky rozlíši reálne kliknutia od botov a cloudových skenerov.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">4</div>
+            <div class="docs-step-body">
+              <h4>Vyhodnoťte a vzdelávajte</h4>
+              <p>Po kliknutí na phishingový link sa učiteľom zobrazí vzdelávacia stránka vysvetľujúca ako útok rozpoznať. Výsledky exportujte do PDF pre vedenie školy.</p>
+            </div>
+          </div>
+
+          <div class="docs-warn">
+            <span>⚠️</span>
+            <span>Phishing simulátor používajte len na vlastných zamestnancoch s ich vedomím alebo po informovaní vedenia školy. Simulácia bez vedomia zamestnávateľa môže byť v rozpore s pracovnoprávnymi predpismi.</span>
+          </div>
+        </section>
+
+        <hr class="docs-divider"/>
+
+        <section class="docs-section" id="breach">
+          <h2><span class="docs-section-num">4</span> Breach Monitor</h2>
+          <p class="intro">Zistite, či sa emailové adresy vašej domény objavili v uniknutých databázach (data breaches).</p>
+
+          <div class="docs-step">
+            <div class="docs-step-num">1</div>
+            <div class="docs-step-body">
+              <h4>Nastavte HIBP API kľúč</h4>
+              <p>Pre plný prístup k databáze HaveIBeenPwned je potrebný API kľúč. Získate ho na haveibeenpwned.com/API/Key. Zadajte ho v sekcii Nastavenia → API kľúče.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">2</div>
+            <div class="docs-step-body">
+              <h4>Zadajte doménu školy</h4>
+              <p>V sekcii „Breach Monitor" zadajte doménu vašej školy (napr. skola.sk). Systém prehľadá všetky emailové adresy tejto domény v databáze uniknutých dát.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">3</div>
+            <div class="docs-step-body">
+              <h4>Vyhodnoťte výsledky</h4>
+              <p>Pre každý nájdený email sa zobrazí zoznam breachov, typy uniknutých dát a či bolo kompromitované heslo v plain texte. Tieto účty vyžadujú okamžitú zmenu hesla.</p>
+            </div>
+          </div>
+
+          <div class="docs-info">
+            <span>💡</span>
+            <span>Ak breach obsahuje „Passwords" (plain text heslá), dotknutý zamestnanec musí okamžite zmeniť heslo vo všetkých systémoch kde používal rovnaké heslo, vrátane školského systému a emailu.</span>
+          </div>
+        </section>
+
+        <hr class="docs-divider"/>
+
+        <section class="docs-section" id="pdf">
+          <h2><span class="docs-section-num">5</span> PDF reporty</h2>
+          <p class="intro">NonDox generuje niekoľko typov PDF reportov pre rôzne potreby — od technickej dokumentácie po právne podklady.</p>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>Web bezpečnostný audit</h4>
+              <p>Kompletný report z Web skenera vrátane skóre, SSL detailov, bezpečnostných hlavičiek a odporúčaní. Vhodný na prezentáciu vedeniu alebo zriaďovateľovi školy.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>Tímový report</h4>
+              <p>Prehľad Security Awareness skóre tímu, výsledky phishing kampaní a štatistiky jednotlivých učiteľov. Generuje sa v sekcii Tím kliknutím na „Export PDF".</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>Compliance certifikát (zákon 69/2018)</h4>
+              <p>Certifikát súladu s národnou stratégiou kybernetickej bezpečnosti. Obsahuje 6-bodový checklist a celkové hodnotenie. Generuje sa v hlavnom Dashboarde.</p>
+            </div>
+          </div>
+
+          <div class="docs-step">
+            <div class="docs-step-num">✓</div>
+            <div class="docs-step-body">
+              <h4>Incident report</h4>
+              <p>Štruktúrovaný dokument pre hlásenie kybernetického incidentu v súlade s povinnosťami podľa zákona č. 69/2018 Z.z. Obsahuje overovací kód pre autentifikáciu dokumentu.</p>
+            </div>
+          </div>
+
+          <div class="docs-info">
+            <span>💡</span>
+            <span>Každý PDF report obsahuje overovací kód v päte dokumentu. Tento kód slúži na overenie autenticity dokumentu. Pri použití reportu pri audite alebo inšpekcii môže overovateľ kontaktovať nondox.support@gmail.com pre potvrdenie.</span>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-copy">© 2026 NonDox — Peter Antecký, IČO 55152376. Všetky práva vyhradené.</div>
+    <div class="footer-links-row">
+      <span>Otázky? Píšte na <a href="mailto:nondox.support@gmail.com" style="color:#4a5070">nondox.support@gmail.com</a></span>
+      <a href="gdpr.html">Ochrana osobných údajov</a>
+      <a href="terms.html">Obchodné podmienky</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const _sb = supabase.createClient('https://qalcsmnvyuujsmnreglt.supabase.co','sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06');
+_sb.auth.getSession().then(({data:{session}})=>{
+  const nr=document.getElementById('navRight');
+  const dl=document.getElementById('navDashboardLink');
+  if(session?.user){
+    if(nr) nr.innerHTML=`<a href="dashboard.html" style="background:#fff;color:#111;border:1px solid #e4e4e7;padding:6px 16px;border-radius:99px;font-size:.82rem;font-weight:600;text-decoration:none">Dashboard</a>`;
+    if(dl) dl.style.display='inline';
+  }
+});
+
+// Highlight active section in sidebar
+const sections = document.querySelectorAll('.docs-section');
+const navLinks = document.querySelectorAll('.docs-nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      navLinks.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`.docs-nav a[href="#${e.target.id}"]`);
+      if(active) active.classList.add('active');
+    }
+  });
+}, {threshold:0.3});
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
