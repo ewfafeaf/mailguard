@@ -124,21 +124,22 @@ async function checkSPF(domain) {
   }
 }
 
-// Check DKIM (just check if selector 'default' exists)
+// Check DKIM — tries multiple common selectors in order
 async function checkDKIM(domain) {
+  const SELECTORS = ['resend', 'google', 'default', 'mail', 'smtp', 'k1'];
   try {
-    const selector = 'default';
-    const response = await fetch(`https://dns.google/resolve?name=${selector}._domainkey.${domain}&type=TXT`);
-    const data = await response.json();
-
-    if (data.Answer && data.Answer.length > 0) {
-      return {
-        exists: true,
-        selector: selector,
-        status: 'PASS'
-      };
+    for (const selector of SELECTORS) {
+      const response = await fetch(`https://dns.google/resolve?name=${selector}._domainkey.${domain}&type=TXT`);
+      const data = await response.json();
+      if (data.Answer && data.Answer.length > 0) {
+        return {
+          exists: true,
+          selector: selector,
+          record: data.Answer[0]?.data || null,
+          status: 'PASS'
+        };
+      }
     }
-
     return {
       exists: false,
       selector: null,
@@ -233,20 +234,26 @@ async function checkMX(domain) {
 function calculateScore(results) {
   let score = 0;
 
-  // SPF: 30 points
-  if (results.spf.status === 'PASS') score += 30;
+  // SPF: 35 points
+  if (results.spf.status === 'PASS') score += 35;
 
-  // DKIM: 20 points
-  if (results.dkim.status === 'PASS') score += 20;
+  // DKIM: 10 points (NOT_FOUND penalizes at most 10 — selector may just be unknown)
+  if (results.dkim.status === 'PASS') score += 10;
 
-  // DMARC: 40 points
-  if (results.dmarc.status === 'PASS') score += 40;
-  else if (results.dmarc.status === 'WEAK') score += 20;
+  // DMARC: 45 points
+  if (results.dmarc.status === 'PASS') score += 45;
+  else if (results.dmarc.status === 'WEAK') score += 22;
 
   // MX: 10 points
   if (results.mx.status === 'PASS') score += 10;
 
-  return score;
+  // Bonus: if SPF + DMARC + MX are all OK, guarantee minimum 90
+  const coreOk = results.spf.status === 'PASS' &&
+    (results.dmarc.status === 'PASS' || results.dmarc.status === 'WEAK') &&
+    results.mx.status === 'PASS';
+  if (coreOk && results.dmarc.status === 'PASS') score = Math.max(score, 90);
+
+  return Math.min(score, 100);
 }
 
 // Generate recommendations
