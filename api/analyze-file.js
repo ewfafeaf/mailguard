@@ -75,7 +75,54 @@ const DANGEROUS_PATTERNS = [
   { pattern: 'Invoke-Expression',         severity: 'critical', desc: 'PowerShell spustenie skrytého kódu (IEX) — klasická technika malware' },
   { pattern: 'DownloadString',            severity: 'critical', desc: 'Sťahovanie a spúšťanie kódu z internetu — typický dropper útok' },
   { pattern: 'IEX(',                      severity: 'critical', desc: 'PowerShell skratka pre Invoke-Expression — obfuskovaný malware' },
+
+  // ── LOLBins (Living-off-the-Land Binaries) ─────────────────────
+  { pattern: 'certutil.*-decode',         severity: 'critical', category: 'lolbin', regex: true,  desc: 'certutil zneužitý na dekódovanie skrytého payloadu — klasická LOLBin technika' },
+  { pattern: 'certutil.*-urlcache',       severity: 'critical', category: 'lolbin', regex: true,  desc: 'certutil zneužitý na sťahovanie súborov z internetu' },
+  { pattern: '-ExecutionPolicy\\s+Bypass',severity: 'critical', category: 'lolbin', regex: true,  desc: 'Obchádzanie PowerShell execution policy — LOLBin útok' },
+  { pattern: '-enc\\s+[A-Za-z0-9+/]{20,}',severity:'critical', category: 'lolbin', regex: true,  desc: 'PowerShell zakódovaný príkaz (-EncodedCommand) — obfuskovaný malware' },
+  { pattern: 'mshta.exe',                 severity: 'critical', category: 'lolbin',               desc: 'mshta.exe — spustenie HTA skriptu, často zneužívané malware' },
+  { pattern: 'regsvr32\\s+/s',            severity: 'critical', category: 'lolbin', regex: true,  desc: 'regsvr32 /s — tiché registrovanie DLL, LOLBin technika' },
+  { pattern: 'wmic.*process.*call.*create',severity:'critical', category: 'lolbin', regex: true,  desc: 'WMIC process call create — vzdialené spúšťanie procesov' },
+  { pattern: 'rundll32.*javascript',      severity: 'critical', category: 'lolbin', regex: true,  desc: 'rundll32 JavaScript — spúšťanie kódu cez legitímny Windows nástroj' },
+  { pattern: 'bitsadmin.*transfer',       severity: 'critical', category: 'lolbin', regex: true,  desc: 'BITSAdmin na stiahnutie malware — LOLBin download technika' },
+
+  // ── Process Injection ──────────────────────────────────────────
+  { pattern: 'ctypes.windll',             severity: 'critical', category: 'process_injection',    desc: 'ctypes.windll — priamy prístup k Windows API z Pythonu, typický pre injekciu kódu' },
+  { pattern: 'CreateRemoteThread',        severity: 'critical', category: 'process_injection',    desc: 'CreateRemoteThread — injekcia kódu do cudzieho procesu' },
+  { pattern: 'NtUnmapViewOfSection',      severity: 'critical', category: 'process_injection',    desc: 'NtUnmapViewOfSection — process hollowing útok' },
+  { pattern: 'OpenProcess.*PROCESS_ALL_ACCESS', severity: 'critical', category: 'process_injection', regex: true, desc: 'OpenProcess s plnými právami — príprava na injekciu kódu' },
+  { pattern: 'shellcode',                 severity: 'critical', category: 'process_injection',    desc: 'Priama zmienka shellcode — spustiteľný kód vložený do dokumentu' },
+
+  // ── Staged Payload / Obfuskácia ────────────────────────────────
+  { pattern: '[A-Za-z0-9+/]{50,}.*[A-Za-z0-9+/]{50,}.*join', severity: 'high', regex: true, desc: 'Dlhé base64 bloky spojené cez join — typická staged payload technika' },
+  { pattern: 'base64.*split.*join',       severity: 'high',     regex: true,  desc: 'base64 split/join obfuskácia — skrytý payload' },
+  { pattern: 'chr\\(\\d+\\).*chr\\(\\d+\\).*chr\\(\\d+\\)', severity: 'high', regex: true, desc: 'Reťazec chr() volaní — obfuskácia cez ASCII kódy znakov' },
+  { pattern: 'fromCharCode.*fromCharCode.*fromCharCode', severity: 'high', regex: true, desc: 'Viacnásobné fromCharCode — JavaScript obfuskácia payloadu' },
+
+  // ── Browser Credential Stealer ─────────────────────────────────
+  { pattern: 'Login Data',                severity: 'critical', category: 'credential_stealer',   desc: 'Prístup k súboru Chrome Login Data — krádež uložených hesiel' },
+  { pattern: 'AppData.*Google.*Chrome',   severity: 'critical', category: 'credential_stealer', regex: true, desc: 'Prístup k Chrome profilu — pokus o krádež dát prehliadača' },
+  { pattern: 'AppData.*Local.*Microsoft.*Edge', severity: 'critical', category: 'credential_stealer', regex: true, desc: 'Prístup k Edge profilu — pokus o krádež dát prehliadača' },
+  { pattern: 'key4.db',                   severity: 'critical', category: 'credential_stealer',   desc: 'key4.db — databáza hesiel Firefox' },
+  { pattern: 'logins.json',               severity: 'critical', category: 'credential_stealer',   desc: 'logins.json — súbor s uloženými heslami Firefox' },
+  { pattern: 'cookies.sqlite',            severity: 'critical', category: 'credential_stealer',   desc: 'cookies.sqlite — krádež session cookies prehliadača' },
+
+  // ── Ransomware ─────────────────────────────────────────────────
+  { pattern: '\\.crypt$',                 severity: 'critical', category: 'ransomware', regex: true, desc: 'Prípona .crypt — súbor zašifrovaný ransomware' },
+  { pattern: '\\.locked$',               severity: 'critical', category: 'ransomware', regex: true, desc: 'Prípona .locked — súbor uzamknutý ransomware' },
+  { pattern: '\\.enc$',                   severity: 'critical', category: 'ransomware', regex: true, desc: 'Prípona .enc — zašifrovaný súbor' },
+  { pattern: 'YOUR_FILES_ARE_ENCRYPTED',  severity: 'critical', category: 'ransomware',             desc: 'Ransomware správa — dokument obsahuje výkupnú nótu' },
+  { pattern: 'how_to_decrypt',            severity: 'critical', category: 'ransomware',             desc: 'Ransomware inštrukcie — návod na zaplatenie výkupného' },
+  { pattern: 'CryptEncrypt',              severity: 'critical', category: 'ransomware',             desc: 'CryptEncrypt API — hromadné šifrovanie súborov' },
+  { pattern: 'CryptAcquireContext',       severity: 'critical', category: 'ransomware',             desc: 'CryptAcquireContext — inicializácia šifrovacieho kontextu, typické pre ransomware' },
 ];
+
+// Pre-compile regex patterns once at module load
+const _compiledPatterns = DANGEROUS_PATTERNS.map(dp => ({
+  ...dp,
+  _rx: dp.regex ? new RegExp(dp.pattern, 'i') : null,
+}));
 
 function scanDangerousPatterns(text) {
   if (!text) return [];
@@ -85,14 +132,17 @@ function scanDangerousPatterns(text) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    for (const dp of DANGEROUS_PATTERNS) {
+    const lineLower = line.toLowerCase();
+    for (const dp of _compiledPatterns) {
       const key = dp.pattern + ':' + i;
       if (seen.has(key)) continue;
-      if (line.toLowerCase().includes(dp.pattern.toLowerCase())) {
+      const matched = dp._rx ? dp._rx.test(line) : lineLower.includes(dp.pattern.toLowerCase());
+      if (matched) {
         seen.add(key);
         found.push({
           pattern:  dp.pattern,
           severity: dp.severity,
+          category: dp.category || null,
           desc:     dp.desc,
           line:     i + 1,
           snippet:  line.trim().slice(0, 120),
@@ -144,12 +194,29 @@ module.exports = async function handler(req, res) {
   // VirusTotal circuit breaker — run in parallel, never block the response
   const vtPromise = vtKey ? safeVT(buf, filename, vtKey) : Promise.resolve(null);
 
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Analýza trvala príliš dlho')), 25000)
+  );
+
   try {
+    const analyzePromise = (async () => {
+      let result;
+      if (isPDF)       result = await analyzePDF(buf, gsbKey);
+      else if (isDOCX) result = await analyzeDOCX(buf, gsbKey);
+      else if (isXLSX) result = await analyzeXLSX(buf, gsbKey);
+      else throw Object.assign(new Error('BAD_FORMAT'), { badFormat: true });
+      return result;
+    })();
+
     let result;
-    if (isPDF)       result = await analyzePDF(buf, gsbKey);
-    else if (isDOCX) result = await analyzeDOCX(buf, gsbKey);
-    else if (isXLSX) result = await analyzeXLSX(buf, gsbKey);
-    else return res.status(400).json({ error: 'Nepodporovaný formát. Použi PDF, DOCX, DOC, XLSX alebo XLS.' });
+    try {
+      result = await Promise.race([analyzePromise, timeoutPromise]);
+    } catch (err) {
+      if (err.badFormat) {
+        return res.status(400).json({ error: 'Nepodporovaný formát. Použi PDF, DOCX, DOC, XLSX alebo XLS.' });
+      }
+      throw err;
+    }
 
     const vtResult = await vtPromise;
     result.vt = vtResult;
@@ -169,9 +236,12 @@ module.exports = async function handler(req, res) {
 /* ═══════════════════════════════════════
    PDF Analysis
 ═══════════════════════════════════════ */
+const MAX_TEXT = 500000;
+
 async function analyzePDF(buf, gsbKey) {
   const pdfData = await pdfParse(buf, { max: 0 });
-  const text    = pdfData.text || '';
+  let text      = pdfData.text || '';
+  if (text.length > MAX_TEXT) { text = text.slice(0, MAX_TEXT); console.log('[analyze-file] PDF text skrátený na 500KB'); }
   const rawStr  = buf.toString('latin1');
 
   // URL z textu + z raw PDF URI anotácií
@@ -190,13 +260,13 @@ async function analyzePDF(buf, gsbKey) {
   const metadata = extractPdfMeta(rawStr);
   const metaWarnings = checkSuspiciousMeta(metadata);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
-  const { score, recs } = calcScore({
+  const { score, recs, forcedCritical } = calcScore({
     hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspiciousUrls, docType: 'PDF', dangerousPatterns, metaWarnings,
   });
 
   console.log(`[PDF] pages=${pdfData.numpages} urls=${allUrls.length} js=${hasJS} score=${score}`);
   return { ok:true, docType:'PDF', pages:pdfData.numpages, urlCount:allUrls.length,
-    urls:allUrls.slice(0,50), suspiciousUrls, hasJS, hasEmbedded, hasForms, hasAutoOpen, score, recs, dangerousPatterns, metadata, metaWarnings };
+    urls:allUrls.slice(0,50), suspiciousUrls, hasJS, hasEmbedded, hasForms, hasAutoOpen, score, recs, dangerousPatterns, metadata, metaWarnings, forcedCritical };
 }
 
 /* ═══════════════════════════════════════
@@ -220,7 +290,8 @@ async function analyzeDOCX(buf, gsbKey) {
   // ── 2. Text z document.xml (URL vzory v texte) ────────────────────
   const docXml = zip.getEntry('word/document.xml')?.getData()?.toString('utf8') || '';
   // Odstráň XML tagy, nechaj len text
-  const plainText = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  let plainText = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  if (plainText.length > MAX_TEXT) { plainText = plainText.slice(0, MAX_TEXT); console.log('[analyze-file] DOCX text skrátený na 500KB'); }
   const textUrls  = extractUrls(plainText);
 
   // ── 3. Počet strán z docProps/app.xml ─────────────────────────────
@@ -237,7 +308,7 @@ async function analyzeDOCX(buf, gsbKey) {
   const metadata = extractDocxMeta(zip);
   const metaWarnings = checkSuspiciousMeta(metadata);
   const suspiciousUrls = await safeGSB(allUrls, gsbKey);
-  const { score, recs } = calcScore({
+  const { score, recs, forcedCritical } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
     hasForms: false, allUrls, suspiciousUrls, docType: 'DOCX', hasMacros, dangerousPatterns, metaWarnings,
   });
@@ -245,7 +316,7 @@ async function analyzeDOCX(buf, gsbKey) {
   console.log(`[DOCX] pages=${pages} hyperlinks=${hyperlinkUrls.length} textUrls=${textUrls.length} macros=${hasMacros} score=${score}`);
   return { ok:true, docType:'DOCX', pages, urlCount:allUrls.length,
     urls:allUrls.slice(0,50), suspiciousUrls, hasJS:false, hasEmbedded:hasMacros,
-    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns, metadata, metaWarnings };
+    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns, metadata, metaWarnings, forcedCritical };
 }
 
 /* ═══════════════════════════════════════
@@ -285,9 +356,11 @@ async function analyzeXLSX(buf, gsbKey) {
   const hasMacros = /xl\/vbaProject\.bin/i.test(rawStr) ||
     (buf[0] === 0xD0 && buf[1] === 0xCF);
 
-  const dangerousPatterns = scanDangerousPatterns(xlsxTextParts.join('\n').slice(0, 50000));
+  let xlsxText = xlsxTextParts.join('\n');
+  if (xlsxText.length > MAX_TEXT) { xlsxText = xlsxText.slice(0, MAX_TEXT); console.log('[analyze-file] XLSX text skrátený na 500KB'); }
+  const dangerousPatterns = scanDangerousPatterns(xlsxText.slice(0, 50000));
   const suspiciousUrls = await safeGSB(uniqueUrls, gsbKey);
-  const { score, recs } = calcScore({
+  const { score, recs, forcedCritical } = calcScore({
     hasJS: false, hasAutoOpen: false, hasEmbedded: hasMacros,
     hasForms: false, allUrls: uniqueUrls, suspiciousUrls, docType: 'XLSX',
     hasMacros, dangerousPatterns,
@@ -297,7 +370,7 @@ async function analyzeXLSX(buf, gsbKey) {
   console.log(`[XLSX] sheets=${sheetCount} urls=${uniqueUrls.length} macros=${hasMacros} score=${score}`);
   return { ok:true, docType:'XLSX', pages: sheetCount, urlCount:uniqueUrls.length,
     urls:uniqueUrls.slice(0,50), suspiciousUrls, hasJS:false, hasEmbedded:hasMacros,
-    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns };
+    hasForms:false, hasAutoOpen:false, hasMacros, score, recs, dangerousPatterns, forcedCritical };
 }
 
 /* ═══════════════════════════════════════
@@ -402,6 +475,8 @@ function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspici
     score -= 5;
     recs.push('Neobvyklý počet URL – môže ísť o spam alebo tracking dokument.');
   }
+  const CRITICAL_CATEGORIES = new Set(['lolbin', 'process_injection']);
+
   if (dangerousPatterns.length > 0) {
     const critCount = dangerousPatterns.filter(p => p.severity === 'critical').length;
     const highCount = dangerousPatterns.filter(p => p.severity === 'high').length;
@@ -413,7 +488,15 @@ function calcScore({ hasJS, hasAutoOpen, hasEmbedded, hasForms, allUrls, suspici
     recs.push(`Metadáta dokumentu obsahujú ${metaWarnings.length} podozrivý${metaWarnings.length === 1 ? '' : 'ch'} znak${metaWarnings.length === 1 ? '' : 'ov'}.`);
   }
 
-  return { score: Math.max(0, Math.min(100, score)), recs };
+  // Override: LOLBin alebo Process Injection → skóre vždy 0 (KRITICKÉ)
+  const hasCriticalCategory = dangerousPatterns.some(p => CRITICAL_CATEGORIES.has(p.category));
+  if (hasCriticalCategory) {
+    score = 0;
+    const cats = [...new Set(dangerousPatterns.filter(p => CRITICAL_CATEGORIES.has(p.category)).map(p => p.category === 'lolbin' ? 'LOLBin' : 'Process Injection'))];
+    recs.unshift(`🚨 KRITICKÉ: Detegovaná technika ${cats.join(' / ')} — dokument je klasifikovaný ako vysoko nebezpečný bez ohľadu na ostatné výsledky.`);
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), recs, forcedCritical: hasCriticalCategory };
 }
 
 async function safeVT(buf, filename, vtKey) {
