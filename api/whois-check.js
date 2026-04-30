@@ -96,6 +96,11 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const { host } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
 
@@ -123,7 +128,8 @@ module.exports = async function handler(req, res) {
 
   console.log(`[whois-check] Looking up: ${domain}`);
 
-  const result = await tryRDAP(domain) || await tryWhoDat(domain);
+  const isSk = domain.endsWith('.sk');
+  const result = await tryRDAP(domain) || await tryWhoDat(domain) || (isSk ? await trySkNic(domain) : null);
 
   if (!result) {
     console.warn(`[whois-check] All sources failed for ${domain}`);
@@ -233,6 +239,51 @@ async function tryWhoDat(domain) {
     console.warn('[who-dat] exception:', err.message);
     return null;
   }
+}
+
+/* ═══════════════════════════════════════
+   Fallback pre .sk: whois.sk-nic.sk (TCP port 43)
+═══════════════════════════════════════ */
+async function trySkNic(domain) {
+  if (!domain.endsWith('.sk')) return null;
+  const net = require('net');
+  return new Promise((resolve) => {
+    let raw = '';
+    const client = net.createConnection({ host: 'whois.sk-nic.sk', port: 43 });
+    const timeout = setTimeout(() => {
+      client.destroy();
+      console.warn('[sk-nic] timeout for ' + domain);
+      resolve(null);
+    }, 6000);
+
+    client.once('connect', () => { client.write(domain + '\r\n'); });
+    client.on('data', chunk => { raw += chunk.toString(); });
+    client.once('end', () => {
+      clearTimeout(timeout);
+      resolve(parseSkNicWhois(raw));
+    });
+    client.once('error', err => {
+      clearTimeout(timeout);
+      console.warn('[sk-nic] error:', err.message);
+      resolve(null);
+    });
+  });
+}
+
+function parseSkNicWhois(raw) {
+  const get = (...keys) => {
+    for (const key of keys) {
+      const m = raw.match(new RegExp(`^${key}:\\s*(.+)`, 'im'));
+      if (m) return m[1].trim();
+    }
+    return null;
+  };
+  const created  = fmtDate(get('Created', 'Domain Created', 'Creation Date'));
+  const expires  = fmtDate(get('Valid Until', 'Expiry Date', 'Expiration Date'));
+  const registrar = get('Registrar', 'Sponsoring Registrar');
+  const ageDays  = calcAge(created);
+  if (!created && !expires && !registrar) return null;
+  return { creation_date: created, expiry_date: expires, registrar, country: 'SK', age_days: ageDays, source: 'sk-nic' };
 }
 
 /* ── Helpers ── */
