@@ -161,6 +161,11 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
   if (req.headers['content-length'] && parseInt(req.headers['content-length']) > MAX_SIZE) {
     return res.status(413).json({ error: 'Súbor je príliš veľký. Maximum je 10MB.' });
@@ -174,7 +179,8 @@ module.exports = async function handler(req, res) {
   });
   if (!authRes.ok) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { filename = 'file', mimetype = '', data: b64, gsbKey, vtKey } = req.body || {};
+  const { filename = 'file', mimetype = '', data: b64, vtKey } = req.body || {};
+  const gsbKey = process.env.GOOGLE_SAFE_BROWSING_KEY;
   if (!b64) return res.status(400).json({ error: 'Chýba parameter data (base64)' });
 
   const buf = Buffer.from(b64, 'base64');

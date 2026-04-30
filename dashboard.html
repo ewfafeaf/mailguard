@@ -2432,39 +2432,6 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
-        <!-- Google Safe Browsing API -->
-        <div class="settings-card" id="gsbCard" style="display:none">
-          <div class="sc-header">
-            <div class="sc-icon">🛡️</div>
-            <div>
-              <h3 class="sc-title">Google Safe Browsing API</h3>
-              <p class="sc-subtitle">Kontroluje URL oproti databáze známych hrozieb</p>
-            </div>
-          </div>
-          <div class="sc-content">
-            <p class="sc-card-info">
-              API kľúč môžeš získať zadarmo na
-              <a href="https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com"
-                target="_blank" rel="noopener">Google Cloud Console</a>.
-            </p>
-            <div class="sc-input-group">
-              <label>API kľúč</label>
-              <div class="sc-input-with-icon">
-                <input type="password" id="gsbKeyInput" class="settings-input"
-                  placeholder="AIza…"/>
-                <span class="sc-key-status none" id="gsbKeyStatus">Nie je nastavený</span>
-              </div>
-            </div>
-            <button class="sc-action-btn primary" onclick="saveGsbKey()">
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-              </svg>
-              Uložiť kľúč
-            </button>
-          </div>
-        </div>
-
         <!-- Nebezpečná zóna -->
         <div class="settings-card danger-card">
           <div class="sc-header">
@@ -3293,16 +3260,6 @@ async function initDashboard(){
   document.getElementById('dropdownUserName').textContent=name;
   document.getElementById('dropdownUserEmail').textContent=email;
   document.getElementById('dropdownUserAvatar').textContent=initials;
-  // GSB card: admin only
-  if(email==='memedumpster@centrum.sk'){
-    document.getElementById('gsbCard').style.display='';
-    const saved=localStorage.getItem('gsb_api_key');
-    if(saved){
-      document.getElementById('gsbKeyInput').value=saved;
-      document.getElementById('gsbKeyStatus').textContent='✓ API kľúč je uložený';
-      document.getElementById('gsbKeyStatus').style.color='var(--green)';
-    }
-  }
   // load plan from profiles
   await loadProfile();
   loadStats();
@@ -3479,32 +3436,6 @@ async function loadDailyUsage(){
   if(todayBarFill){
     todayBarFill.style.width=pct+'%';
     todayBarFill.style.background=used>=limit?'var(--red)':used>=limit-1?'#f59e0b':'linear-gradient(90deg,var(--green),var(--teal))';
-  }
-}
-
-function saveGsbKey(){
-  const key=document.getElementById('gsbKeyInput').value.trim();
-  const status=document.getElementById('gsbKeyStatus');
-  if(!key){
-    localStorage.removeItem('gsb_api_key');
-    if(status){status.textContent='Nie je nastavený';status.className='sc-key-status none';}
-    showToast('API kľúč bol odstránený','');
-    return;
-  }
-  localStorage.setItem('gsb_api_key',key);
-  if(status){status.textContent='✓ Uložený';status.className='sc-key-status ok';}
-  showToast('GSB API kľúč uložený','success');
-}
-
-// Pre-fill GSB key status on section open
-function refreshGsbKeyStatus(){
-  const key=localStorage.getItem('gsb_api_key')||'';
-  const status=document.getElementById('gsbKeyStatus');
-  const input=document.getElementById('gsbKeyInput');
-  if(input&&key) input.value=key;
-  if(status){
-    if(key){status.textContent='✓ Uložený';status.className='sc-key-status ok';}
-    else{status.textContent='Nie je nastavený';status.className='sc-key-status none';}
   }
 }
 
@@ -3773,7 +3704,7 @@ function displayDNSResults(data){
       <td style="width:120px"><span class="status-badge status-${(c.status||'').toLowerCase()}">${escHtml(dnsStatusSk(c.status))}</span></td>
       <td class="td-detail">
         ${escHtml(c.detail)}
-        ${c.isDkim?`<div style="margin-top:5px;font-size:.75rem;color:var(--muted);line-height:1.4">ℹ️ DKIM detekcia vyžaduje znalosť selektora. Pre presný test odošlite email na <a href="mailto:audit@nondox.com" style="color:var(--accent)">audit@nondox.com</a></div>`:''}
+        ${c.isDkim?`<div style="margin-top:5px;font-size:.75rem;color:var(--muted);line-height:1.4">ℹ️ DKIM detekcia vyžaduje znalosť selektora. Pre presný test odošlite email na <a href="mailto:nondox.support@gmail.com" style="color:var(--accent)">nondox.support@gmail.com</a></div>`:''}
       </td>
     </tr>`).join('');
 
@@ -7010,8 +6941,6 @@ async function analyzeFile(file){
   saveInd.style.display='none';
 
   const sizeMB=(file.size/1048576).toFixed(2);
-  const gsbKey=localStorage.getItem('gsb_api_key')||'';
-
   // ── Terminálový overlay ──
   showTerminalOverlay('nondox-scan-file.sh');
   termLine('[*]','NonDox File Scanner v2.1','info','muted',150);
@@ -7032,7 +6961,7 @@ async function analyzeFile(file){
         const resp=await fetch('/api/analyze-file',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':`Bearer ${(await _sb.auth.getSession()).data.session?.access_token}`},
-          body:JSON.stringify({filename:file.name,mimetype:file.type,data:b64,gsbKey}),
+          body:JSON.stringify({filename:file.name,mimetype:file.type,data:b64}),
         });
         const data=await resp.json();
 
