@@ -97,8 +97,22 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const { host } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
+
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(host) ? host : 'https://' + host);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return res.status(400).json({ error: 'Neplatná URL adresa' });
+    }
+  } catch {
+    return res.status(400).json({ error: 'Neplatná URL adresa' });
+  }
 
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '');

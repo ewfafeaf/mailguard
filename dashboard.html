@@ -4145,6 +4145,14 @@ async function webScan(){
   const raw=document.getElementById('wsInput').value.trim();
   if(!raw) return;
 
+  try {
+    const _p = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw);
+    if (!['http:', 'https:'].includes(_p.protocol)) throw new Error();
+  } catch {
+    alert('Zadajte platnú URL adresu (napr. skola.sk alebo https://skola.sk)');
+    return;
+  }
+
   const OWN_DOMAINS = ['nondox.com', 'www.nondox.com'];
   const inputVal = (document.getElementById('webInput') || document.getElementById('wsInput') || document.querySelector('input[type="url"], input[type="text"]'))?.value?.toLowerCase().replace(/^https?:\/\//,'').replace(/\/$/,'').trim();
   if (OWN_DOMAINS.includes(inputVal)) {
