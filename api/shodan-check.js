@@ -161,6 +161,11 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET')     return res.status(405).json({ error: 'Method not allowed' });
 
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const { host } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
 
@@ -213,7 +218,7 @@ module.exports = async function handler(req, res) {
         await setCache(cacheKey, censysResult, 6);
         return res.status(200).json(censysResult);
       }
-      return res.status(200).json({ ok: false, error: 'Shodan ani Censys nedostupne' });
+      return res.status(200).json({ ok: false, error: 'ℹ️ Sieťová analýza momentálne nedostupná. Skúste znova neskôr.' });
     }
     if (!r.ok) {
       return res.status(200).json({ ok: false, error: `Shodan HTTP ${r.status}` });
