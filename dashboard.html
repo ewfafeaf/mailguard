@@ -4267,15 +4267,13 @@ async function webScan(){
   };
 
   // ── Paralelné volania (Promise.allSettled — nikdy nezastavia sa) ──
-  const gsbKey=localStorage.getItem('gsb_api_key');
-
   const [sslRes, whoisRes, vtRes, headersRes, shodanRes, gsbRes] = await Promise.allSettled([
     runSSLCheck(hostname),
     runWhoisCheck(hostname),
     runVTCheck(hostname),
     runHeadersCheck(hostname),
     runShodanCheck(hostname),
-    gsbKey ? checkGoogleSafeBrowsing(scanUrl) : Promise.resolve(null),
+    checkGoogleSafeBrowsing(scanUrl),
   ]);
 
   // SSL
@@ -6458,27 +6456,21 @@ const GSB_THREAT_SK={
 };
 
 async function checkGoogleSafeBrowsing(url){
-  const key=localStorage.getItem('gsb_api_key');
-  if(!key) return null;
   try{
-    const body={
-      client:{clientId:'nondox',clientVersion:'1.0'},
-      threatInfo:{
-        threatTypes:['MALWARE','SOCIAL_ENGINEERING','UNWANTED_SOFTWARE','POTENTIALLY_HARMFUL_APPLICATION'],
-        platformTypes:['ANY_PLATFORM'],
-        threatEntryTypes:['URL'],
-        threatEntries:[{url}]
-      }
-    };
-    const res=await fetch(
-      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${encodeURIComponent(key)}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
-    );
-    if(!res.ok){console.warn('GSB HTTP error:',res.status);return null;}
-    const json=await res.json();
-    return json.matches||[];
+    const session = await _sb.auth.getSession();
+    const token = session.data.session?.access_token;
+    if(!token) return null;
+    const res = await fetch('/api/gsb-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ url }),
+    });
+    if(!res.ok){ console.warn('GSB endpoint error:', res.status); return null; }
+    const json = await res.json();
+    if(json.skipped) return null;
+    return json.matches || [];
   }catch(e){
-    console.warn('GSB fetch error:',e);
+    console.warn('GSB fetch error:', e);
     return null;
   }
 }
@@ -6580,18 +6572,14 @@ async function dashAnalyze(){
       termLine(icon,f.text,cls,cls,200);
     }
 
-    const gsbKey=localStorage.getItem('gsb_api_key')||'';
-    if(gsbKey){
-      termLine('[*]','Querying Google Safe Browsing...','info','info',300);
-      // GSB runs while URL-structure lines are animating
-      gsbMatches=await checkGoogleSafeBrowsing(fullUrl);
-      if(gsbMatches&&gsbMatches.length>0){
-        termLine('[-]',`Google Safe Browsing: ${gsbMatches.length} threat(s) detected`,'err','err',250);
-        for(const m of gsbMatches)
-          termLine('[-]','  '+(GSB_THREAT_SK[m.threatType]||m.threatType),'err','err',180);
-      } else {
-        termLine('[+]','Google Safe Browsing: CLEAN','ok','ok',250);
-      }
+    termLine('[*]','Querying Google Safe Browsing...','info','info',300);
+    gsbMatches=await checkGoogleSafeBrowsing(fullUrl);
+    if(gsbMatches&&gsbMatches.length>0){
+      termLine('[-]',`Google Safe Browsing: ${gsbMatches.length} threat(s) detected`,'err','err',250);
+      for(const m of gsbMatches)
+        termLine('[-]','  '+(GSB_THREAT_SK[m.threatType]||m.threatType),'err','err',180);
+    } else {
+      termLine('[+]','Google Safe Browsing: CLEAN','ok','ok',250);
     }
 
     termLine('[*]','Calculating security score...','info','info',300);
