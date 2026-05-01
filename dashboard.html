@@ -4349,7 +4349,7 @@ async function webScan(){
 
   // GSB (bežalo paralelne, len uložíme výsledok)
   gsbResult = gsbRes.status==='fulfilled' ? gsbRes.value : null;
-  if(gsbKey){
+  if(gsbResult !== null){
     const gsbOk=!gsbResult||gsbResult.length===0;
     termLine(gsbOk?'[+]':'[-]',`Google Safe Browsing: ${gsbOk?'CLEAN':'THREAT DETECTED'}`,gsbOk?'ok':'err',gsbOk?'ok':'err',0);
   }
@@ -6981,12 +6981,10 @@ async function analyzeFile(file){
         if(data.hasForms)    termLine('[!]','Interactive form detected — be cautious','info','info',220);
         if(!data.hasJS&&!data.hasMacros&&!data.hasAutoOpen) termLine('[+]','No malicious code detected','ok','ok',220);
 
-        if(gsbKey){
-          if(data.suspiciousUrls&&data.suspiciousUrls.length>0)
-            termLine('[-]',`Google Safe Browsing: ${data.suspiciousUrls.length} dangerous URL(s)`,'err','err',250);
-          else if((data.urlCount||0)>0)
-            termLine('[+]','Google Safe Browsing: all URLs CLEAN','ok','ok',220);
-        }
+        if(data.suspiciousUrls&&data.suspiciousUrls.length>0)
+          termLine('[-]',`Google Safe Browsing: ${data.suspiciousUrls.length} dangerous URL(s)`,'err','err',250);
+        else if((data.urlCount||0)>0)
+          termLine('[+]','Google Safe Browsing: all URLs CLEAN','ok','ok',220);
 
         termLine('[*]','Calculating security score...','info','info',300);
         const sLabel=data.score>=80?'SAFE':data.score>=50?'SUSPICIOUS':'DANGEROUS';
