@@ -6456,6 +6456,7 @@ const GSB_THREAT_SK={
 };
 
 async function checkGoogleSafeBrowsing(url){
+  console.log('GSB called', url);
   try{
     const session = await _sb.auth.getSession();
     const token = session.data.session?.access_token;
