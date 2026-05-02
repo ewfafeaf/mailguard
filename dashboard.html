@@ -1772,14 +1772,63 @@ body::before{content:'';position:fixed;inset:0;
     <div id="sectionNova" class="dash-section">
       <div class="dashboard-grid">
 
-        <!-- Row 0: Nové widgety -->
-        <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px">
+        <!-- ══ HERO: Bezpečnostné skóre + mini-stats ══ -->
+        <div style="grid-column:1/-1;display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:8px">
 
-          <!-- Widget 1: Digitálna imunita školy -->
+          <!-- LEFT: Score ring (dominant) -->
+          <div style="position:relative;background:linear-gradient(135deg,rgba(0,255,136,.05),rgba(79,142,247,.07),rgba(0,0,0,0));border:1px solid rgba(79,142,247,.28);border-radius:18px;padding:28px 32px;display:flex;align-items:center;gap:32px;overflow:hidden;box-shadow:0 0 40px rgba(0,255,136,.06),0 0 80px rgba(79,142,247,.04)">
+            <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 25% 50%,rgba(0,255,136,.07) 0%,transparent 55%);pointer-events:none"></div>
+            <svg viewBox="0 0 120 120" width="155" height="155" style="flex-shrink:0;filter:drop-shadow(0 0 18px rgba(0,255,136,.22))">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(79,142,247,.1)" stroke-width="10"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="url(#scoreGrad)" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="80"
+                transform="rotate(-90 60 60)" id="scoreRing"/>
+              <defs>
+                <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#4f8ef7"/>
+                  <stop offset="100%" stop-color="#00ff88"/>
+                </linearGradient>
+              </defs>
+              <text x="60" y="55" text-anchor="middle" font-size="26" font-weight="800" fill="#eeeef5" font-family="system-ui" id="scoreText">74</text>
+              <text x="60" y="72" text-anchor="middle" font-size="10" fill="rgba(120,130,160,.7)" font-family="system-ui">/100</text>
+            </svg>
+            <div style="flex:1;min-width:0;position:relative">
+              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">Bezpečnostné skóre</div>
+              <div style="font-size:.95rem;font-weight:700;margin-bottom:14px" id="scoreVerdictLabel">Načítavam…</div>
+              <div class="stat-breakdown" id="statBreakdown"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: 4 mini-stat tiles -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:12px;padding:14px 16px">
+              <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">📊 Celkovo analýz</div>
+              <div style="font-size:1.65rem;font-weight:800;color:#4f8ef7;line-height:1" id="statTotal">—</div>
+            </div>
+            <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);border-radius:12px;padding:14px 16px">
+              <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">✅ Bezpečné</div>
+              <div style="font-size:1.65rem;font-weight:800;color:#22c55e;line-height:1" id="statSafe">—</div>
+            </div>
+            <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);border-radius:12px;padding:14px 16px">
+              <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">❌ Hrozby</div>
+              <div style="font-size:1.65rem;font-weight:800;color:#ef4444;line-height:1" id="statDanger">—</div>
+            </div>
+            <div style="background:rgba(124,95,247,.06);border:1px solid rgba(124,95,247,.18);border-radius:12px;padding:14px 16px">
+              <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">🕐 Posledná aktivita</div>
+              <div style="font-size:1rem;font-weight:700;color:#c084fc;line-height:1.2" id="statLastDate">—</div>
+              <div style="font-size:.7rem;color:var(--muted);margin-top:3px" id="statLastTime"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ DVE HLAVNÉ KARTY: Imunita + Hrozby ══ -->
+        <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+
+          <!-- Digitálna imunita -->
           <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(79,142,247,.02));border:1px solid rgba(79,142,247,.25)">
-            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">🏫 Digitálna imunita školy</div>
-            <div style="display:flex;align-items:center;gap:14px">
-              <svg viewBox="0 0 120 120" width="90" height="90" style="flex-shrink:0">
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">🏫 Digitálna imunita školy</div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <svg viewBox="0 0 120 120" width="86" height="86" style="flex-shrink:0">
                 <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(79,142,247,.12)" stroke-width="10"/>
                 <circle cx="60" cy="60" r="50" fill="none" stroke="#4f8ef7" stroke-width="10"
                   stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"
@@ -1788,14 +1837,13 @@ body::before{content:'';position:fixed;inset:0;
                 <text x="60" y="72" text-anchor="middle" font-size="9" fill="rgba(120,130,160,.8)" font-family="system-ui">/100</text>
               </svg>
               <div style="flex:1;min-width:0">
-                <div style="font-size:.8rem;font-weight:600;color:var(--text)" id="immunityLabel">Načítavam…</div>
-                <div style="font-size:.72rem;color:var(--muted);margin-top:4px;line-height:1.4" id="immunityDetail"></div>
+                <div style="font-size:.82rem;font-weight:600;color:var(--text)" id="immunityLabel">Načítavam…</div>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:5px;line-height:1.5" id="immunityDetail"></div>
               </div>
             </div>
-            <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Celková odolnosť školy</div>
           </div>
 
-          <!-- Widget 2: Hrozby tento týždeň -->
+          <!-- Hrozby tento týždeň -->
           <div class="stat-card" style="background:linear-gradient(135deg,rgba(239,68,68,.07),rgba(239,68,68,.02));border:1px solid rgba(239,68,68,.22)">
             <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">⚠️ Hrozby tento týždeň</div>
             <div id="weekThreatsBody">
@@ -1804,68 +1852,9 @@ body::before{content:'';position:fixed;inset:0;
               </div>
             </div>
           </div>
-
-          <!-- Widget 3: Ľudský faktor -->
-          <div class="stat-card" style="background:linear-gradient(135deg,rgba(251,191,36,.07),rgba(251,191,36,.02));border:1px solid rgba(251,191,36,.22)">
-            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">👥 Ľudský faktor</div>
-            <div id="humanFactorBody">
-              <div style="display:flex;align-items:center;gap:8px;height:70px;color:var(--muted);font-size:.82rem">
-                <div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Načítavam…
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- Row 1: Stat karty -->
-        <div style="grid-column:1/-1;display:flex;gap:12px">
-          <div class="stat-card" style="flex:1.2;background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,255,136,.02));border:1px solid rgba(0,255,136,.25)">
-            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">BEZPEČNOSTNÉ SKÓRE</div>
-            <div style="display:flex;align-items:center;justify-content:center">
-              <svg viewBox="0 0 120 120" width="110" height="110">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(79,142,247,.1)" stroke-width="10"/>
-                <circle cx="60" cy="60" r="50" fill="none" stroke="url(#scoreGrad)" stroke-width="10"
-                  stroke-linecap="round"
-                  stroke-dasharray="314"
-                  stroke-dashoffset="80"
-                  transform="rotate(-90 60 60)"
-                  id="scoreRing"/>
-                <defs>
-                  <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#4f8ef7"/>
-                    <stop offset="100%" stop-color="#00ff88"/>
-                  </linearGradient>
-                </defs>
-                <text x="60" y="55" text-anchor="middle" font-size="26" font-weight="800" fill="#eeeef5" font-family="system-ui" id="scoreText">74</text>
-                <text x="60" y="72" text-anchor="middle" font-size="10" fill="rgba(120,130,160,.8)" font-family="system-ui">/100</text>
-              </svg>
-            </div>
-            <div style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:4px">Celkové hodnotenie</div>
-          </div>
-          <div class="stat-card" style="flex:1.2;background:linear-gradient(135deg,rgba(124,95,247,.08),rgba(124,95,247,.02));border:1px solid rgba(124,95,247,.3);border-radius:14px">
-            <div class="stat-label">Posledná aktivita</div>
-            <div class="stat-value blue" style="font-size:1.4rem" id="statLastDate">—</div>
-            <div style="font-size:.7rem;color:var(--muted);margin-top:4px" id="statLastTime"></div>
-            <div class="stat-icon">🕐</div>
-          </div>
-          <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(79,142,247,.02));border:1px solid rgba(79,142,247,.3);border-radius:14px">
-            <div class="stat-label">Celkovo analýz</div>
-            <div class="stat-value blue" id="statTotal">—</div>
-            <div class="stat-icon">📊</div>
-          </div>
-          <div class="stat-card" style="background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,255,136,.02));border:1px solid rgba(0,255,136,.25);border-radius:14px">
-            <div class="stat-label">Bezpečné</div>
-            <div class="stat-value green" id="statSafe">—</div>
-            <div class="stat-icon">✅</div>
-          </div>
-          <div class="stat-card" style="flex:1.3;background:linear-gradient(135deg,rgba(255,59,59,.08),rgba(255,59,59,.02));border:1px solid rgba(255,59,59,.25);border-radius:14px">
-            <div class="stat-label">Hrozby</div>
-            <div class="stat-value red" id="statDanger">—</div>
-            <div class="stat-breakdown" id="statBreakdown"></div>
-            <div class="stat-icon">🚨</div>
-          </div>
-        </div>
-
-        <!-- Row 2: Dnes + Live Feed -->
+        <!-- ══ DNES + LIVE ACTIVITY ══ -->
         <div style="grid-column:1/-1;display:flex;gap:12px">
           <div class="dg-today-card" style="flex:1">
             <div>
@@ -1885,21 +1874,22 @@ body::before{content:'';position:fixed;inset:0;
           </div>
           <div class="threat-feed" style="flex:1.4">
             <div class="threat-feed-label">🔴 Live Activity</div>
-            <div class="feed-item"><span class="feed-dot safe"></span><span>URL scan • Bezpečné • Teraz</span></div>
-            <div class="feed-item"><span class="feed-dot warning"></span><span>Email check • 2 min</span></div>
-            <div class="feed-item"><span class="feed-dot danger"></span><span>Phishing blocked • 5 min</span></div>
+            <div class="feed-item"><span class="feed-dot safe"></span><span style="color:#22c55e;font-weight:600">URL scan</span><span style="color:var(--muted)">&nbsp;· Bezpečné · Teraz</span></div>
+            <div class="feed-item"><span class="feed-dot warning"></span><span style="color:#ff9500;font-weight:600">Email check</span><span style="color:var(--muted)">&nbsp;· Podozrivý · 2 min</span></div>
+            <div class="feed-item"><span class="feed-dot danger"></span><span style="color:#ff3b3b;font-weight:600">Phishing blocked</span><span style="color:var(--muted)">&nbsp;· 5 min</span></div>
           </div>
         </div>
 
-        <!-- Row 4: Charts -->
+        <!-- ══ CHART: Aktivita 7 dní ══ -->
         <div class="chart-card" style="grid-column:1/-1">
+          <div style="font-size:.75rem;color:#555e70;margin-bottom:6px">Rastúci trend signalizuje, že tím aktívne kontroluje hrozby.</div>
           <div class="chart-card-label">📈 Aktivita (7 dní)</div>
           <div class="mini-chart-wrapper">
             <canvas id="activityChart"></canvas>
           </div>
         </div>
 
-        <!-- Row: Súlad so zákonom -->
+        <!-- ══ SÚLAD SO ZÁKONOM ══ -->
         <div style="grid-column:1/-1">
           <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.06),rgba(79,142,247,.01));border:1px solid rgba(79,142,247,.2)">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
@@ -1919,10 +1909,10 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
-        <!-- Row 4b: Two admin-panel charts -->
+        <!-- ══ DVA GRAFY ══ -->
         <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <!-- Growth Chart -->
           <div class="section-card" style="margin-bottom:0">
+            <div style="font-size:.75rem;color:#555e70;margin-bottom:10px">Rast analýz odráža zapojenie tímu do bezpečnostnej rutiny.</div>
             <div class="section-header">
               <h3 class="section-title">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1935,8 +1925,8 @@ body::before{content:'';position:fixed;inset:0;
               <canvas id="growthChart"></canvas>
             </div>
           </div>
-          <!-- Resource Chart -->
           <div class="section-card" style="margin-bottom:0">
+            <div style="font-size:.75rem;color:#555e70;margin-bottom:10px">Čo váš tím kontroluje najčastejšie — email, URL alebo súbory.</div>
             <div class="section-header">
               <h3 class="section-title">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1956,8 +1946,8 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
-        <!-- Row 5: Quick actions + Threat map -->
-        <div style="grid-column:1/7;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <!-- ══ QUICK ACTIONS ══ -->
+        <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
           <a class="quick-action" onclick="showSection('webskener')" style="background:linear-gradient(135deg,rgba(79,142,247,.12),rgba(79,142,247,.03));border:1px solid rgba(79,142,247,.3)">
             <span class="quick-action-icon">◬</span><span>Web skener</span>
           </a>
@@ -1972,9 +1962,9 @@ body::before{content:'';position:fixed;inset:0;
           </a>
         </div>
 
-        <!-- THREAT MAP - full width -->
+        <!-- ══ THREAT MAP ══ -->
         <div class="threat-map-card" style="grid-column:1/-1;padding:18px 20px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <div class="threat-map-label">🌍 Live Threat Map</div>
             <div style="display:flex;gap:16px;font-size:.7rem;color:var(--muted)">
               <span><span style="color:#ff3b3b">●</span> High risk</span>
@@ -1982,6 +1972,7 @@ body::before{content:'';position:fixed;inset:0;
               <span><span style="color:#00ff88">●</span> Blocked</span>
             </div>
           </div>
+          <div style="font-size:.73rem;color:#555e70;margin-bottom:10px">Toto sú aktuálne útoky na podobné organizácie.</div>
           <svg id="threatMapSvg" viewBox="0 0 800 360" style="width:100%;height:320px;border-radius:10px;background:rgba(10,12,20,.7)">
     <!-- Ocean background grid -->
     <rect width="800" height="360" fill="rgba(8,10,18,.0)"/>
@@ -2098,7 +2089,7 @@ body::before{content:'';position:fixed;inset:0;
           </div>
         </div>
 
-        <!-- Row 6: Tip dňa + Posledná aktivita -->
+        <!-- ══ TIP DŇA + POSLEDNÁ AKTIVITA ══ -->
         <div class="dg-tip-card" style="grid-column:1/7">
           <div class="dg-widget-label">💡 Tip dňa</div>
           <div style="border-left:3px solid var(--accent);padding-left:12px">
@@ -2110,6 +2101,9 @@ body::before{content:'';position:fixed;inset:0;
           <div class="dg-widget-label">🕐 Posledná aktivita</div>
           <div id="novaLastActivityContent" style="font-size:.83rem;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
         </div>
+
+        <!-- humanFactorBody: hidden, udržiavaný pre JS kompatibilitu -->
+        <div style="display:none"><div id="humanFactorBody"></div></div>
 
       </div>
     </div>
@@ -5350,6 +5344,13 @@ async function loadStats(){
     const offset = circumference - (score / 100) * circumference;
     ring.setAttribute('stroke-dashoffset', offset);
     ring.style.stroke = score >= 70 ? 'url(#scoreGrad)' : score >= 40 ? '#ff9500' : '#ff3b3b';
+  }
+
+  // Hero verdict label
+  const verdictEl=document.getElementById('scoreVerdictLabel');
+  if(verdictEl){
+    verdictEl.textContent=score>=80?'Výborné zabezpečenie':score>=60?'Dobré zabezpečenie':score>=40?'Vyžaduje zlepšenie':'Slabé zabezpečenie';
+    verdictEl.style.color=score>=70?'#22c55e':score>=40?'#ff9500':'#ef4444';
   }
 
   // Threat breakdown badges
