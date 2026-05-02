@@ -4602,9 +4602,9 @@ function wsRenderFull(scanUrl,hostname,urlRisk,sslResult,whoisResult,vtResult,ob
   // Hlavičky
   const hdr=obsResult?.tests||{};
   const hdrDefs=[
-    {key:'strict-transport-security',label:'HSTS',                  desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.',        tooltip:'Chýba ochrana proti presmerovaniu na nezabezpečené stránky. Útočník môže zachytiť heslá učiteľov.'},
-    {key:'content-security-policy',  label:'CSP',                   desc:'Obmedzuje zdroje skriptov. Chráni pred XSS.',           tooltip:'Chýba ochrana proti vkladaniu cudzích škodlivých skriptov na web školy.'},
-    {key:'x-frame-options',          label:'X-Frame-Options',        desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.',tooltip:'Web školy môže byť vložený do inej stránky a zneužitý na phishing.'},
+    {key:'strict-transport-security',label:'HSTS',                  desc:'Vynucuje HTTPS. Chráni pred downgrade útokmi.',        tooltip:'Útočník môže presmerovať komunikáciu vašich používateľov cez nezabezpečený kanál a odpočúvať heslá a citlivé dáta.'},
+    {key:'content-security-policy',  label:'CSP',                   desc:'Obmedzuje zdroje skriptov. Chráni pred XSS.',           tooltip:'Bez Content Security Policy môže útočník vložiť škodlivý kód priamo do vašej stránky. Návštevníci o tom nevedia nič.'},
+    {key:'x-frame-options',          label:'X-Frame-Options',        desc:'Zabraňuje vloženiu do iFrame. Ochrana pred clickjacking.',tooltip:'Vaša stránka môže byť vložená do inej stránky a zneužitá na podvodné kliknutia — tzv. clickjacking útok.'},
     {key:'x-content-type-options',   label:'X-Content-Type-Options', desc:'Zabraňuje MIME sniffingu.',                             tooltip:'Prehliadač môže byť oklamaný pri načítaní súborov zo školského webu.'},
     {key:'referrer-policy',          label:'Referrer-Policy',        desc:'Obmedzuje zdieľanie URL pri navigácii.',                tooltip:'Web školy zbytočne zdieľa citlivé informácie pri každom kliknutí.'},
     {key:'permissions-policy',       label:'Permissions-Policy',     desc:'Kontroluje prístup k zariadeniam prehliadača.',         tooltip:'Chýba kontrola nad kamerou, mikrofónom a polohou na školskom webe.'},
@@ -7047,7 +7047,7 @@ function renderPDFResult(d){
     d.hasJS       && flag('🚨','JavaScript detekovaný',
       `${dtype} obsahuje JS – môže spustiť škodlivý kód pri otvorení.`),
     d.hasAutoOpen && flag('⚠️','Auto-open akcia',
-      'Dokument sa automaticky pokúsi spustiť kód po otvorení.'),
+      'Tento dokument sa pokúša automaticky spustiť kód pri otvorení. Klasická technika ransomware útokov — žiadna interakcia používateľa nie je potrebná.'),
     d.hasMacros   && flag('🚨','Makrá (VBA) detekované',
       'Dokument obsahuje spustiteľné makrá – nespúšťaj ich z neznámych zdrojov.'),
     (!d.hasMacros && d.hasEmbedded) && flag('📎','Vložené súbory',
