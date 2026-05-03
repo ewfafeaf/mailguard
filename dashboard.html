@@ -1050,13 +1050,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
   .main{padding:24px 20px}
 }
 @media(max-width:680px){
-  .sidebar{width:60px;padding:0}
-  .sidebar-item span:not(.icon){display:none}
-  .sidebar-user-compact{justify-content:center;padding:10px 0}
-  .sidebar-user-email,.sidebar-plan-badge{display:none}
-  .sidebar-nav{padding:0 4px}
-  .sidebar-divider{margin:6px 4px}
-  .main{margin-left:60px;padding:20px 16px}
+  /* Legacy rule — .sidebar class not used, kept only for safety */
   .stats-row{flex-direction:column}
   .nav-user-email{display:none}
   .analysis-input-row{flex-direction:column}
@@ -1525,6 +1519,156 @@ body::before{content:'';position:fixed;inset:0;
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+/* ══════════════════════════════════════════════════════
+   NONDOX — MOBILE RESPONSIVE
+══════════════════════════════════════════════════════ */
+
+/* Global: no horizontal scroll, consistent box model */
+html,body{overflow-x:hidden}
+*,*::before,*::after{box-sizing:border-box}
+img,canvas{max-width:100%;height:auto}
+
+/* Long strings (emails, domains, URLs) never break layout */
+.td-label,.td-detail,.stat-value,.feed-item span,
+.ws-check-title,.ws-check-desc,.pdf-url-item,
+.az-scan-url,.hres-domain,.breakdown-badge,
+code,pre{overflow-wrap:anywhere;word-break:break-word}
+
+/* Hamburger — hidden on desktop */
+.nd-hamburger{
+  display:none;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:9px;flex-shrink:0;
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);
+  color:#eeeef5;cursor:pointer;padding:0;
+  transition:background .2s,border-color .2s}
+.nd-hamburger:hover{background:rgba(79,142,247,.2)}
+
+/* Sidebar overlay — tap to close */
+.nd-sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.65);backdrop-filter:blur(3px);
+  z-index:149}
+.nd-sidebar-overlay.active{display:block}
+
+/* ── 1024px: offcanvas sidebar ── */
+@media(max-width:1024px){
+  .nd-hamburger{display:flex}
+  .modern-sidebar{z-index:150}
+  .modern-topbar{left:0}
+  .main{margin-left:0!important;width:100%;padding:16px 14px}
+  /* Kill the old 680px collapse-to-60px rule on modern-sidebar */
+  .modern-sidebar{width:220px!important}
+}
+
+/* ── 768px: single-column layouts ── */
+@media(max-width:768px){
+  .main{padding:14px 12px}
+
+  /* Nova section structural grids (inline styles overridden via these classes) */
+  .nd-hero-row{grid-template-columns:1fr!important}
+  .nd-stat-tiles{grid-template-columns:1fr 1fr!important}
+  .nd-main-cards{grid-template-columns:1fr!important}
+  .nd-today-live{flex-direction:column!important}
+  .nd-charts-row{grid-template-columns:1fr!important}
+  .nd-quick-actions{grid-template-columns:repeat(2,1fr)!important}
+
+  /* All dashboard-grid children span full width */
+  .dashboard-grid>*{grid-column:1/-1!important}
+
+  /* Feature card grids */
+  .nova-feature-grid{grid-template-columns:repeat(2,1fr)!important}
+  .ws-feature-grid,.header-features-grid,.file-scanner-features{grid-template-columns:repeat(2,1fr)!important}
+
+  /* Compliance + form grids */
+  #complianceChecklist,.form-row,.team-invite-inputs,.hist-filter-row{grid-template-columns:1fr!important}
+
+  /* Chart heights */
+  .chart-wrapper-large{height:180px}
+  .chart-wrapper-medium{height:150px}
+  .mini-chart-wrapper{height:110px}
+
+  /* Stat cards: no fixed widths */
+  .stat-card{min-width:0;width:100%}
+  .stat-icon{display:none}
+  .stats-row{flex-direction:column}
+
+  /* Inputs + buttons full width */
+  .analysis-btn{width:100%}
+  .ws-input-row,.ws-input-wrapper{flex-direction:column!important}
+  #wsInput,#wsBtn,
+  #blInput,.bl-input-row button,
+  #dnsInput,.dns-input-row button{width:100%!important;min-width:0!important}
+
+  /* Tables */
+  .res-table,.res-table-wrap,table{display:block;overflow-x:auto;min-width:0}
+  .hist-layout{grid-template-columns:1fr}
+
+  /* Web scanner check rows */
+  .ws-checks{grid-template-columns:1fr!important}
+
+  /* Plans */
+  .plans-grid{grid-template-columns:1fr!important}
+
+  /* Threat map (SVG) */
+  #threatMapSvg{height:180px!important}
+
+  /* Topbar */
+  .topbar-user-compact{display:none}
+}
+
+/* ── 480px: compact mobile ── */
+@media(max-width:480px){
+  .main{padding:10px 8px}
+
+  /* Score SVG text */
+  #scoreText{font-size:20px!important}
+  .dg-today-number{font-size:2rem}
+
+  /* Topbar: hide search and date */
+  .topbar-search{display:none}
+  .topbar-datetime{font-size:.78rem;gap:4px}
+  .topbar-datetime .separator{display:none}
+  #currentDate{display:none}
+
+  /* CTA buttons — stacked */
+  .analysis-input-row{flex-direction:column;gap:8px}
+  .analysis-input,.analysis-btn{width:100%}
+  .analysis-btn{height:42px}
+
+  /* Feature grids → 1 col */
+  .nova-feature-grid,.ws-feature-grid,
+  .header-features-grid,.file-scanner-features{grid-template-columns:1fr!important}
+
+  /* Quick actions — keep 2 cols */
+  .nd-quick-actions{grid-template-columns:repeat(2,1fr)!important}
+  .quick-action{padding:12px 8px;font-size:.68rem}
+  .quick-action-icon{font-size:1.1rem}
+
+  /* Charts even smaller */
+  .chart-wrapper-large{height:150px}
+  .chart-wrapper-medium{height:120px}
+  .mini-chart-wrapper{height:90px}
+
+  /* Hide non-critical secondary text */
+  .dg-today-sub{display:none}
+  .stat-breakdown{display:none}
+
+  /* Nova hero stat tiles: 1 col */
+  .nd-stat-tiles{grid-template-columns:1fr!important}
+
+  /* All input rows stack */
+  .ws-input-row,.ws-input-wrapper,
+  .bl-input-row,.dns-input-row{flex-direction:column!important;gap:8px!important}
+  #wsInput,#wsBtn,#blInput,#blBtn,
+  #dnsInput,#dnsBtn{width:100%!important}
+
+  /* Plan cards */
+  .plans-grid{grid-template-columns:1fr!important}
+
+  /* Compliance */
+  #complianceChecklist{grid-template-columns:1fr!important}
+}
 </style>
 </head>
 <body>
@@ -1540,6 +1684,7 @@ body::before{content:'';position:fixed;inset:0;
 </div>
 
 <!-- Modern Sidebar -->
+<div class="nd-sidebar-overlay" id="ndSidebarOverlay" onclick="toggleMobileSidebar()"></div>
 <aside class="modern-sidebar">
   <a href="index.html" class="logo-link">
     <div class="sidebar-logo">
@@ -1697,6 +1842,11 @@ body::before{content:'';position:fixed;inset:0;
 
 <!-- Modern Top Bar -->
 <header class="modern-topbar">
+  <button class="nd-hamburger" onclick="toggleMobileSidebar()" aria-label="Menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
   <div class="topbar-user-compact">
     <div class="topbar-compact-avatar" id="topbarCompactAvatar">?</div>
     <div class="topbar-compact-details">
@@ -1773,7 +1923,7 @@ body::before{content:'';position:fixed;inset:0;
       <div class="dashboard-grid">
 
         <!-- ══ HERO: Bezpečnostné skóre + mini-stats ══ -->
-        <div style="grid-column:1/-1;display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:8px">
+        <div class="nd-hero-row" style="grid-column:1/-1;display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:8px">
 
           <!-- LEFT: Score ring (dominant) -->
           <div style="position:relative;background:linear-gradient(135deg,rgba(0,255,136,.05),rgba(79,142,247,.07),rgba(0,0,0,0));border:1px solid rgba(79,142,247,.28);border-radius:18px;padding:28px 32px;display:flex;align-items:center;gap:32px;overflow:hidden;box-shadow:0 0 40px rgba(0,255,136,.06),0 0 80px rgba(79,142,247,.04)">
@@ -1800,7 +1950,7 @@ body::before{content:'';position:fixed;inset:0;
           </div>
 
           <!-- RIGHT: 4 mini-stat tiles -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="nd-stat-tiles" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div style="background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:12px;padding:14px 16px">
               <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">📊 Celkovo analýz</div>
               <div style="font-size:1.65rem;font-weight:800;color:#4f8ef7;line-height:1" id="statTotal">—</div>
@@ -1822,7 +1972,7 @@ body::before{content:'';position:fixed;inset:0;
         </div>
 
         <!-- ══ DVE HLAVNÉ KARTY: Imunita + Hrozby ══ -->
-        <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+        <div class="nd-main-cards" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
 
           <!-- Digitálna imunita -->
           <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(79,142,247,.02));border:1px solid rgba(79,142,247,.25)">
@@ -1855,7 +2005,7 @@ body::before{content:'';position:fixed;inset:0;
         </div>
 
         <!-- ══ DNES + LIVE ACTIVITY ══ -->
-        <div style="grid-column:1/-1;display:flex;gap:12px">
+        <div class="nd-today-live" style="grid-column:1/-1;display:flex;gap:12px">
           <div class="dg-today-card" style="flex:1">
             <div>
               <div class="dg-today-label">Dnes</div>
@@ -1910,7 +2060,7 @@ body::before{content:'';position:fixed;inset:0;
         </div>
 
         <!-- ══ DVA GRAFY ══ -->
-        <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="nd-charts-row" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="section-card" style="margin-bottom:0">
             <div style="font-size:.75rem;color:#555e70;margin-bottom:10px">Rast analýz odráža zapojenie tímu do bezpečnostnej rutiny.</div>
             <div class="section-header">
@@ -1947,7 +2097,7 @@ body::before{content:'';position:fixed;inset:0;
         </div>
 
         <!-- ══ QUICK ACTIONS ══ -->
-        <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="nd-quick-actions" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
           <a class="quick-action" onclick="showSection('webskener')" style="background:linear-gradient(135deg,rgba(79,142,247,.12),rgba(79,142,247,.03));border:1px solid rgba(79,142,247,.3)">
             <span class="quick-action-icon">◬</span><span>Web skener</span>
           </a>
@@ -3517,6 +3667,23 @@ document.addEventListener('click',e=>{
   const btn=document.querySelector('.topbar-user');
   if(menu&&btn&&!menu.contains(e.target)&&!btn.contains(e.target))
     menu.classList.remove('active');
+});
+
+function toggleMobileSidebar(){
+  const sidebar=document.querySelector('.modern-sidebar');
+  const overlay=document.getElementById('ndSidebarOverlay');
+  if(!sidebar) return;
+  const isOpen=sidebar.classList.toggle('mobile-open');
+  overlay?.classList.toggle('active',isOpen);
+  document.body.style.overflow=isOpen?'hidden':'';
+}
+// Close sidebar on resize back to desktop
+window.addEventListener('resize',()=>{
+  if(window.innerWidth>1024){
+    document.querySelector('.modern-sidebar')?.classList.remove('mobile-open');
+    document.getElementById('ndSidebarOverlay')?.classList.remove('active');
+    document.body.style.overflow='';
+  }
 });
 
 async function signOut(){
