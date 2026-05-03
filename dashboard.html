@@ -1725,6 +1725,46 @@ html,body{overflow-x:hidden}
   input:not([type=checkbox]):not([type=radio]),
   select,textarea,.ws-input,.ws-fancy-input{
     font-size:16px!important;min-height:44px}
+
+  /* ── SCAN BAR (Web skener / DNS / Blacklist / Breach Monitor)
+        ws-fancy-inner je flex row s [ikona][input][button] vnútri —
+        treba ho rozbiť na column bez zmeny HTML ── */
+  .ws-fancy-wrap{
+    padding:0!important;
+    animation:none!important;
+    background:transparent!important;
+    border-radius:0!important}
+  .ws-fancy-inner{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    background:transparent!important;
+    border:none!important;
+    border-radius:0!important;
+    overflow:visible!important;
+    gap:10px!important}
+  .ws-fancy-icon{display:none!important}
+  .ws-fancy-input{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    flex:none!important;
+    width:100%!important;
+    min-width:0!important;
+    padding:14px 16px!important;
+    font-size:16px!important;
+    height:46px!important;
+    border:1px solid rgba(79,142,247,.35)!important;
+    border-radius:12px!important;
+    background:#1a1a2e!important;
+    -webkit-text-fill-color:#fff!important}
+  .ws-scan-btn{
+    flex:none!important;
+    width:100%!important;
+    height:46px!important;
+    margin:0!important;
+    font-size:.9rem!important;
+    border-radius:10px!important}
 }
 
 @media(max-width:480px){
