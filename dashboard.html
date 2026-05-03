@@ -1669,6 +1669,72 @@ code,pre{overflow-wrap:anywhere;word-break:break-word}
   /* Compliance */
   #complianceChecklist{grid-template-columns:1fr!important}
 }
+
+/* ═══════════════════════════════════════
+   MOBILE UX FIXES
+   ═══════════════════════════════════════ */
+
+/* Prevent horizontal scroll globally */
+html,body{overflow-x:hidden}
+
+/* Mobile topbar brand — hidden on desktop */
+.topbar-brand-mobile{
+  display:none;font-weight:800;font-size:.88rem;color:#eeeef5;
+  flex:1;text-align:center;letter-spacing:.04em;pointer-events:none;
+  white-space:nowrap}
+
+/* Touch active feedback */
+.ws-btn:active{transform:scale(.98)!important}
+.analysis-btn:active{transform:scale(.98)!important}
+
+/* Long-content overflow-wrap */
+.res-section-body,.section-desc,.ws-fc-desc,
+.card-subtitle,.az-scan-input{overflow-wrap:anywhere}
+
+/* Scrollable tables inside cards */
+.section-card table,.team-card table,.az-panel table{
+  display:block;overflow-x:auto;min-width:0}
+
+@media(max-width:768px){
+  /* ── TOPBAR ── */
+  .modern-topbar{height:56px!important;padding:0 14px!important}
+  .main{margin-top:56px!important}
+  .topbar-datetime{display:none!important}
+  .topbar-brand-mobile{display:flex;align-items:center;justify-content:center}
+  .topbar-user{
+    padding:5px 10px!important;font-size:.8rem!important;
+    gap:6px!important}
+  .topbar-user-avatar{width:26px!important;height:26px!important}
+  #topbarUserName{display:none}
+
+  /* ── PHISHING SIMULATOR — force 1 column ── */
+  .phishing-grid{grid-template-columns:1fr!important}
+  .phishing-history{margin-top:20px}
+
+  /* ── CARD SPACING ── */
+  .section-card{padding:14px!important;margin-bottom:10px!important}
+  .team-card .card-header{padding:14px 14px 0!important}
+  .team-card .card-content{padding:14px!important}
+  .az-panel{padding:14px!important}
+  .team-card,.az-panel{margin-bottom:10px}
+
+  /* ── BUTTONS ── */
+  .ws-btn{height:44px!important;padding:0 18px!important;font-size:.88rem!important}
+
+  /* ── INPUTS — font-size 16px prevents iOS auto-zoom ── */
+  input:not([type=checkbox]):not([type=radio]),
+  select,textarea,.ws-input,.ws-fancy-input{
+    font-size:16px!important;min-height:44px}
+}
+
+@media(max-width:480px){
+  .modern-topbar{height:52px!important;padding:0 10px!important}
+  .main{margin-top:52px!important}
+  .section-card{padding:10px!important;margin-bottom:8px!important}
+  .team-card .card-header{padding:10px 10px 0!important}
+  .team-card .card-content{padding:10px!important}
+  .az-panel{padding:10px!important}
+}
 </style>
 </head>
 <body>
@@ -1847,6 +1913,7 @@ code,pre{overflow-wrap:anywhere;word-break:break-word}
       <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
   </button>
+  <div class="topbar-brand-mobile">NonDox</div>
   <div class="topbar-user-compact">
     <div class="topbar-compact-avatar" id="topbarCompactAvatar">?</div>
     <div class="topbar-compact-details">
@@ -2962,7 +3029,7 @@ code,pre{overflow-wrap:anywhere;word-break:break-word}
             </div>
           </div>
           <div class="card-content">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+            <div class="phishing-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
 
               <!-- Ľavý stĺpec: formulár -->
               <div>
@@ -2996,7 +3063,7 @@ code,pre{overflow-wrap:anywhere;word-break:break-word}
               </div>
 
               <!-- Pravý stĺpec: história kampaní -->
-              <div id="phishingResultsCard">
+              <div id="phishingResultsCard" class="phishing-history">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                   <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">História kampaní</div>
                   <button onclick="loadPhishingCampaigns()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:6px;transition:color .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'" title="Obnoviť">↻</button>
