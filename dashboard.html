@@ -416,13 +416,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--tex
 /* ── Hacker Terminal Overlay ── */
 #wsTerminalOverlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center}
 #wsTerminalOverlay.wsto-visible{display:flex}
-.wst-window{width:min(700px,93vw);background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.8)}
-.wst-titlebar{background:#161b22;padding:10px 16px;display:flex;align-items:center;gap:0;border-bottom:1px solid #21262d}
+.wst-window{width:min(700px,93vw);background:#0a0a0a;border:1px solid #1e2530;border-radius:12px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.9),0 0 0 1px rgba(0,255,65,.06)}
+.wst-titlebar{background:#0f1014;padding:10px 16px;display:flex;align-items:center;gap:0;border-bottom:1px solid #1a1f28}
 .wst-dots{display:flex;gap:7px;width:60px}
 .wst-dot{width:12px;height:12px;border-radius:50%}
 .wst-dot.r{background:#ff5f57}.wst-dot.y{background:#febc2e}.wst-dot.g{background:#28c840}
-.wst-title{flex:1;text-align:center;font-size:.78rem;color:#6e7681;font-family:monospace;letter-spacing:.04em}
-.wst-body{padding:18px 20px 18px;height:340px;overflow-y:auto;font-family:'Courier New',Courier,monospace;font-size:.8rem;line-height:1.7;scrollbar-width:thin;scrollbar-color:#30363d transparent}
+.wst-title{flex:1;text-align:center;font-size:.78rem;color:#4a5568;font-family:monospace;letter-spacing:.04em}
+.wst-body{padding:14px 18px 14px;height:420px;overflow-y:auto;font-family:'Courier New',Courier,monospace;font-size:.8rem;line-height:1.7;scrollbar-width:thin;scrollbar-color:#1e2530 transparent;background:#0a0a0a}
 .wst-body::-webkit-scrollbar{width:4px}.wst-body::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
 .wst-line{display:flex;gap:7px;opacity:0;transform:translateX(-8px);transition:opacity .18s ease,transform .18s ease}
 .wst-line.wst-show{opacity:1;transform:none}
@@ -3881,9 +3881,8 @@ async function analyzeDNS(){
   resultEl.style.display='none';
 
   // Fullscreen terminál — rýchle riadky (80ms medzi každým)
-  showTerminalOverlay('nondox-dns.sh');
-  termLine('[*]','Initializing NonDox DNS checker v1.0...','info','muted', 80);
-  termLine('[*]','Target domain: '+domain,                 'info','info',  80);
+  showTerminalOverlay('nondox-dns.sh', domain);
+  termLine('[*]','Target domain: '+domain, 'info','info', 80);
   termLine('[*]','Querying Google DNS API...',             'info','info',  80);
   termLine('[*]','Checking SPF record (TXT)...',          'info','info',  80);
   termLine('[*]','Verifying DKIM signature...',           'info','info',  80);
@@ -4031,8 +4030,7 @@ async function analyzeBlacklist(){
   btn.disabled=true; btn.textContent='Checking…';
   resultEl.style.display='none';
 
-  showTerminalOverlay('nondox-blacklist.sh');
-  termLine('[*]','Initializing NonDox Blacklist Checker v1.0...','info','muted',80);
+  showTerminalOverlay('nondox-blacklist.sh', input);
   termLine('[*]','Target: '+input,'info','info',80);
   termLine('[*]','Resolving to IP address...','info','info',80);
   termLine('[*]','Reversing IP for RBL lookup...','info','info',80);
@@ -4432,8 +4430,7 @@ async function webScan(){
     const fakeShodan = { ok: true, ip: '76.76.21.21', inShodan: true, ports: [{port:80,label:'HTTP',risk:'safe'},{port:443,label:'HTTPS',risk:'safe'}], openDangerous: [], org: 'Vercel Inc.' };
     const fakeObs = { tests: { 'strict-transport-security': {pass:true}, 'content-security-policy': {pass:true}, 'x-frame-options': {pass:true}, 'x-content-type-options': {pass:true}, 'referrer-policy': {pass:true}, 'permissions-policy': {pass:true} } };
     const fakeReport = { url: 'https://nondox.com', hostname: 'nondox.com', score: 100, recs: [], gsbChecked: true, sslResult: fakeSSL, whoisResult: fakeWhois, vtResult: fakeVT };
-    showTerminalOverlay();
-    termLine('[*]','Initializing NonDox security scan...','info','muted',100);
+    showTerminalOverlay('nondox-scan.sh','nondox.com');
     termLine('[*]','Resolving hostname: nondox.com','info','info',200);
     termLine('[+]','DNS resolved → 76.76.21.21 (Vercel Inc.)','ok','ok',350);
     termLine('[*]','Fetching SSL certificate...','info','info',500);
@@ -4484,9 +4481,8 @@ async function webScan(){
   </div>`;
 
   // Spusti terminálový overlay
-  showTerminalOverlay();
-  termLine('[*]','Initializing NonDox scanner v2.1...','info','muted',200);
-  termLine('[*]',`Target: ${hostname}`,'info','info',350);
+  showTerminalOverlay('nondox-scan.sh', scanUrl);
+  termLine('[*]',`Target: ${hostname}`,'info','info',200);
   termLine('[*]','Resolving DNS... OK','info','info',500);
   termLine('[*]',`Connecting to ${hostname}:443...`,'info','info',450);
 
@@ -4706,8 +4702,7 @@ function finalizeReport(scanUrl,hostname,urlRisk,gsbResult,obsResult,sslResult,w
 ══════════════════════════════════════════ */
 let _termChain=Promise.resolve();
 
-function showTerminalOverlay(title='nondox-scan.sh'){
-  // Odstráň prípadný starý overlay
+function showTerminalOverlay(title='nondox-scan.sh', scanUrl=''){
   document.getElementById('wsTerminalOverlay')?.remove();
   const el=document.createElement('div');
   el.id='wsTerminalOverlay';
@@ -4720,11 +4715,73 @@ function showTerminalOverlay(title='nondox-scan.sh'){
     <div class="wst-body" id="wstBody"><span class="wst-cursor" id="wstCursor">█</span></div>
   </div>`;
   document.body.appendChild(el);
-  el.classList.add('wsto-visible'); // okamžite viditeľný
-  _termChain=Promise.resolve();
+  el.classList.add('wsto-visible');
+  _termChain=_wstBootSequence(scanUrl);
 }
 
-function termLine(icon,text,iconCls='info',textCls='info',delay=320){
+/* 5-sekundová boot sequence v troch fázach */
+async function _wstBootSequence(scanUrl){
+  function _raw(text,style){
+    const body=document.getElementById('wstBody');
+    const cursor=document.getElementById('wstCursor');
+    if(!body) return;
+    const d=document.createElement('div');
+    d.style.cssText=style;
+    d.textContent=text;
+    body.insertBefore(d,cursor);
+    body.scrollTop=body.scrollHeight;
+  }
+  function _rh(n){return Math.floor(Math.random()*Math.pow(16,n)).toString(16).padStart(n,'0').toUpperCase()}
+  function _rb(){return Math.floor(Math.random()*256)}
+
+  /* ── Fáza 1: Matrix hex flood (0–2 s) ── */
+  await new Promise(resolve=>{
+    const t0=Date.now();
+    const iv=setInterval(()=>{
+      if(!document.getElementById('wstBody')){clearInterval(iv);resolve();return}
+      const fmt=Math.floor(Math.random()*3);
+      let line;
+      if(fmt===0)      line=Array.from({length:16},()=>_rh(2)).join(' ');
+      else if(fmt===1) line=Array.from({length:5}, ()=>'0x'+_rh(6)).join(' ');
+      else             line=Array.from({length:5}, ()=>_rb().toString(2).padStart(8,'0')).join(' ');
+      _raw(line,'color:#00aa33;font-size:.68rem;line-height:1.3;letter-spacing:.03em');
+      if(Date.now()-t0>=2000){clearInterval(iv);resolve()}
+    },50);
+  });
+
+  /* ── Fáza 2: Boot inicializácia (2–4 s) ── */
+  const BOOT=[
+    ['*','[*] Initializing NONDOX secure channel...'],
+    ['*','[*] Loading threat intelligence modules... [████████] 100%'],
+    ['*','[*] Connecting to VirusTotal API............. OK'],
+    ['*','[*] Connecting to Shodan intelligence........ OK'],
+    ['*','[*] Loading malware signatures............... 47,291 patterns loaded'],
+    ['*','[*] HIBP breach database..................... 12.4B records indexed'],
+    ['*','[*] Establishing encrypted tunnel............ DONE'],
+    ['+','[+] NONDOX ENGINE v2.1 READY'],
+    ['+','[+] ────────────────────────────────────────────'],
+  ];
+  for(const[t,text] of BOOT){
+    await new Promise(r=>setTimeout(r,220));
+    _raw(text,`color:${t==='+'?'#00ff41':'#ffaa00'};font-size:.78rem;line-height:1.55;font-weight:${t==='+'?'600':'400'}`);
+  }
+
+  /* ── Fáza 3: Target lock (4–5 s) ── */
+  const target=scanUrl||'(target)';
+  const TARGET=[
+    ['*',`[*] Target acquired: ${target}`],
+    ['*','[*] Running 9 parallel modules...'],
+    ['+','[+] Scan initiated — stand by'],
+  ];
+  for(const[t,text] of TARGET){
+    await new Promise(r=>setTimeout(r,220));
+    _raw(text,`color:${t==='+'?'#00ff41':'#ffaa00'};font-size:.78rem;line-height:1.55`);
+  }
+  await new Promise(r=>setTimeout(r,300));
+}
+
+/* Pridaj riadok do terminála — všetky volania sa zaradia po boot sekvencii */
+function termLine(icon,text,iconCls='info',textCls='info',delay=120){
   _termChain=_termChain.then(async()=>{
     await new Promise(ok=>setTimeout(ok,delay));
     const body=document.getElementById('wstBody');
@@ -4741,7 +4798,7 @@ function termLine(icon,text,iconCls='info',textCls='info',delay=320){
 
 function closeTerminalOverlay(){
   _termChain=_termChain.then(async()=>{
-    await new Promise(ok=>setTimeout(ok,1000)); // pauza pri "Scan complete!"
+    await new Promise(ok=>setTimeout(ok,1000));
     const el=document.getElementById('wsTerminalOverlay');
     if(el) el.remove();
   });
