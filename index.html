@@ -450,7 +450,6 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .steps-grid,.features-grid,.reviews-grid{grid-template-columns:1fr}
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
   .steps-grid::before{display:none}
   .footer-grid{grid-template-columns:1fr 1fr}
   .nav-center{display:none}
@@ -488,21 +487,10 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .plans-grid{grid-template-columns:1fr!important}
   .pricing-grid{grid-template-columns:1fr!important}
   .stats-row{flex-direction:column!important;align-items:center;gap:24px!important}
-  .stats-grid{grid-template-columns:1fr!important}
   .footer-grid{grid-template-columns:1fr}
   footer .footer-bottom{flex-direction:column;text-align:center}
   *{max-width:100%;box-sizing:border-box}
 }
-
-/* ── STATS ── */
-#stats{padding:70px 0}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
-  padding:32px 24px;text-align:center}
-.stat-number{font-size:clamp(2.1rem,4.5vw,2.8rem);font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:12px}
-.stat-desc{font-size:.86rem;color:var(--muted);line-height:1.6}
-.stats-footnote{text-align:center;font-size:.86rem;color:var(--muted);line-height:1.65;
-  max-width:560px;margin:36px auto 0}
 
 /* ── WORLDS ── */
 #worlds{padding:56px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
@@ -991,34 +979,6 @@ input#heroInput:-webkit-autofill:focus {
         <p class="feature-desc">Interaktívne karty o phishingu, ransomware, malware, DDoS a SQL Injection s popisom prejavov a obranou.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ── STATS ── -->
-<section id="stats" class="section-animate">
-  <div class="container">
-    <div class="section-header" style="margin-bottom:40px">
-      <h2 class="section-title">Čísla ktoré by ste <span class="hl">nemali ignorovať</span></h2>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number">86 %</div>
-        <p class="stat-desc">kybernetických útokov začína phishingovým emailom.</p>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">4 000 000 €</div>
-        <p class="stat-desc">maximálna pokuta za únik údajov žiakov podľa GDPR.</p>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">287 dní</div>
-        <p class="stat-desc">trvá organizácii priemerne odhaliť kybernetický útok.</p>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">73 %</div>
-        <p class="stat-desc">slovenských škôl nemá plán kybernetickej ochrany.</p>
-      </div>
-    </div>
-    <p class="stats-footnote">Tieto štatistiky sa týkajú aj vašej školy.</p>
   </div>
 </section>
 
