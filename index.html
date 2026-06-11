@@ -450,6 +450,7 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .steps-grid,.features-grid,.reviews-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
   .steps-grid::before{display:none}
   .footer-grid{grid-template-columns:1fr 1fr}
   .nav-center{display:none}
@@ -487,25 +488,21 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .plans-grid{grid-template-columns:1fr!important}
   .pricing-grid{grid-template-columns:1fr!important}
   .stats-row{flex-direction:column!important;align-items:center;gap:24px!important}
+  .stats-grid{grid-template-columns:1fr!important}
   .footer-grid{grid-template-columns:1fr}
   footer .footer-bottom{flex-direction:column;text-align:center}
   *{max-width:100%;box-sizing:border-box}
 }
 
-/* ── MARQUEE REVIEWS ── */
-#reviews{padding:70px 0;overflow:hidden}
-.marquee-wrap{position:relative;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
-.marquee-track{display:flex;gap:18px;width:max-content;animation:marqueeScroll 38s linear infinite}
-.marquee-track:hover{animation-play-state:paused}
-@keyframes marqueeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.rev-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
-  padding:22px 24px;width:300px;flex-shrink:0}
-.rev-stars{color:#fbbf24;font-size:.85rem;letter-spacing:2px;margin-bottom:10px}
-.rev-text{font-size:.86rem;color:var(--muted);line-height:1.65;margin-bottom:14px;font-style:italic}
-.rev-author{display:flex;align-items:center;gap:10px}
-.rev-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
-.rev-name{font-size:.82rem;font-weight:700;line-height:1.2}
-.rev-role{font-size:.74rem;color:var(--muted)}
+/* ── STATS ── */
+#stats{padding:70px 0}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:32px 24px;text-align:center}
+.stat-number{font-size:clamp(2.1rem,4.5vw,2.8rem);font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:12px}
+.stat-desc{font-size:.86rem;color:var(--muted);line-height:1.6}
+.stats-footnote{text-align:center;font-size:.86rem;color:var(--muted);line-height:1.65;
+  max-width:560px;margin:36px auto 0}
 
 /* ── WORLDS ── */
 #worlds{padding:56px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
@@ -997,78 +994,31 @@ input#heroInput:-webkit-autofill:focus {
   </div>
 </section>
 
-<!-- ── REVIEWS ── -->
-<!-- ── REVIEWS MARQUEE ── -->
-<section id="reviews" class="section-animate">
-  <div class="section-header" style="margin-bottom:40px">
-    <div class="section-tag">Recenzie</div>
-    <h2 class="section-title">Čo hovoria <span class="hl">používatelia</span></h2>
-  </div>
-  <div class="marquee-wrap">
-    <div class="marquee-track" id="marqueeTrack">
-      <!-- set 1 -->
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Konečne nástroj ktorý pochopí aj netechnický zamestnanec."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(249,115,22,.2)">👩‍🏫</div><div><div class="rev-name">Mgr. Jana Kováčová</div><div class="rev-role">ZŠ Bratislava</div></div></div>
+<!-- ── STATS ── -->
+<section id="stats" class="section-animate">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:40px">
+      <h2 class="section-title">Prečo to nestačí <span class="hl">čakať</span></h2>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">86 %</div>
+        <p class="stat-desc">útokov začína phishingovým emailom. Nie vírusom. Nie hackom. Emailom.</p>
       </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Odhalil phishing email ktorý prešiel cez náš antivírus."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(251,146,60,.2)">👨‍💼</div><div><div class="rev-name">Ing. Peter Novák</div><div class="rev-role">Gymnázium Košice</div></div></div>
+      <div class="stat-card">
+        <div class="stat-number">4 000 000 €</div>
+        <p class="stat-desc">priemerná pokuta za únik osobných údajov žiakov podľa GDPR.</p>
       </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Používame to na hodinách informatiky ako praktickú ukážku."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(251,191,36,.15)">🧑‍🏫</div><div><div class="rev-name">Bc. Martin Horváth</div><div class="rev-role">SOŠ Žilina</div></div></div>
+      <div class="stat-card">
+        <div class="stat-number">287 dní</div>
+        <p class="stat-desc">trvá priemerne kým organizácia zistí že bola napadnutá.</p>
       </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Riaditeľ bol nadšený keď sme mu ukázali report."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(34,197,94,.15)">👩‍💻</div><div><div class="rev-name">Simona Kováč</div><div class="rev-role">IT správca, škola</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Jednoduché, rýchle, presné. Odporúčam každej škole."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(249,115,22,.15)">👨‍🎓</div><div><div class="rev-name">Tomáš Blaho</div><div class="rev-role">ZŠ Nitra</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Za 30 sekúnd vie každý učiteľ či je email bezpečný."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(239,68,68,.15)">👩‍🎓</div><div><div class="rev-name">Lucia Mináčová</div><div class="rev-role">VŠ Trenčín</div></div></div>
-      </div>
-      <!-- set 2 (duplicate for seamless loop) -->
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Konečne nástroj ktorý pochopí aj netechnický zamestnanec."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(249,115,22,.2)">👩‍🏫</div><div><div class="rev-name">Mgr. Jana Kováčová</div><div class="rev-role">ZŠ Bratislava</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Odhalil phishing email ktorý prešiel cez náš antivírus."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(251,146,60,.2)">👨‍💼</div><div><div class="rev-name">Ing. Peter Novák</div><div class="rev-role">Gymnázium Košice</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Používame to na hodinách informatiky ako praktickú ukážku."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(251,191,36,.15)">🧑‍🏫</div><div><div class="rev-name">Bc. Martin Horváth</div><div class="rev-role">SOŠ Žilina</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Riaditeľ bol nadšený keď sme mu ukázali report."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(34,197,94,.15)">👩‍💻</div><div><div class="rev-name">Simona Kováč</div><div class="rev-role">IT správca, škola</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Jednoduché, rýchle, presné. Odporúčam každej škole."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(249,115,22,.15)">👨‍🎓</div><div><div class="rev-name">Tomáš Blaho</div><div class="rev-role">ZŠ Nitra</div></div></div>
-      </div>
-      <div class="rev-card">
-        <div class="rev-stars">★★★★★</div>
-        <p class="rev-text">"Za 30 sekúnd vie každý učiteľ či je email bezpečný."</p>
-        <div class="rev-author"><div class="rev-avatar" style="background:rgba(239,68,68,.15)">👩‍🎓</div><div><div class="rev-name">Lucia Mináčová</div><div class="rev-role">VŠ Trenčín</div></div></div>
+      <div class="stat-card">
+        <div class="stat-number">73 %</div>
+        <p class="stat-desc">slovenských škôl nemá žiadny plán kybernetickej ochrany.</p>
       </div>
     </div>
+    <p class="stats-footnote">Každá z týchto čísiel sa týka aj vašej školy. NonDox vám pomôže zistiť kde ste.</p>
   </div>
 </section>
 
