@@ -92,16 +92,35 @@ section{position:relative;z-index:1}
 
 /* ── HERO ── */
 #hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;
-  padding:calc(56px + 70px) 20px 100px;flex-direction:column}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(79,142,247,.1);
-  border:1px solid rgba(79,142,247,.25);border-radius:99px;padding:5px 16px;font-size:.75rem;
-  color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px}
-.hero-badge span{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,212,255,.4)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(0,212,255,0)}}
-.hero-title{font-size:clamp(1.8rem,5vw,3.8rem);font-weight:900;line-height:1.06;letter-spacing:-2.5px;margin-bottom:20px}
+  padding:calc(56px + 70px) 20px 100px;flex-direction:column;position:relative;overflow:hidden}
+.hero-shader-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(10,6,2,.55);
+  border:1px solid rgba(249,191,59,.4);border-radius:99px;padding:7px 18px;font-size:.8rem;
+  color:#f9bf3b;font-weight:600;letter-spacing:.02em;margin-bottom:28px;backdrop-filter:blur(6px)}
+.hero-title{font-size:clamp(1.8rem,5vw,3.8rem);font-weight:900;line-height:1.06;letter-spacing:-2.5px;margin-bottom:20px;position:relative}
 .hero-title .hl{background:linear-gradient(90deg,var(--accent),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.hero-tagline{font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--muted);margin-bottom:36px;letter-spacing:.01em}
+.hero-title-line{position:relative;display:inline-block;overflow:hidden}
+.hero-title-white{color:#ffffff}
+.hero-title-gradient{background:linear-gradient(90deg,#f97316,#ef4444,#ec4899,#f97316);
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:heroGradientShift 6s ease infinite}
+@keyframes heroGradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.hero-title-line::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(75deg,transparent 0%,rgba(255,255,255,.55) 50%,transparent 100%);
+  transform:skewX(-20deg);animation:heroLightSweep 3s ease-in-out infinite;mix-blend-mode:overlay;pointer-events:none}
+@keyframes heroLightSweep{0%{left:-60%}45%{left:120%}100%{left:120%}}
+.hero-tagline{font-size:clamp(.95rem,1.8vw,1.1rem);color:rgba(255,255,255,.6);margin-bottom:8px;letter-spacing:.01em}
 .hero-tagline strong{color:rgba(238,238,245,.7);font-weight:600}
+.hero-btn-row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:28px 0 8px}
+.hero-btn-primary{background:#f97316;color:#1a0f00;border:none;border-radius:9999px;padding:14px 32px;
+  font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;
+  transition:opacity .2s,transform .1s}
+.hero-btn-primary:hover{opacity:.9}
+.hero-btn-primary:active{transform:scale(.97)}
+.hero-btn-secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:9999px;
+  padding:14px 32px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;
+  transition:border-color .2s,background .2s}
+.hero-btn-secondary:hover{border-color:#fff;background:rgba(255,255,255,.08)}
 /* hero input */
 .hero-input-wrap{display:flex;align-items:center;gap:8px;max-width:540px;width:100%;margin:32px auto 0;background:#ffffff;border:1px solid #e4e4e7;border-radius:14px;padding:6px 6px 6px 16px;box-shadow:0 4px 24px rgba(0,0,0,.12)}
 .hero-input-icon{display:none}
@@ -452,6 +471,8 @@ footer{background:#000;border-top:1px solid rgba(255,255,255,.07);padding:56px 0
   .mobile-auth-btns .btn-signin{color:rgba(255,255,255,.7);font-size:.92rem;text-align:left;padding:10px 14px;background:none;border:none;cursor:pointer}
   .mobile-auth-btns .btn-signup{background:linear-gradient(90deg,#4f8ef7,#7c5ff7);color:#fff;border:none;border-radius:9px;padding:11px 14px;font-size:.92rem;font-weight:700;text-align:center;cursor:pointer}
   .hero-title{font-size:clamp(1.8rem,8vw,2.8rem)!important}
+  .hero-btn-row{flex-direction:column!important;width:100%}
+  .hero-btn-primary,.hero-btn-secondary{width:100%;text-align:center}
   .hero-input-wrap{flex-direction:column!important;gap:0!important;background:transparent!important;border:none!important;padding:0!important;box-shadow:none!important}
   .hero-input{width:100%!important;background:#ffffff!important;-webkit-box-shadow:0 0 0 30px #ffffff inset!important;box-shadow:0 0 0 30px #ffffff inset!important;-webkit-text-fill-color:#111111!important;color:#111111!important;border:1px solid #e4e4e7!important;border-radius:12px!important;padding:14px 16px!important;height:52px!important;font-size:1rem!important;margin-bottom:10px!important}
   .hero-input-btn{width:100%!important;height:52px!important;border-radius:12px!important;font-size:1rem!important;background:linear-gradient(90deg,#4f8ef7,#7c5ff7)!important;color:#fff!important;border:none!important}
@@ -791,12 +812,19 @@ input#heroInput:-webkit-autofill:focus {
 <!-- ── HERO ── -->
 <div class="particles" id="particles"></div>
 <section id="hero">
+  <canvas id="heroShaderCanvas" class="hero-shader-canvas" aria-hidden="true"></canvas>
   <div style="width:100%;max-width:800px;position:relative;z-index:1">
-    <div class="hero-badge"><span></span>Bezpečnosť pre školy, firmy &amp; jednotlivcov</div>
+    <div class="hero-badge">✦ Útočníci majú nástroje. Teraz ich máš aj ty.</div>
     <h1 class="hero-title">
-      Útočníci majú nástroje.<br><span style="color:#4f8ef7">Teraz ich máš aj ty.</span>
+      <span class="hero-title-line hero-title-white">Útočníci majú nástroje.</span><br>
+      <span class="hero-title-line hero-title-gradient">Teraz ich máš aj ty.</span>
     </h1>
     <p class="hero-tagline">86 % útokov začína jedným emailom. NonDox ťa upozorní skôr, než bude neskoro.</p>
+
+    <div class="hero-btn-row">
+      <button class="hero-btn-primary" onclick="openModal('register')">Začať zadarmo</button>
+      <a href="#how" class="hero-btn-secondary">Ako to funguje</a>
+    </div>
 
     <div class="hero-input-wrap">
       <input
@@ -814,55 +842,10 @@ input#heroInput:-webkit-autofill:focus {
       <button class="hero-input-btn" onclick="heroAnalyze()">Analyzovať →</button>
     </div>
 
-    <div class="hero-subtext">
-      <span>37 kontrol</span>
-      <span class="hero-subtext-sep">·</span>
-      <span>AI analýza</span>
-      <span class="hero-subtext-sep">·</span>
-      <span>Výsledky za sekundy</span>
-      <span class="hero-subtext-sep">·</span>
-      <span>Pre každého</span>
-    </div>
-
     <!-- HERO RESULTS -->
     <div id="heroResults" style="display:none;margin-top:20px;width:100%;max-width:540px;margin-left:auto;margin-right:auto;text-align:left"></div>
 
   </div>
-
-  <!-- TERMINAL WINDOW -->
-  <div class="hero-terminal-wrap" id="terminalWrap">
-  <div class="hero-terminal" id="terminalEl">
-    <div class="t-bar">
-      <div class="t-dots">
-        <div class="t-dot t-red" title="Zavrieť"></div>
-        <div class="t-dot t-yellow" title="Minimalizovať"></div>
-        <div class="t-dot t-green" title="Maximalizovať"></div>
-      </div>
-      <div class="t-title">analysis_result.json</div>
-    </div>
-    <div class="t-body">
-      <span class="t-line"><span class="tc-c">// Phishing email detected — analyzing headers...</span></span>
-      <span class="t-line"></span>
-      <span class="t-line"><span class="tc-k">async function</span> <span class="tc-t">scanEmail</span><span class="tc-p">(</span><span class="tc-n">input</span><span class="tc-p">) {</span></span>
-      <span class="t-line">  <span class="tc-c">// TODO: user reported suspicious email</span></span>
-      <span class="t-line">  <span class="tc-k">const</span> <span class="tc-t">from</span> <span class="tc-p">=</span> <span class="tc-f">"support@paypal-secure-update.tk"</span><span class="tc-p">;</span></span>
-      <span class="t-line">  <span class="tc-k">const</span> <span class="tc-t">link</span> <span class="tc-p">=</span> <span class="tc-f">"http://paypal-secure-update.tk/verify"</span><span class="tc-p">;</span></span>
-      <span class="t-line">  <span class="tc-k">const</span> <span class="tc-t">verdict</span> <span class="tc-p">=</span> <span class="tc-f">"PHISHING_DETECTED"</span><span class="tc-p">;</span> <span class="tc-c">// score: 94</span></span>
-      <span class="t-line">  <span class="tc-k">return</span> <span class="tc-p">{</span> <span class="tc-t">verdict</span><span class="tc-p">,</span> <span class="tc-t">action</span><span class="tc-p">:</span> <span class="tc-f">"BLOCK"</span> <span class="tc-p">};</span></span>
-      <span class="t-line"><span class="tc-p">}</span></span>
-      <!-- scanning beam -->
-      <div class="scan-wrap">
-        <div class="scan-line"></div>
-        <div class="scan-badge">SCANNING</div>
-      </div>
-    </div>
-    <div class="t-findings">
-      <div class="t-finding"><span class="t-badge t-badge-red">Phishing</span> Doména sa vydáva za PayPal</div>
-      <div class="t-finding"><span class="t-badge t-badge-orange">No HTTPS</span> Nešifrované pripojenie</div>
-      <div class="t-finding"><span class="t-badge t-badge-yellow">Suspicious TLD</span> Doména .tk — bežne zneužívaná</div>
-    </div>
-  </div>
-  </div><!-- /terminal-wrap -->
 </section>
 
 
@@ -2410,6 +2393,140 @@ _sb.auth.getSession().then(({data:{session}})=>{
   _currentUser=session?.user ?? null;
   updateNavAuth(_currentUser);
 });
+
+// ── HERO SHADER BACKGROUND (dark smoky / fog, brown-orange-red) ──
+(function initHeroShader(){
+  const canvas = document.getElementById('heroShaderCanvas');
+  if(!canvas) return;
+  const gl = canvas.getContext('webgl', { antialias:false }) || canvas.getContext('experimental-webgl', { antialias:false });
+  if(!gl) return;
+
+  const vsSource = `
+    attribute vec2 a_pos;
+    void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); }
+  `;
+  const fsSource = `
+    precision highp float;
+    uniform vec2 u_resolution;
+    uniform float u_time;
+
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
+
+    float noise(vec2 p){
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0,0.0));
+      float c = hash(i + vec2(0.0,1.0));
+      float d = hash(i + vec2(1.0,1.0));
+      vec2 u = f*f*(3.0-2.0*f);
+      return mix(a,b,u.x) + (c-a)*u.y*(1.0-u.x) + (d-b)*u.x*u.y;
+    }
+
+    float fbm(vec2 p){
+      float v = 0.0;
+      float a = 0.5;
+      for(int i=0;i<6;i++){
+        v += a * noise(p);
+        p *= 2.02;
+        a *= 0.5;
+      }
+      return v;
+    }
+
+    void main(){
+      vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+      vec2 p = uv * 3.0;
+      p.x *= u_resolution.x / u_resolution.y;
+
+      float t = u_time * 0.05;
+      float n1 = fbm(p + vec2(t, -t * 0.6));
+      float n2 = fbm(p * 1.6 - vec2(-t * 0.4, t * 0.3) + n1);
+      float n = fbm(p + n2);
+
+      vec3 black     = vec3(0.02, 0.012, 0.01);
+      vec3 darkBrown = vec3(0.16, 0.07, 0.04);
+      vec3 orange    = vec3(0.94, 0.42, 0.10);
+      vec3 red       = vec3(0.65, 0.10, 0.06);
+
+      vec3 color = mix(black, darkBrown, smoothstep(0.15, 0.75, n));
+      color = mix(color, red, smoothstep(0.45, 0.85, n2) * 0.45);
+      color = mix(color, orange, smoothstep(0.6, 0.95, n) * 0.35);
+
+      float vig = smoothstep(1.1, 0.25, length(uv - 0.5));
+      color *= mix(0.55, 1.0, vig);
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  function compile(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      console.warn('shader compile error:', gl.getShaderInfoLog(s));
+      gl.deleteShader(s);
+      return null;
+    }
+    return s;
+  }
+
+  const vs = compile(gl.VERTEX_SHADER, vsSource);
+  const fs = compile(gl.FRAGMENT_SHADER, fsSource);
+  if(!vs || !fs) return;
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
+    console.warn('program link error:', gl.getProgramInfoLog(program));
+    return;
+  }
+  gl.useProgram(program);
+
+  const posBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1,-1,  1,-1,  -1,1,
+    -1,1,   1,-1,   1,1,
+  ]), gl.STATIC_DRAW);
+
+  const posLoc = gl.getAttribLocation(program, 'a_pos');
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+  const resLoc = gl.getUniformLocation(program, 'u_resolution');
+  const timeLoc = gl.getUniformLocation(program, 'u_time');
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  function resize(){
+    const w = Math.floor(canvas.clientWidth * dpr);
+    const h = Math.floor(canvas.clientHeight * dpr);
+    if(canvas.width !== w || canvas.height !== h){
+      canvas.width = w;
+      canvas.height = h;
+      gl.viewport(0, 0, w, h);
+    }
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let paused = false;
+  document.addEventListener('visibilitychange', () => { paused = document.hidden; });
+
+  const start = performance.now();
+  function frame(now){
+    if(!paused){
+      gl.uniform2f(resLoc, canvas.width, canvas.height);
+      gl.uniform1f(timeLoc, (now - start) / 1000);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
 
 // Particles (rovnaké ako dashboard)
 (function initParticles(){
