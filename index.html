@@ -48,6 +48,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+.section-animate{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.section-animate.visible{opacity:1;transform:translateY(0)}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:var(--text);overflow-x:hidden}
 .vibe-blob{position:fixed;width:60vw;height:60vw;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
 
@@ -850,7 +852,7 @@ input#heroInput:-webkit-autofill:focus {
 
 
 <!-- ── HOW IT WORKS ── -->
-<section class="how-it-works" id="how">
+<section class="how-it-works section-animate" id="how">
   <div class="how-container">
     <div class="how-badge">POSTUP</div>
     <h2 class="how-title">Ako to <span class="gradient-text">funguje</span></h2>
@@ -926,7 +928,7 @@ input#heroInput:-webkit-autofill:focus {
 </section>
 
 <!-- ── WARNING BANNER ── -->
-<section style="background:linear-gradient(135deg,rgba(220,38,38,.15),rgba(220,38,38,.05));border-top:1px solid rgba(220,38,38,.3);border-bottom:1px solid rgba(220,38,38,.3);padding:48px 20px;text-align:center">
+<section class="section-animate" style="background:linear-gradient(135deg,rgba(220,38,38,.15),rgba(220,38,38,.05));border-top:1px solid rgba(220,38,38,.3);border-bottom:1px solid rgba(220,38,38,.3);padding:48px 20px;text-align:center">
   <div style="max-width:900px;margin:0 auto">
     <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:#ef4444;margin-bottom:16px">⚠️ Aktuálny stav kybernetickej bezpečnosti na Slovensku</div>
     <div class="stats-row" style="display:flex;justify-content:center;gap:60px;flex-wrap:wrap;margin-bottom:24px">
@@ -952,7 +954,7 @@ input#heroInput:-webkit-autofill:focus {
 </section>
 
 <!-- ── FEATURES ── -->
-<section id="features">
+<section id="features" class="section-animate">
   <div class="container">
     <div class="section-header">
       <div class="section-tag">Funkcie</div>
@@ -996,7 +998,7 @@ input#heroInput:-webkit-autofill:focus {
 
 <!-- ── REVIEWS ── -->
 <!-- ── REVIEWS MARQUEE ── -->
-<section id="reviews">
+<section id="reviews" class="section-animate">
   <div class="section-header" style="margin-bottom:40px">
     <div class="section-tag">Recenzie</div>
     <h2 class="section-title">Čo hovoria <span class="hl">používatelia</span></h2>
@@ -1070,7 +1072,7 @@ input#heroInput:-webkit-autofill:focus {
 </section>
 
 <!-- ── WORLDS ── -->
-<section id="worlds">
+<section id="worlds" class="section-animate">
   <div class="container">
     <div class="section-header" style="margin-bottom:28px">
       <div class="section-tag">Navrhnuté pre váš svet</div>
@@ -1087,7 +1089,7 @@ input#heroInput:-webkit-autofill:focus {
 </section>
 
 <!-- ── CTA PRE-PRICING ── -->
-<section id="cta-pre">
+<section id="cta-pre" class="section-animate">
   <div class="container">
     <div class="cta-box">
       <h2 class="cta-box-title">Kybernetické útoky na školy<br>rastú každý rok.</h2>
@@ -1098,7 +1100,7 @@ input#heroInput:-webkit-autofill:focus {
 </section>
 
 <!-- ── PRICING ── -->
-<section id="pricing">
+<section id="pricing" class="section-animate">
   <div class="container">
     <div class="section-header">
       <div class="section-tag">Cenník</div>
@@ -1342,7 +1344,7 @@ input#heroInput:-webkit-autofill:focus {
 </section>
 
 <!-- ── FAQ ── -->
-<section id="faq">
+<section id="faq" class="section-animate">
   <div class="container">
     <div class="section-header">
       <div class="section-tag">FAQ</div>
@@ -2526,6 +2528,21 @@ _sb.auth.getSession().then(({data:{session}})=>{
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+})();
+
+// ── SCROLL REVEAL (fade-in + slide-up on scroll) ──
+(function initSectionReveal(){
+  const sections = document.querySelectorAll('.section-animate');
+  if(!sections.length) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  sections.forEach(section => observer.observe(section));
 })();
 
 // Particles (rovnaké ako dashboard)
