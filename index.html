@@ -1359,6 +1359,19 @@ _sb.auth.getSession().then(({data:{session}})=>{
   _currentUser=session?.user ?? null;
   updateNavAuth(_currentUser);
 });
+
+// Re-check session when the page is restored from bfcache (e.g. browser Back
+// button after logging in on another page) — bfcache restores the old DOM
+// snapshot without re-running scripts, so the nav would otherwise still show
+// the logged-out state.
+window.addEventListener('pageshow', (event)=>{
+  if(event.persisted){
+    _sb.auth.getSession().then(({data:{session}})=>{
+      _currentUser=session?.user ?? null;
+      updateNavAuth(_currentUser);
+    });
+  }
+});
 </script>
 
 <script>
