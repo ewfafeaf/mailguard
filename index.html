@@ -853,6 +853,13 @@ footer{border-top:1px solid var(--line);padding:58px 0 34px;margin-top:92px}
 </div>
 
 <script>
+/* escHtml must be defined before any async code (Supabase auth callbacks
+   below) can possibly call it — getSession()/onAuthStateChange promises can
+   resolve in a microtask checkpoint before later <script> blocks even parse,
+   so this cannot live in a later block without risking a silent
+   ReferenceError that aborts updateNavAuth() mid-render. */
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 /* ══════════════════════════════════════════
    NAV
 ══════════════════════════════════════════ */
@@ -1789,7 +1796,6 @@ function buildTips(level,emailFindings,urlResults){
   if(urlResults.some(r=>r.level==='danger'))tips.push('Podozrivé URL neotvárať – ani na počítači v škole alebo na mobile.');
   return tips;
 }
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 
 <script>
