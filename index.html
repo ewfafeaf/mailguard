@@ -382,9 +382,105 @@ footer{border-top:1px solid var(--line);padding:58px 0 34px;margin-top:92px}
 @media(prefers-reduced-motion:reduce){
   .term,.tl,.scoreline,.scoreline .bar i,.rv{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
 }
+
+/* ===== ANIMATED BACKGROUND LAYERS ===== */
+#nd-bg{position:fixed;inset:0;z-index:-3;pointer-events:none}
+#nd-bg canvas{width:100%;height:100%;display:block}
+/* aurora glows */
+.nd-aurora{position:fixed;inset:0;z-index:-4;pointer-events:none;overflow:hidden}
+.nd-aurora span{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;animation:drift 18s ease-in-out infinite}
+.nd-aurora .a1{width:520px;height:520px;background:radial-gradient(circle,rgba(56,189,248,.35),transparent 70%);top:-140px;right:-80px}
+.nd-aurora .a2{width:460px;height:460px;background:radial-gradient(circle,rgba(99,102,241,.3),transparent 70%);bottom:-160px;left:-100px;animation-delay:-7s}
+.nd-aurora .a3{width:380px;height:380px;background:radial-gradient(circle,rgba(56,189,248,.18),transparent 70%);top:40%;left:45%;animation-delay:-12s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.08)}66%{transform:translate(-30px,25px) scale(.95)}}
+/* moving grid */
+.nd-grid{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(134,149,176,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(134,149,176,.06) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 30%,#000 30%,transparent 80%);
+  -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 30%,#000 30%,transparent 80%);
+  animation:gridmove 26s linear infinite}
+@keyframes gridmove{to{background-position:54px 54px}}
+/* scan line */
+.nd-scan{position:fixed;left:0;right:0;height:180px;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(56,189,248,.05) 45%,rgba(56,189,248,.09) 50%,rgba(56,189,248,.05) 55%,transparent);
+  animation:scandown 9s ease-in-out infinite}
+@keyframes scandown{0%{top:-180px}100%{top:100%}}
+@media(prefers-reduced-motion:reduce){
+  .nd-aurora span,.nd-grid,.nd-scan{animation:none}
+  #nd-bg{display:none}
+}
 </style>
 </head>
 <body>
+
+<!-- ===== ANIMATED BACKGROUND (behind all content — z-index -1 to -4) ===== -->
+<div class="nd-aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+<div class="nd-grid"></div>
+<div class="nd-scan"></div>
+<div id="nd-bg"><canvas id="ndCanvas"></canvas></div>
+
+<script>
+/* ===== NonDox network topology background ===== */
+(function(){
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas=document.getElementById('ndCanvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  let W,H,DPR,nodes=[],mouse={x:-9999,y:-9999};
+  const COUNT_BASE=0.00009; // density per px
+  const MAXD=150;           // max link distance
+  const ACCENT=[56,189,248];
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=canvas.clientWidth;H=canvas.clientHeight;
+    canvas.width=W*DPR;canvas.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    const target=Math.min(90,Math.max(28,Math.floor(W*H*COUNT_BASE)));
+    nodes=[];
+    for(let i=0;i<target;i++){
+      nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.28,vy:(Math.random()-.5)*.28,r:Math.random()*1.6+.8});
+    }
+  }
+  function step(){
+    ctx.clearRect(0,0,W,H);
+    // move
+    for(const n of nodes){
+      n.x+=n.vx;n.y+=n.vy;
+      if(n.x<0||n.x>W)n.vx*=-1;
+      if(n.y<0||n.y>H)n.vy*=-1;
+      // gentle mouse repel
+      const dx=n.x-mouse.x,dy=n.y-mouse.y,d=Math.hypot(dx,dy);
+      if(d<120){const f=(120-d)/120*.6;n.x+=dx/d*f;n.y+=dy/d*f;}
+    }
+    // links
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const a=nodes[i],b=nodes[j];
+        const dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
+        if(d<MAXD){
+          const o=(1-d/MAXD)*.5;
+          ctx.strokeStyle='rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+o.toFixed(3)+')';
+          ctx.lineWidth=.7;
+          ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+        }
+      }
+    }
+    // nodes
+    for(const n of nodes){
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,6.283);
+      ctx.fillStyle='rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+',.7)';
+      ctx.fill();
+    }
+    requestAnimationFrame(step);
+  }
+  window.addEventListener('resize',resize,{passive:true});
+  window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;},{passive:true});
+  window.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999;});
+  resize();step();
+})();
+</script>
 
 <header>
   <div class="wrap nav">
