@@ -2,10 +2,14 @@ export const config = {
   runtime: 'edge',
 };
 
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
 export default async function handler(req) {
   // CORS headers
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers.get('origin');
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED.includes(origin) ? origin : 'https://nondox.com',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
@@ -13,6 +17,11 @@ export default async function handler(req) {
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers });
+  }
+
+  const _origin = req.headers.get('origin');
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers });
   }
 
   try {
@@ -34,15 +43,15 @@ export default async function handler(req) {
     const token = authHeader.replace('Bearer ', '');
     if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
     const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
-      headers: { 'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06', 'Authorization': `Bearer ${token}` }
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
     });
     if (!authRes.ok) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
 
     const cacheKey = 'dns:' + cleanDomain;
     const sbRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache?cache_key=eq.' + encodeURIComponent(cacheKey) + '&expires_at=gt.' + new Date().toISOString() + '&select=data', {
       headers: {
-        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
-        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
       }
     });
     const sbData = await sbRes.json();
@@ -65,8 +74,8 @@ export default async function handler(req) {
     await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache', {
       method: 'POST',
       headers: {
-        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
-        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates'
       },
@@ -264,7 +273,7 @@ function generateRecommendations(results) {
     recommendations.push({
       type: 'critical',
       title: 'Chýba SPF záznam',
-      description: 'Pridajte SPF záznam do DNS aby ste zabránili spoofingu emailov.',
+      description: 'Bez SPF záznamu môže ktokoľvek na svete odoslať email ktorý sa tvári že pochádza z vašej domény.',
       fix: 'Pridajte TXT záznam: v=spf1 include:_spf.google.com ~all'
     });
   }
@@ -273,7 +282,7 @@ function generateRecommendations(results) {
     recommendations.push({
       type: 'warning',
       title: 'Chýba DKIM podpis',
-      description: 'DKIM podpis overuje autenticitu odosielaných emailov.',
+      description: 'Bez DKIM podpisu nemôže príjemca overiť že email naozaj odoslali vy. Útočník môže obsah emailu zmeniť počas prenosu bez toho aby to niekto zistil.',
       fix: 'Nastavte DKIM v administrácii vášho email providera.'
     });
   }
@@ -282,7 +291,7 @@ function generateRecommendations(results) {
     recommendations.push({
       type: 'critical',
       title: 'Chýba DMARC politika',
-      description: 'DMARC určuje čo sa stane s emailami ktoré zlyhajú SPF/DKIM kontrolu.',
+      description: 'Bez DMARC politiky môže ktokoľvek posielať emaily v mene vašej domény. Rodičia, žiaci aj úrady dostanú falošný email ktorý vyzerá ako od vás.',
       fix: 'Pridajte TXT záznam na _dmarc.' + results.domain + ': v=DMARC1; p=quarantine; rua=mailto:admin@' + results.domain
     });
   } else if (results.dmarc.policy === 'none') {

@@ -1,11 +1,18 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers['origin'];
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED.includes(origin) ? origin : 'https://nondox.com');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
+
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   const { type, priority, description, userEmail, name, school, phone, message } = req.body;
 

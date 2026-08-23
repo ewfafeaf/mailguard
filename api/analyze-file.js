@@ -5,6 +5,7 @@ const pdfParse = require('pdf-parse');
 const AdmZip   = require('adm-zip');
 const XLSX     = require('xlsx');
 
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
 
@@ -19,10 +20,10 @@ const DANGEROUS_PATTERNS = [
   { pattern: 'RtlAdjustPrivilege',         severity: 'critical', desc: 'Eskalácia systémových privilégií' },
   { pattern: 'dllload',                    severity: 'critical', desc: 'Načítanie systémovej knižnice' },
   // Office macros
-  { pattern: 'AutoOpen',                   severity: 'critical', desc: 'Automatické spustenie po otvorení — Dokument obsahuje kód ktorý sa automaticky spustí bez vedomia používateľa. Typická technika malware útokov.' },
+  { pattern: 'AutoOpen',                   severity: 'critical', desc: 'Tento dokument sa pokúša automaticky spustiť kód pri otvorení. Klasická technika ransomware útokov — žiadna interakcia používateľa nie je potrebná.' },
   { pattern: 'Workbook_Open',              severity: 'critical', desc: 'Automatické spustenie v Exceli' },
-  { pattern: 'CreateObject("WScript.Shell")', severity: 'critical', desc: 'Prístup k Windows Shell' },
-  { pattern: "CreateObject('WScript.Shell')", severity: 'critical', desc: 'Prístup k Windows Shell' },
+  { pattern: 'CreateObject("WScript.Shell")', severity: 'critical', desc: 'Dokument obsahuje príkaz na spustenie systémových operácií v pozadí. Útočníci takto sťahujú a spúšťajú vírusy bez vedomia obete.' },
+  { pattern: "CreateObject('WScript.Shell')", severity: 'critical', desc: 'Dokument obsahuje príkaz na spustenie systémových operácií v pozadí. Útočníci takto sťahujú a spúšťajú vírusy bez vedomia obete.' },
   { pattern: 'Shell(',                     severity: 'high',     desc: 'Spustenie shell príkazu' },
   // System paths
   { pattern: 'System32',                   severity: 'critical', desc: 'Prístup k systémovým súborom Windows' },
@@ -74,13 +75,13 @@ const DANGEROUS_PATTERNS = [
   { pattern: '-ExecutionPolicy Bypass',   severity: 'critical', desc: 'Obchádzanie bezpečnostnej politiky Windows — typický prvý krok ransomware útoku' },
   { pattern: 'Invoke-Expression',         severity: 'critical', desc: 'PowerShell spustenie skrytého kódu (IEX) — klasická technika malware' },
   { pattern: 'DownloadString',            severity: 'critical', desc: 'Sťahovanie a spúšťanie kódu z internetu — typický dropper útok' },
-  { pattern: 'IEX(',                      severity: 'critical', desc: 'PowerShell skratka pre Invoke-Expression — obfuskovaný malware' },
+  { pattern: 'IEX(',                      severity: 'critical', desc: 'Dokument obsahuje zámerně zašifrovaný kód ktorý sa snaží skryť svoju skutočnú funkciu pred bezpečnostnými nástrojmi.' },
 
   // ── LOLBins (Living-off-the-Land Binaries) ─────────────────────
   { pattern: 'certutil.*-decode',         severity: 'critical', category: 'lolbin', regex: true,  desc: 'certutil zneužitý na dekódovanie skrytého payloadu — klasická LOLBin technika' },
   { pattern: 'certutil.*-urlcache',       severity: 'critical', category: 'lolbin', regex: true,  desc: 'certutil zneužitý na sťahovanie súborov z internetu' },
   { pattern: '-ExecutionPolicy\\s+Bypass',severity: 'critical', category: 'lolbin', regex: true,  desc: 'Obchádzanie PowerShell execution policy — LOLBin útok' },
-  { pattern: '-enc\\s+[A-Za-z0-9+/]{20,}',severity:'critical', category: 'lolbin', regex: true,  desc: 'PowerShell zakódovaný príkaz (-EncodedCommand) — obfuskovaný malware' },
+  { pattern: '-enc\\s+[A-Za-z0-9+/]{20,}',severity:'critical', category: 'lolbin', regex: true,  desc: 'Dokument obsahuje zámerně zašifrovaný kód ktorý sa snaží skryť svoju skutočnú funkciu pred bezpečnostnými nástrojmi.' },
   { pattern: 'mshta.exe',                 severity: 'critical', category: 'lolbin',               desc: 'mshta.exe — spustenie HTA skriptu, často zneužívané malware' },
   { pattern: 'regsvr32\\s+/s',            severity: 'critical', category: 'lolbin', regex: true,  desc: 'regsvr32 /s — tiché registrovanie DLL, LOLBin technika' },
   { pattern: 'wmic.*process.*call.*create',severity:'critical', category: 'lolbin', regex: true,  desc: 'WMIC process call create — vzdialené spúšťanie procesov' },
@@ -154,7 +155,9 @@ function scanDangerousPatterns(text) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers['origin'];
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED.includes(origin) ? origin : 'https://nondox.com');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -175,7 +178,7 @@ module.exports = async function handler(req, res) {
   const token = authHeader.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
-    headers: { 'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06', 'Authorization': `Bearer ${token}` }
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
   });
   if (!authRes.ok) return res.status(401).json({ error: 'Unauthorized' });
 

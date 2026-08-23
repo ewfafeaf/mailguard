@@ -2,7 +2,7 @@
 // Endpoint: GET /api/virustotal-check?host=DOMAIN
 
 const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
 async function verifyToken(token) {
   if (!token) return null;
@@ -88,12 +88,19 @@ async function checkRateLimit(userId) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers['origin'];
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED.includes(origin) ? origin : 'https://nondox.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   const { host } = req.query;
   if (!host) return res.status(400).json({ error: 'Missing host parameter' });
@@ -112,7 +119,8 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid hostname' });
   }
 
-  const apiKey = process.env.VIRUSTOTAL_API_KEY || 'ed512194cf801fda89aef7e2e39ba4b8ca5bd79d54bb7fdeacd21a1389605d04';
+  const apiKey = process.env.VIRUSTOTAL_API_KEY;
+  if (!apiKey) return res.status(200).json({ ok: false, error: 'VIRUSTOTAL_API_KEY nie je nastavený' });
 
   // Použi root doménu
   const parts = clean.split('.');

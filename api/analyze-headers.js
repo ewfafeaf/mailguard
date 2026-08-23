@@ -1,19 +1,28 @@
 // Vercel Serverless Function – Email Header Analysis
 // POST { headers: string (raw email headers) }
 
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers['origin'];
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED.includes(origin) ? origin : 'https://nondox.com');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const _origin = req.headers['origin'];
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
-    headers: { 'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06', 'Authorization': `Bearer ${token}` }
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
   });
   if (!authRes.ok) return res.status(401).json({ error: 'Unauthorized' });
 

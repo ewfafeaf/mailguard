@@ -2,9 +2,13 @@ export const config = {
   runtime: 'edge',
 };
 
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
 export default async function handler(req) {
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers.get('origin');
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED.includes(origin) ? origin : 'https://nondox.com',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
@@ -12,6 +16,11 @@ export default async function handler(req) {
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers });
+  }
+
+  const _origin = req.headers.get('origin');
+  if (_origin && !['https://nondox.com', 'https://www.nondox.com'].includes(_origin)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers });
   }
 
   try {
@@ -32,15 +41,15 @@ export default async function handler(req) {
     const token = authHeader.replace('Bearer ', '');
     if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
     const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
-      headers: { 'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06', 'Authorization': `Bearer ${token}` }
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
     });
     if (!authRes.ok) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
 
     const cacheKey = 'blacklist:' + clean;
     const sbRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache?cache_key=eq.' + encodeURIComponent(cacheKey) + '&expires_at=gt.' + new Date().toISOString() + '&select=data', {
       headers: {
-        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
-        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06'
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
       }
     });
     const sbData = await sbRes.json();
@@ -106,8 +115,8 @@ export default async function handler(req) {
     await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/rest/v1/cache', {
       method: 'POST',
       headers: {
-        'apikey': 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
-        'Authorization': 'Bearer sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates'
       },

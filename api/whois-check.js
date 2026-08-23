@@ -3,7 +3,7 @@
 // Fallback:  https://who-dat.as93.net/DOMAIN.json (verejné API)
 
 const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_gSuxNEKiTmU0puO9G8vrPQ_GcjOoK06';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
 async function verifyToken(token) {
   if (!token) return null;
@@ -89,7 +89,9 @@ async function checkRateLimit(userId) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const ALLOWED = ['https://nondox.com', 'https://www.nondox.com'];
+  const origin = req.headers['origin'];
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED.includes(origin) ? origin : 'https://nondox.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
