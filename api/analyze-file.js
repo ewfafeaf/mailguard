@@ -5,9 +5,53 @@ const pdfParse = require('pdf-parse');
 const AdmZip   = require('adm-zip');
 const XLSX     = require('xlsx');
 
+const SUPABASE_URL = 'https://qalcsmnvyuujsmnreglt.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
+
+// Same checkRateLimit pattern as ssl-check.js/shodan-check.js. This endpoint
+// always requires auth (no anonymous path), and is heavier than a plain
+// domain scan (parses uploaded PDF/DOCX/XLSX up to 10MB), so it gets its
+// own lower fixed limit and its own 'file' bucket rather than sharing the
+// 'scan' bucket used by the domain-scan endpoints.
+async function checkRateLimit(userId) {
+  const windowStart = new Date(Date.now() - 3600000).toISOString();
+  const limit = 10;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/rate_limits?user_id=eq.${encodeURIComponent(userId)}&endpoint=eq.file&select=count,window_start`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    if (!rows || rows.length === 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/rate_limits`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ user_id: userId, endpoint: 'file', count: 1, window_start: new Date().toISOString() })
+      });
+      return { allowed: true, remaining: limit - 1 };
+    }
+    const row = rows[0];
+    if (new Date(row.window_start) < new Date(windowStart)) {
+      await fetch(`${SUPABASE_URL}/rest/v1/rate_limits?user_id=eq.${encodeURIComponent(userId)}&endpoint=eq.file`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: 1, window_start: new Date().toISOString() })
+      });
+      return { allowed: true, remaining: limit - 1 };
+    }
+    if (row.count >= limit) {
+      return { allowed: false, remaining: 0 };
+    }
+    await fetch(`${SUPABASE_URL}/rest/v1/rate_limits?user_id=eq.${encodeURIComponent(userId)}&endpoint=eq.file`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count: row.count + 1 })
+    });
+    return { allowed: true, remaining: limit - row.count - 1 };
+  } catch(e) { return { allowed: true, remaining: limit }; }
+}
 
 const DANGEROUS_PATTERNS = [
   // Python
@@ -177,10 +221,17 @@ module.exports = async function handler(req, res) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  const authRes = await fetch('https://qalcsmnvyuujsmnreglt.supabase.co/auth/v1/user', {
+  const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
   });
   if (!authRes.ok) return res.status(401).json({ error: 'Unauthorized' });
+  const authData = await authRes.json();
+  const userId = authData?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const rl = await checkRateLimit(userId);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Príliš veľa požiadaviek. Počkaj hodinu a skús znova.', retryAfter: 3600 });
+  }
 
   const { filename = 'file', mimetype = '', data: b64, vtKey } = req.body || {};
   const gsbKey = process.env.GOOGLE_SAFE_BROWSING_KEY;
